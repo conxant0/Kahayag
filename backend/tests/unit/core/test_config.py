@@ -1,4 +1,14 @@
+from pathlib import Path
+
 from app.core.config import Settings
+
+
+def test_settings_env_file_is_resolved_from_the_backend_directory() -> None:
+    env_file = Path(Settings.model_config["env_file"])
+
+    assert env_file.is_absolute()
+    assert env_file.name == ".env"
+    assert env_file.parent.name == "backend"
 
 
 def test_settings_defaults() -> None:
