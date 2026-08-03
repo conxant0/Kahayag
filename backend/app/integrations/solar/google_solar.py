@@ -52,7 +52,7 @@ class GoogleSolarProvider:
                 "location.longitude": longitude,
                 "radiusMeters": radius_meters,
                 "view": "IMAGERY_AND_ANNUAL_FLUX_LAYERS",
-                "requiredQuality": "HIGH",
+                "requiredQuality": "BASE",
                 "key": self._api_key,
             },
         )
