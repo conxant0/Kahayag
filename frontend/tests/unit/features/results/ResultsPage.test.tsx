@@ -63,9 +63,12 @@ describe("ResultsPage", () => {
       new Error("bad raster"),
     );
     useAssessmentStore.getState().setPropertySelection({
+      placeId: null,
+      name: "Cebu",
       address: "Cebu",
       latitude: 10.3157,
       longitude: 123.8854,
+      source: "manual",
     });
     useAssessmentStore.getState().setRoofPolygon({
       coordinates: [
