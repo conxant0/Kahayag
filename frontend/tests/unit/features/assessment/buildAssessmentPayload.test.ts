@@ -1,11 +1,7 @@
 // Verifies the request body sent to POST /assessments matches the backend contract.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  buildAssessmentPayload,
-  FALLBACK_ROOF_AREA_SQUARE_METERS,
-} from "../../../../src/features/assessment/buildAssessmentPayload";
-import { DEMO_PROPERTY } from "../../../../src/integrations/maps/googleMapsHelpers";
+import { buildAssessmentPayload } from "../../../../src/features/assessment/buildAssessmentPayload";
 import {
   DEFAULT_ENERGY_INPUTS,
   type EnergyInputs,
@@ -85,26 +81,24 @@ describe("buildAssessmentPayload", () => {
     expect(payload.inputs.electricity_rate_php_per_kwh).toBe("12.00");
   });
 
-  it("falls back to the demo property when none was selected", () => {
-    const payload = buildAssessmentPayload({
-      selectedProperty: null,
-      roofPolygon: ROOF,
-      energyInputs: energy(),
-    });
-
-    expect(payload.property.address).toBe(DEMO_PROPERTY.address);
+  it("rejects a missing property rather than standing in a demo one", () => {
+    expect(() =>
+      buildAssessmentPayload({
+        selectedProperty: null,
+        roofPolygon: ROOF,
+        energyInputs: energy(),
+      }),
+    ).toThrow(/choose a property/i);
   });
 
-  it("falls back to a nominal roof area when nothing was traced", () => {
-    const payload = buildAssessmentPayload({
-      selectedProperty: PROPERTY,
-      roofPolygon: null,
-      energyInputs: energy(),
-    });
-
-    expect(payload.roof.area_m2).toBe(
-      FALLBACK_ROOF_AREA_SQUARE_METERS.toFixed(2),
-    );
+  it("rejects a missing roof rather than assuming a nominal area", () => {
+    expect(() =>
+      buildAssessmentPayload({
+        selectedProperty: PROPERTY,
+        roofPolygon: null,
+        energyInputs: energy(),
+      }),
+    ).toThrow(/trace your roof/i);
   });
 
   it("rejects a missing bill rather than inventing one", () => {

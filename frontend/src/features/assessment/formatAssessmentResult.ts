@@ -87,11 +87,15 @@ export function formatCostRange(result: AssessmentResult | null): string {
   return `${peso(low)}–${peso(high)}`;
 }
 
-export function formatBudgetCompatibility(result: AssessmentResult | null): string {
+export function formatBudgetCompatibility(
+  result: AssessmentResult | null,
+): string {
   if (!result) {
     return "—";
   }
-  return result.financials.budget_compatible ? "Within your budget" : "Above your budget";
+  return result.financials.budget_compatible
+    ? "Within your budget"
+    : "Above your budget";
 }
 
 export function formatRatio(value: number | string | null | undefined): string {

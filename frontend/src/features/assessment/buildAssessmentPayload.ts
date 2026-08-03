@@ -1,5 +1,4 @@
 // Builds the POST /assessments payload from session state.
-import { DEMO_PROPERTY } from "../../integrations/maps/googleMapsHelpers";
 import type {
   EnergyInputs,
   RoofPolygon,
@@ -7,15 +6,6 @@ import type {
 } from "../../state/assessmentStore";
 import { DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH } from "../../state/assessmentStore";
 import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../roof/roofUtils";
-
-/**
- * The area assumed when no trace was stored — a modest Cebu bungalow roof.
- *
- * Only reachable when someone lands on the submission step without tracing,
- * which the flow prevents; it exists so the request is still well-formed
- * rather than being rejected for a missing number nobody was asked for.
- */
-export const FALLBACK_ROOF_AREA_SQUARE_METERS = 120;
 
 /**
  * The request body accepted by `POST /assessments`.
@@ -75,14 +65,22 @@ export function buildAssessmentPayload({
   roofPolygon: RoofPolygon | null;
   energyInputs: EnergyInputs | null;
 }): AssessmentRequest {
-  const property = selectedProperty ?? DEMO_PROPERTY;
+  // Nothing here has a stand-in. Substituting a demo address or a nominal roof
+  // for one nobody gave would return a complete, confident, entirely fictional
+  // assessment, which is worse than refusing to build the request at all.
+  if (selectedProperty == null) {
+    throw new Error("Choose a property before continuing.");
+  }
+
+  if (roofPolygon == null) {
+    throw new Error("Trace your roof before continuing.");
+  }
+
   const monthlyBillPhp = energyInputs?.monthlyBillPhp ?? null;
   const electricityRatePhpPerKwh =
     energyInputs?.electricityRatePhpPerKwh ??
     DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH;
 
-  // The bill has no default. Every figure downstream is derived from it, so
-  // inventing one would produce a complete, confident, fictional assessment.
   if (monthlyBillPhp == null || monthlyBillPhp <= 0) {
     throw new Error("Enter a monthly electricity bill before continuing.");
   }
@@ -91,9 +89,8 @@ export function buildAssessmentPayload({
     throw new Error("Electricity rate must be greater than zero.");
   }
 
-  const tracedArea = roofPolygon?.areaSquareMeters;
   const roofAreaSquareMeters = Math.max(
-    tracedArea ?? FALLBACK_ROOF_AREA_SQUARE_METERS,
+    roofPolygon.areaSquareMeters,
     MIN_VALID_ROOF_AREA_SQUARE_METERS,
   );
 
@@ -101,9 +98,12 @@ export function buildAssessmentPayload({
 
   const payload: AssessmentRequest = {
     property: {
-      address: property.address || property.name || "Selected property",
-      latitude: formatCoordinate(property.latitude),
-      longitude: formatCoordinate(property.longitude),
+      address:
+        selectedProperty.address ||
+        selectedProperty.name ||
+        "Selected property",
+      latitude: formatCoordinate(selectedProperty.latitude),
+      longitude: formatCoordinate(selectedProperty.longitude),
       assessment_date: todayIsoDate(),
     },
     roof: {

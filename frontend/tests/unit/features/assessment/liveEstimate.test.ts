@@ -7,7 +7,7 @@ import {
   formatLiveEstimateSystemSize,
   resolveRoofAreaSquareMeters,
 } from "../../../../src/features/assessment/liveEstimate";
-import { FALLBACK_ROOF_AREA_SQUARE_METERS } from "../../../../src/features/assessment/buildAssessmentPayload";
+import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../../../../src/features/roof/roofUtils";
 import type { RoofPolygon } from "../../../../src/state/assessmentStore";
 
 const ROOF: RoofPolygon = {
@@ -24,10 +24,10 @@ describe("resolveRoofAreaSquareMeters", () => {
     expect(resolveRoofAreaSquareMeters(ROOF)).toBe(60);
   });
 
-  it("falls back when nothing was traced", () => {
-    expect(resolveRoofAreaSquareMeters(null)).toBe(
-      FALLBACK_ROOF_AREA_SQUARE_METERS,
-    );
+  it("floors a sliver at the smallest area the tracer accepts", () => {
+    expect(
+      resolveRoofAreaSquareMeters({ ...ROOF, areaSquareMeters: 0.4 }),
+    ).toBe(MIN_VALID_ROOF_AREA_SQUARE_METERS);
   });
 });
 

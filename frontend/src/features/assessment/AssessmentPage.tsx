@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Navigate } from "react-router-dom";
 
 import { FlowLayout } from "../../shared/components/layout";
 import { Chip, Eyebrow, Rule, UploadCard } from "../../shared/components/ui";
@@ -11,6 +12,7 @@ import {
   formatLiveEstimateSystemSize,
   resolveRoofAreaSquareMeters,
 } from "./liveEstimate";
+import { resolveRedirectForStep } from "./sessionGuard";
 
 /**
  * /energy — Figma 2171:53 (desktop) and 2133:19 (mobile).
@@ -28,9 +30,18 @@ const PRESETS = [2500, 4800, 8000, 12000];
 const digitsOf = (value: string) => value.replace(/\D/g, "");
 
 export function AssessmentPage() {
+  const selectedProperty = useAssessmentStore(
+    (state) => state.selectedProperty,
+  );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
   const setEnergyInputs = useAssessmentStore((state) => state.setEnergyInputs);
+
+  const redirect = resolveRedirectForStep("energy", {
+    selectedProperty,
+    roofPolygon,
+    energyInputs,
+  });
 
   const billDigits =
     energyInputs.monthlyBillPhp != null
@@ -41,7 +52,7 @@ export function AssessmentPage() {
   const fieldId = "monthly-electricity-bill";
 
   const liveEstimate = useMemo(() => {
-    if (!hasAmount) {
+    if (!hasAmount || roofPolygon == null) {
       return null;
     }
 
@@ -68,6 +79,12 @@ export function AssessmentPage() {
   };
 
   const formattedAmount = hasAmount ? amount.toLocaleString("en-PH") : "";
+
+  // After the hooks, so the order stays stable between a session that may stay
+  // and one that is on its way back to an earlier step.
+  if (redirect) {
+    return <Navigate to={redirect} replace />;
+  }
 
   return (
     <FlowLayout

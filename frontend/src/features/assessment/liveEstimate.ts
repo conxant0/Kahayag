@@ -10,7 +10,6 @@
 import { DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH } from "../../state/assessmentStore";
 import type { RoofPolygon } from "../../state/assessmentStore";
 import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../roof/roofUtils";
-import { FALLBACK_ROOF_AREA_SQUARE_METERS } from "./buildAssessmentPayload";
 
 const STANDARD_PANEL_WATTAGE_W = 450;
 const PANEL_AREA_M2 = 1.13 * 1.76;
@@ -30,12 +29,15 @@ function roundTo(value: number, decimals: number): number {
   return Math.round(value * factor) / factor;
 }
 
-export function resolveRoofAreaSquareMeters(
-  roofPolygon: RoofPolygon | null,
-): number {
-  const tracedArea = roofPolygon?.areaSquareMeters;
+/**
+ * The traced area, floored at the smallest area the tracer treats as a roof.
+ *
+ * Takes a polygon rather than accepting null: the step that shows this preview
+ * cannot be reached without a trace, so there is no area to invent.
+ */
+export function resolveRoofAreaSquareMeters(roofPolygon: RoofPolygon): number {
   return Math.max(
-    tracedArea ?? FALLBACK_ROOF_AREA_SQUARE_METERS,
+    roofPolygon.areaSquareMeters,
     MIN_VALID_ROOF_AREA_SQUARE_METERS,
   );
 }

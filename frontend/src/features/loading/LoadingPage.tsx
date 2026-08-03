@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { Eyebrow, KahayagLoader } from "../../shared/components/ui";
@@ -9,6 +9,7 @@ import { useFluxCacheStore } from "../../state/fluxCacheStore";
 import { buildAssessmentPayload } from "../assessment/buildAssessmentPayload";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { useSubmitAssessment } from "../assessment/hooks/useSubmitAssessment";
+import { resolveRedirectForStep } from "../assessment/sessionGuard";
 import {
   computeFluxCacheKey,
   needsFluxForPanelLayout,
@@ -66,6 +67,12 @@ export function LoadingPage() {
   const fluxCacheEntry = useFluxCacheStore((state) => state.entry);
   const result = readAssessmentResult(rawResult);
 
+  const redirect = resolveRedirectForStep("loading", {
+    selectedProperty,
+    roofPolygon,
+    energyInputs,
+  });
+
   const { mutate, isPending, isSuccess, error } = useSubmitAssessment();
   const { progress, completeProgress } = useLoadingProgress({
     phase,
@@ -77,8 +84,8 @@ export function LoadingPage() {
   });
 
   // Built here rather than on the previous screen so a session restored from
-  // storage submits exactly what it holds. A missing bill throws, and the
-  // absent payload becomes the recovery message below.
+  // storage submits exactly what it holds. Anything missing throws, which the
+  // guard above has already turned into a redirect.
   const payload = useMemo(() => {
     try {
       return buildAssessmentPayload({
@@ -135,13 +142,16 @@ export function LoadingPage() {
     return () => window.clearInterval(cycle);
   }, []);
 
+  // `redirect` is checked here as well as before the render: an effect still
+  // runs on the pass that returns `<Navigate>`, and submitting an assessment on
+  // the way out is exactly what the guard exists to prevent.
   useEffect(() => {
-    if (!payload || isPending || isSuccess) {
+    if (redirect || !payload || isPending || isSuccess) {
       return;
     }
 
     mutate(payload);
-  }, [payload, isPending, isSuccess, mutate]);
+  }, [redirect, payload, isPending, isSuccess, mutate]);
 
   useEffect(() => {
     if (isSuccess && phase === "assessment") {
@@ -193,13 +203,14 @@ export function LoadingPage() {
     startFluxPreload,
   ]);
 
-  const submissionError =
-    error instanceof Error
-      ? error.message
-      : payload == null
-        ? "Enter your monthly bill before continuing."
-        : null;
+  // A session that cannot produce a payload is missing an answer, not failing
+  // a request, so it goes back to the step that collects the answer rather than
+  // showing an error beside a stalled bar.
+  if (redirect) {
+    return <Navigate to={redirect} replace />;
+  }
 
+  const submissionError = error instanceof Error ? error.message : null;
   const errorMessage = submissionError ?? fluxError;
 
   return (
@@ -244,15 +255,14 @@ export function LoadingPage() {
               >
                 Back to your bill
               </Link>
-              {payload ? (
-                <button
-                  type="button"
-                  onClick={() => mutate(payload)}
-                  className="font-sans text-[15px] font-semibold text-cobalt hover:underline"
-                >
-                  Try again
-                </button>
-              ) : null}
+              {/* Past the guard, so a payload exists and can be resent. */}
+              <button
+                type="button"
+                onClick={() => payload && mutate(payload)}
+                className="font-sans text-[15px] font-semibold text-cobalt hover:underline"
+              >
+                Try again
+              </button>
             </>
           ) : (
             <>
@@ -267,9 +277,7 @@ export function LoadingPage() {
                   missing, so the way on stays open. */}
               <button
                 type="button"
-                onClick={() =>
-                  navigate(ROUTE_PATHS.results, { replace: true })
-                }
+                onClick={() => navigate(ROUTE_PATHS.results, { replace: true })}
                 className="font-sans text-[15px] font-semibold text-cobalt hover:underline"
               >
                 Continue without flux map
