@@ -10,7 +10,7 @@ class SelfIntersectingRoofPolygonError(RoofGeometryError):
 
 
 class DegenerateRoofPolygonError(RoofGeometryError):
-    """Raised when a roof polygon encloses no usable area (collinear or duplicate vertices)."""
+    """Raised when a roof polygon encloses no area (collinear or duplicate vertices)."""
 
 
 class InsufficientRoofAreaError(RoofGeometryError):

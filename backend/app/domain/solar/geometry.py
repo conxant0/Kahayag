@@ -11,7 +11,7 @@ from app.domain.solar.errors import (
     InsufficientRoofAreaError,
     SelfIntersectingRoofPolygonError,
 )
-from app.shared.schemas import GeoCoordinate, RoofArea, RoofPolygon
+from app.domain.solar.value_objects import GeoCoordinate, RoofArea, RoofPolygon
 
 _EARTH_RADIUS_M = 6371000.0
 
@@ -75,15 +75,18 @@ def _all_collinear(points: list[tuple[float, float]]) -> bool:
 
 def _raise_degenerate() -> None:
     raise DegenerateRoofPolygonError(
-        "Roof polygon encloses no usable area; vertices may be duplicated or collinear"
+        "Roof polygon encloses no area; vertices may be duplicated or collinear"
     )
 
 
 def calculate_roof_area(polygon: RoofPolygon) -> RoofArea:
-    """Validate a submitted roof polygon and calculate its usable area.
+    """Validate a submitted roof polygon and calculate its traced area.
+
+    The result is the traced polygon area before the tracing UI applies its
+    usable-area deduction for edges, access, spacing, ridges, and obstructions.
 
     Raises DegenerateRoofPolygonError for duplicate or collinear vertices that
-    enclose no usable area, SelfIntersectingRoofPolygonError for edges that
+    enclose no area, SelfIntersectingRoofPolygonError for edges that
     cross themselves (e.g. a bowtie shape), or InsufficientRoofAreaError for a
     valid shape too small to plausibly fit a solar panel.
     """
@@ -115,4 +118,5 @@ def max_panels_by_roof(
     usable_area_m2: Decimal,
     panel_area_m2: Decimal,
 ) -> int:
+    """Return the panel count for an area already filtered for usability."""
     return int(usable_area_m2 // panel_area_m2)

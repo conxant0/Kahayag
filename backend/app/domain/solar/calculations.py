@@ -1,7 +1,7 @@
 """Deterministic solar demand calculation rules."""
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_EVEN, Decimal
 
 from app.domain.solar.assumptions import (
     COST_BASE_PHP_PER_KWP,
@@ -92,16 +92,19 @@ def calculate_annual_generation_kwh(
     *,
     solar_resource: SolarResource,
 ) -> Decimal:
+    """Return whole-kWh generation using explicit Decimal half-even rounding."""
     return (
         system_capacity_kwp * annual_yield_per_kwp_kwh(solar_resource)
-    ).quantize(Decimal("1"))
+    ).quantize(Decimal("1"), rounding=ROUND_HALF_EVEN)
 
 
 def calculate_consumption_offset_ratio(
-    annual_generation_kwh: Decimal,
+    self_consumed_energy_kwh: Decimal,
     annual_consumption_kwh: Decimal,
 ) -> Decimal:
-    return min(Decimal(1), annual_generation_kwh / annual_consumption_kwh).quantize(
+    if annual_consumption_kwh <= 0:
+        raise ValueError("annual_consumption_kwh must be greater than zero")
+    return min(Decimal(1), self_consumed_energy_kwh / annual_consumption_kwh).quantize(
         Decimal("0.01")
     )
 
@@ -118,10 +121,10 @@ def calculate_base_cost_php(system_capacity_kwp: Decimal) -> int:
 
 
 def calculate_annual_savings_php(
-    billable_generation_kwh: Decimal,
+    self_consumed_energy_kwh: Decimal,
     electricity_rate_php_per_kwh: Decimal,
 ) -> int:
-    return int(billable_generation_kwh * electricity_rate_php_per_kwh)
+    return int(self_consumed_energy_kwh * electricity_rate_php_per_kwh)
 
 
 def calculate_monthly_savings_php(annual_savings_php: int) -> int:

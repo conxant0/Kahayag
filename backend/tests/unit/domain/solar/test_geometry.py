@@ -8,7 +8,7 @@ from app.domain.solar.errors import (
     SelfIntersectingRoofPolygonError,
 )
 from app.domain.solar.geometry import calculate_roof_area
-from app.shared.schemas import GeoCoordinate, RoofPolygon
+from app.domain.solar.value_objects import GeoCoordinate, RoofPolygon
 
 
 def _coordinate(latitude: str, longitude: str) -> GeoCoordinate:
@@ -63,7 +63,7 @@ def test_calculates_area_for_a_concave_polygon() -> None:
 
     area = calculate_roof_area(polygon)
 
-    assert area.area_m2 > 0
+    assert area.area_m2 == pytest.approx(Decimal("100"), abs=Decimal("1"))
 
 
 def test_rejects_self_intersecting_bowtie_polygon() -> None:
@@ -106,7 +106,7 @@ def test_rejects_duplicate_vertices_as_degenerate() -> None:
         calculate_roof_area(polygon)
 
 
-def test_rejects_valid_polygon_below_minimum_usable_area() -> None:
+def test_rejects_valid_polygon_below_minimum_panel_area() -> None:
     # A real, non-degenerate 1m x 1m square: too small to fit any panel.
     side_degrees = Decimal(1) / Decimal(111320)
     polygon = RoofPolygon(

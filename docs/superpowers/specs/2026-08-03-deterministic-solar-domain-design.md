@@ -1,8 +1,9 @@
-# Deterministic Solar Domain Transfer
+# Deterministic Solar Domain
 
 ## Context
 
-`Kahayag-old` is the source of truth for Jezreel's rebuild. The target
+`Kahayag-old` is the behavioral reference for Jezreel's deterministic solar
+functionality. The target
 `Kahayag-Final/kahayag` repository currently contains the scaffold and empty
 solar-domain package. This slice implements checklist section 1 only:
 framework-independent deterministic solar calculations and their focused
@@ -10,10 +11,10 @@ tests.
 
 ## Goal
 
-Transfer the existing `Kahayag-old/backend/app/domain/solar` behavior into the
-target with the smallest compatible diff, preserving the public helper names,
-Decimal arithmetic, validation rules, recommendation semantics, and focused
-tests.
+Implement the deterministic solar functionality in
+`Kahayag-Final/kahayag/backend/app/domain/solar` with the smallest compatible
+diff, preserving the public helper names, Decimal arithmetic, validation rules,
+recommendation semantics, and focused tests.
 
 ## Scope
 
@@ -31,8 +32,10 @@ Add to `Kahayag-Final/kahayag/backend`:
 - `tests/unit/domain/test_calculations.py`
 - `tests/unit/domain/solar/test_geometry.py`
 - `tests/unit/domain/solar/test_panel_capacity.py`
+- `tests/unit/domain/solar/test_recommendations.py`
 
-Reuse the target's existing shared schemas and `shapely` dependency. Do not
+Keep the domain value objects framework-independent, use the target's existing
+`shapely` dependency, and leave API Pydantic schemas at the boundary. Do not
 add assessment routes, provider code, frontend behavior, report logic, or
 shading implementation in this slice.
 
@@ -54,8 +57,9 @@ API change.
   performance ratio.
 - Direct monthly consumption takes precedence over bill and tariff inputs.
 - Bill-derived consumption uses the default tariff when no tariff is given.
-- Capacity, generation, cost, savings, offset, payback, and budget helpers
-  retain their existing rounding and flooring rules.
+- Capacity, cost, savings, offset, payback, and budget helpers retain their
+  existing rounding and flooring rules. Generation explicitly uses Decimal
+  half-even rounding to whole kWh.
 - Roof geometry retains duplicate-point cleanup, collinearity checks,
   self-intersection validation, minimum panel-area validation, and Decimal
   area output.
@@ -71,6 +75,6 @@ Run from the target backend:
 python -m pytest tests/unit/domain tests/unit/domain/solar -q
 ```
 
-The checklist records the exact command and result. Section 1 is marked
-`[~]` while the transfer is underway and `[x]` only after this focused suite
-passes. Section 4 remains unimplemented and is explicitly noted as deferred.
+The checklist records the exact command and result. Section 1 is marked `[x]`
+after this focused suite passes. Section 4 remains unimplemented and is
+explicitly noted as deferred.
