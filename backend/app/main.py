@@ -7,9 +7,11 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-if settings.env == "production" and settings.cors_origins == "http://localhost:5173":
+if settings.env == "production" and (
+    settings.cors_origins == "http://localhost:5173" or "*" in settings.cors_origins
+):
     raise RuntimeError(
-        "APP_CORS_ORIGINS must be configured when APP_ENV=production."
+        "APP_CORS_ORIGINS must be configured to specific origins when APP_ENV=production."
     )
 
 docs_url = None if settings.env == "production" else "/docs"
