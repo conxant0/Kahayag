@@ -21,6 +21,10 @@ export const MOCK_ASSESSMENT_RESPONSE: AssessmentResult = {
     budget_php: 300000,
     panel_category_id: "standard-450",
   },
+  estimated_monthly_consumption_kwh: "400.00",
+  consumption_source: "direct",
+  uses_default_tariff: false,
+  resolved_tariff_php_per_kwh: "12.00",
   recommendation: {
     panel_category_id: "standard-450",
     panel_wattage_w: 450,

@@ -9,6 +9,8 @@ import { createBrowserRouter } from "react-router-dom";
 import { ComponentsPage } from "../features/components-demo";
 import { LandingPage } from "../features/landing";
 import { PropertyPage } from "../features/property";
+import { RecommendationPage, WhyPage } from "../features/recommendation";
+import { EditLayoutPage, ResultsPage } from "../features/results";
 
 import { PendingScreen } from "./PendingScreen";
 import { ROUTE_PATHS } from "./routePaths";
@@ -25,16 +27,16 @@ export const router = createBrowserRouter([
     path: ROUTE_PATHS.loading,
     element: <PendingScreen name="The loading screen" />,
   },
-  { path: ROUTE_PATHS.results, element: <PendingScreen name="Results" /> },
+  { path: ROUTE_PATHS.results, element: <ResultsPage /> },
   {
     path: ROUTE_PATHS.editLayout,
-    element: <PendingScreen name="Layout editing" />,
+    element: <EditLayoutPage />,
   },
   {
     path: ROUTE_PATHS.invest,
-    element: <PendingScreen name="The investment view" />,
+    element: <RecommendationPage />,
   },
-  { path: ROUTE_PATHS.why, element: <PendingScreen name="The explanation" /> },
+  { path: ROUTE_PATHS.why, element: <WhyPage /> },
   {
     path: ROUTE_PATHS.brief,
     element: <PendingScreen name="The project brief" />,

@@ -9,7 +9,6 @@ const FACTOR_WEIGHTS = Object.freeze({
 });
 
 const DEFAULT_ELECTRICITY_RATE = 12;
-const DEMO_CONFIDENCE_PERCENT = 92;
 
 interface ConfidenceFactor {
   name: string;
@@ -17,39 +16,6 @@ interface ConfidenceFactor {
   confidence: string;
   high: boolean;
 }
-
-const DEMO_FACTORS: readonly ConfidenceFactor[] = Object.freeze([
-  {
-    name: "Roof geometry",
-    source: "LiDAR 3D mapping",
-    confidence: "High",
-    high: true,
-  },
-  {
-    name: "Solar irradiance",
-    source: "10-year satellite average",
-    confidence: "High",
-    high: true,
-  },
-  {
-    name: "Shading",
-    source: "Nearby vegetation & obstacles",
-    confidence: "Medium",
-    high: false,
-  },
-  {
-    name: "Local grid data",
-    source: "Regional stability history",
-    confidence: "High",
-    high: true,
-  },
-  {
-    name: "Actual production",
-    source: "Syncs after installation",
-    confidence: "N/A",
-    high: false,
-  },
-]);
 
 interface ConfidenceLabel {
   confidence: string;
@@ -212,23 +178,16 @@ export interface PredictionConfidence {
 }
 
 export function buildPredictionConfidence({
-  result = null,
+  result,
   roofPolygon = null,
   energyInputs = null,
 }: {
-  result?: AssessmentResult | null;
+  result: AssessmentResult | null;
   roofPolygon?: RoofPolygon | null;
   energyInputs?: EnergyInputs | null;
-} = {}): PredictionConfidence {
+}): PredictionConfidence {
   if (!result) {
-    return {
-      overallPercent: DEMO_CONFIDENCE_PERCENT,
-      factors: DEMO_FACTORS.map((factor) => ({ ...factor })),
-      intro:
-        "Think of it as a weather forecast for your energy bills — your roof's geometry, ten years of satellite weather, and VECO rates in one projection.",
-      advancedAnalysis:
-        "Hourly irradiance is modelled across the year, then reduced by a 0.5%/year panel degradation curve and a shading map built from nearby vegetation and obstacles.",
-    };
+    throw new Error("A completed assessment result is required for confidence.");
   }
 
   const roof = scoreRoofGeometry(roofPolygon, result.roof);
@@ -295,12 +254,8 @@ export function buildPredictionConfidence({
 }
 
 export function buildAdvancedAnalysisDetail(
-  result: AssessmentResult | null,
+  result: AssessmentResult,
 ): string {
-  if (!result) {
-    return "Hourly irradiance is modelled across the year, then reduced by a 0.5%/year panel degradation curve and a shading map built from nearby vegetation and obstacles.";
-  }
-
   const parts: string[] = [];
   const assumptions = result.assumptions;
   const shading = result.shading;

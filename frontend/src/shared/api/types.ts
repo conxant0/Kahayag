@@ -58,6 +58,10 @@ export interface AssessmentResult {
     budget_php: number | null;
     panel_category_id: string;
   };
+  estimated_monthly_consumption_kwh: string;
+  consumption_source: "direct" | "bill";
+  uses_default_tariff: boolean;
+  resolved_tariff_php_per_kwh: string;
   recommendation: {
     panel_category_id: string;
     panel_wattage_w: number;
@@ -93,4 +97,28 @@ export interface AssessmentResult {
   shading?: ShadingSummary | null;
   limitations: string[];
   is_provisional: boolean;
+}
+
+export interface InvestmentProjectionRequest {
+  assessment: AssessmentResult;
+  monthly_consumption_kwh: number;
+  electricity_rate_php_per_kwh: number;
+  system_cost_php: number;
+}
+
+export interface InvestmentProjectionResponse {
+  system_cost_php: number;
+  monthly_savings_php: number;
+  annual_savings_php: number;
+  co2_tonnes_per_year: string;
+  break_even_year: string | null;
+  year_10_net_php: number;
+  year_25_net_php: number;
+  lifetime_gross_savings_php: number;
+  milestones: Array<{ year: number; cumulative_net_php: number }>;
+  assumptions: {
+    analysis_years: number;
+    electricity_escalation_ratio: string;
+    annual_panel_degradation_ratio: string;
+  };
 }

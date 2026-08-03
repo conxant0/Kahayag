@@ -4,6 +4,41 @@ import type { AssessmentResult } from "../../shared/api/types";
 
 const number = (value: number) => Number(value).toLocaleString("en-PH");
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Narrows the opaque in-memory store value at the results boundary. */
+export function readAssessmentResult(raw: unknown): AssessmentResult | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+
+  const requiredSections = [
+    "property",
+    "roof",
+    "inputs",
+    "recommendation",
+    "financials",
+    "assumptions",
+  ];
+
+  if (
+    requiredSections.some((section) => !isRecord(raw[section])) ||
+    !Array.isArray(raw.limitations) ||
+    typeof raw.is_provisional !== "boolean"
+  ) {
+    return null;
+  }
+
+  return raw as unknown as AssessmentResult;
+}
+
+export function formatPeso(value: number | string | null | undefined): string {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? peso(parsed) : "—";
+}
+
 export function formatMonthlySavings(result: AssessmentResult | null): string {
   return peso(Number(result?.financials?.monthly_savings_php ?? 0));
 }
@@ -36,6 +71,32 @@ export function formatPaybackYears(result: AssessmentResult | null): string {
 
 export function formatAnnualSavings(result: AssessmentResult | null): string {
   return peso(Number(result?.financials?.annual_savings_php ?? 0));
+}
+
+export function formatOffset(result: AssessmentResult | null): string {
+  const ratio = Number(result?.recommendation?.annual_consumption_offset_ratio);
+  return Number.isFinite(ratio) ? `${Math.round(ratio * 100)}%` : "—";
+}
+
+export function formatCostRange(result: AssessmentResult | null): string {
+  const low = Number(result?.financials?.estimated_cost_low_php);
+  const high = Number(result?.financials?.estimated_cost_high_php);
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    return "—";
+  }
+  return `${peso(low)}–${peso(high)}`;
+}
+
+export function formatBudgetCompatibility(result: AssessmentResult | null): string {
+  if (!result) {
+    return "—";
+  }
+  return result.financials.budget_compatible ? "Within your budget" : "Above your budget";
+}
+
+export function formatRatio(value: number | string | null | undefined): string {
+  const ratio = Number(value);
+  return Number.isFinite(ratio) ? `${Math.round(ratio * 100)}%` : "—";
 }
 
 export function formatShadingImpact(

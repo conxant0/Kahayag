@@ -1,5 +1,10 @@
 // Places panel rectangles inside a georeferenced roof polygon, rotated to
 // follow the roof's longest edge orientation.
+import {
+  averageFluxAtCoordinates,
+  createFluxSampler,
+} from "../../integrations/solar/fluxSampler";
+import type { GeoTiffRaster } from "../../integrations/solar/geoTiffLoader";
 import type { GeoPoint } from "../../shared/api/types";
 
 const EARTH_RADIUS_METERS = 6_371_000;
@@ -190,12 +195,14 @@ function layoutAxisAlignedPanels({
   panelWidthM,
   panelHeightM,
   gapM,
+  scorePanel,
 }: {
   polygon: readonly Point2D[];
   panelCount: number;
   panelWidthM: number;
   panelHeightM: number;
   gapM: number;
+  scorePanel?: (panel: PanelCandidate) => number;
 }): PanelCandidate[] {
   const minX = Math.min(...polygon.map((point) => point.x));
   const maxX = Math.max(...polygon.map((point) => point.x));
@@ -237,10 +244,17 @@ function layoutAxisAlignedPanels({
     }
   }
 
-  candidates.sort(
-    (left, right) =>
-      distanceSquared(left.center, seed) - distanceSquared(right.center, seed),
-  );
+  candidates.sort((left, right) => {
+    if (scorePanel) {
+      const scoreDifference = scorePanel(right) - scorePanel(left);
+      if (scoreDifference !== 0) {
+        return scoreDifference;
+      }
+    }
+    return (
+      distanceSquared(left.center, seed) - distanceSquared(right.center, seed)
+    );
+  });
 
   return candidates.slice(0, panelCount);
 }
@@ -249,25 +263,41 @@ export interface LayoutPanel {
   corners: [GeoPoint, GeoPoint, GeoPoint, GeoPoint];
 }
 
-// flux-aware panel scoring (the source's optional `flux` parameter,
-// which biased placement toward higher-irradiance patches of roof using a
-// GeoTIFF sampler) is dropped here. Its only caller in this repo,
-// buildReportRequest, never supplies `flux`, and wiring it back in would pull
-// the geotiff/proj4 GeoTIFF parsing chain and the solar-flux visualization
-// feature into this task's scope. Re-add createFluxSampler-based scoring here
-// when the results/map flux overlay feature is ported.
+function buildFluxScorePanel({
+  averageLatitude: avgLat,
+  flux,
+  roofAngle,
+  seed,
+}: {
+  averageLatitude: number;
+  flux: GeoTiffRaster;
+  roofAngle: number;
+  seed: Point2D;
+}): (panel: PanelCandidate) => number {
+  const sample = createFluxSampler(flux);
+  return (panel) =>
+    averageFluxAtCoordinates(
+      panel.corners.map((corner) =>
+        unprojectPoint(rotatePointAround(seed, corner, roofAngle), avgLat),
+      ),
+      sample,
+    );
+}
+
 export function layoutPanelsInPolygon({
   coordinates,
   panelCount,
   panelWidthM = 1.13,
   panelHeightM = 1.76,
   gapM = 0.08,
+  flux,
 }: {
   coordinates: readonly GeoPoint[];
   panelCount: number;
   panelWidthM?: number;
   panelHeightM?: number;
   gapM?: number;
+  flux?: GeoTiffRaster;
 }): LayoutPanel[] {
   if (!coordinates?.length || panelCount <= 0) {
     return [];
@@ -287,6 +317,9 @@ export function layoutPanelsInPolygon({
     { panelWidthM, panelHeightM },
     { panelWidthM: panelHeightM, panelHeightM: panelWidthM },
   ];
+  const scorePanel = flux
+    ? buildFluxScorePanel({ averageLatitude: avgLat, flux, roofAngle, seed })
+    : undefined;
 
   let bestPanels: PanelCandidate[] = [];
 
@@ -297,6 +330,7 @@ export function layoutPanelsInPolygon({
       panelWidthM: orientation.panelWidthM,
       panelHeightM: orientation.panelHeightM,
       gapM,
+      scorePanel,
     });
 
     if (alignedPanels.length > bestPanels.length) {
