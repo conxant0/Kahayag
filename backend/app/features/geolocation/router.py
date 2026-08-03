@@ -1,7 +1,10 @@
 # Defines approximate geolocation via client IP.
 
-import httpx
 from fastapi import APIRouter, HTTPException, Request
+
+from app.api.dependencies import DependsGeolocationProvider
+from app.integrations.geolocation.errors import GeolocationLookupError
+from app.integrations.geolocation.provider import GeolocationProvider
 
 router = APIRouter()
 
@@ -28,7 +31,10 @@ def _is_private_ip(ip_address: str) -> bool:
 
 
 @router.post("/geolocation/approximate")
-def resolve_approximate_location(request: Request) -> dict:
+def resolve_approximate_location(
+    request: Request,
+    geolocation_provider: GeolocationProvider = DependsGeolocationProvider,
+) -> dict:
     """Return coarse coordinates from the caller's public IP address."""
     client_ip = _client_ip(request)
     if _is_private_ip(client_ip):
@@ -41,29 +47,9 @@ def resolve_approximate_location(request: Request) -> dict:
         )
 
     try:
-        response = httpx.get(
-            f"http://ip-api.com/json/{client_ip}",
-            params={"fields": "status,message,lat,lon"},
-            timeout=5.0,
-        )
-        response.raise_for_status()
-        payload = response.json()
-    except httpx.HTTPError as error:
-        raise HTTPException(
-            status_code=502,
-            detail="Approximate location lookup failed.",
-        ) from error
-
-    if payload.get("status") != "success":
-        raise HTTPException(
-            status_code=502,
-            detail=payload.get("message", "Approximate location lookup failed."),
-        )
-
-    latitude = payload.get("lat")
-    longitude = payload.get("lon")
-    if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
-        raise HTTPException(status_code=502, detail="Approximate location lookup returned invalid coordinates.")
+        latitude, longitude = geolocation_provider.locate(client_ip)
+    except GeolocationLookupError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
     return {
         "latitude": latitude,

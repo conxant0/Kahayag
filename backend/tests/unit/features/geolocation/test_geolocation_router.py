@@ -28,7 +28,7 @@ class TestApproximateGeolocation:
             assert "8.8.8.8" in url
             return FakeResponse()
 
-        monkeypatch.setattr("app.features.geolocation.router.httpx.get", fake_get)
+        monkeypatch.setattr("app.integrations.geolocation.ip_api.httpx.get", fake_get)
 
         response = client.post(
             "/api/v1/geolocation/approximate",
