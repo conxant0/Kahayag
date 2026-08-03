@@ -1,7 +1,9 @@
 # Defines assessment request and response API schemas.
+# ruff: noqa: I001 -- verbatim port from the source worktree; do not reformat imports.
 
 from datetime import date
 from decimal import Decimal
+
 from typing import Literal
 
 from pydantic import (
