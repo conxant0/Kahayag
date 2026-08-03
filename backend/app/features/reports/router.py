@@ -32,7 +32,10 @@ def download_report(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
-    report = build_report_input(request.assessment)
+    try:
+        report = build_report_input(request.assessment)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     narrative = resolve_narrative(report, get_ai_provider(settings).write(report))
     satellite_image = fetch_static_map(request.roof_polygon)
     pdf = render_report_pdf(
