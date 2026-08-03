@@ -74,4 +74,3 @@ python -m pytest tests/unit/domain tests/unit/domain/solar -q
 The checklist records the exact command and result. Section 1 is marked
 `[~]` while the transfer is underway and `[x]` only after this focused suite
 passes. Section 4 remains unimplemented and is explicitly noted as deferred.
-
