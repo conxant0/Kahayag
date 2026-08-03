@@ -1,6 +1,10 @@
 // Builds the exact PDF report request payload from assessment and roof state.
 import { layoutPanelsInPolygon } from "../results/panelLayoutUtils";
-import type { AssessmentResult, GeoPoint, RoofPolygon } from "../../shared/api/types";
+import type {
+  AssessmentResult,
+  GeoPoint,
+  RoofPolygon,
+} from "../../shared/api/types";
 
 export interface PanelPolygon {
   corners: [GeoPoint, GeoPoint, GeoPoint, GeoPoint];
@@ -32,7 +36,9 @@ export function buildReportRequest({
     panelHeightM: Number(result.assumptions.panel_height_m),
   });
   if (panels.length !== result.recommendation.panel_count) {
-    throw new Error("Could not fit the selected panel count inside the roof trace.");
+    throw new Error(
+      "Could not fit the selected panel count inside the roof trace.",
+    );
   }
   return {
     assessment: result,

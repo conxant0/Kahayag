@@ -8,6 +8,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import { ComponentsPage } from "../features/components-demo";
 import { LandingPage } from "../features/landing";
+import { PropertyPage } from "../features/property";
 import { RecommendationPage, WhyPage } from "../features/recommendation";
 import { EditLayoutPage, ResultsPage } from "../features/results";
 
@@ -16,10 +17,7 @@ import { ROUTE_PATHS } from "./routePaths";
 
 export const router = createBrowserRouter([
   { path: ROUTE_PATHS.landing, element: <LandingPage /> },
-  {
-    path: ROUTE_PATHS.locate,
-    element: <PendingScreen name="Property search" />,
-  },
+  { path: ROUTE_PATHS.locate, element: <PropertyPage /> },
   { path: ROUTE_PATHS.trace, element: <PendingScreen name="Roof tracing" /> },
   {
     path: ROUTE_PATHS.energy,

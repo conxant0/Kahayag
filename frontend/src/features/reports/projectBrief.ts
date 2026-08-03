@@ -151,7 +151,9 @@ function resolveAnnualYieldPerKwpKwh(
   assumptions: AssessmentResult["assumptions"] | undefined,
 ): number {
   const sunshineHours = Number(assumptions?.annual_sunshine_hours_per_kwp);
-  const performanceRatio = Number(assumptions?.performance_ratio ?? PERFORMANCE_RATIO);
+  const performanceRatio = Number(
+    assumptions?.performance_ratio ?? PERFORMANCE_RATIO,
+  );
 
   if (Number.isFinite(sunshineHours) && sunshineHours > 0) {
     return sunshineHours * performanceRatio;
@@ -160,11 +162,18 @@ function resolveAnnualYieldPerKwpKwh(
   return PEAK_SUN_HOURS_PER_DAY * 365 * PERFORMANCE_RATIO;
 }
 
-function resolvePanelAreaM2(assumptions: AssessmentResult["assumptions"] | undefined): number {
+function resolvePanelAreaM2(
+  assumptions: AssessmentResult["assumptions"] | undefined,
+): number {
   const widthM = Number(assumptions?.panel_width_m);
   const heightM = Number(assumptions?.panel_height_m);
 
-  if (Number.isFinite(widthM) && widthM > 0 && Number.isFinite(heightM) && heightM > 0) {
+  if (
+    Number.isFinite(widthM) &&
+    widthM > 0 &&
+    Number.isFinite(heightM) &&
+    heightM > 0
+  ) {
     return widthM * heightM;
   }
 
@@ -184,7 +193,9 @@ function resolveCostBasePhpPerKwp(
   return COST_BASE_PHP_PER_KWP;
 }
 
-function resolvePanelClass(panelCategoryId: string | null | undefined): PanelClassOption {
+function resolvePanelClass(
+  panelCategoryId: string | null | undefined,
+): PanelClassOption {
   return (
     PANEL_CLASS_OPTIONS.find((option) => option.id === panelCategoryId) ??
     PANEL_CLASS_OPTIONS[0]!
@@ -215,7 +226,10 @@ function computeSizingForPanelClass(
   if (recommendation.panel_category_id === panelCategoryId) {
     const annualGenerationKwh = Number(recommendation.annual_generation_kwh);
     const annualConsumptionKwh = Number(inputs.monthly_consumption_kwh) * 12;
-    const billableGenerationKwh = Math.min(annualGenerationKwh, annualConsumptionKwh);
+    const billableGenerationKwh = Math.min(
+      annualGenerationKwh,
+      annualConsumptionKwh,
+    );
     const rate = Number(inputs.electricity_rate_php_per_kwh);
     const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
     const systemCapacityKwp = Number(recommendation.system_capacity_kwp);
@@ -242,7 +256,11 @@ function computeSizingForPanelClass(
   const panelAreaM2 = resolvePanelAreaM2(assumptions);
   const costBasePhpPerKwp = resolveCostBasePhpPerKwp(assumptions);
   const maxByRoof = maxPanelsByRoof(usableAreaM2, panelAreaM2);
-  const maxByBudget = maxPanelsByBudget(inputs.budget_php, panelClass.wattageW, costBasePhpPerKwp);
+  const maxByBudget = maxPanelsByBudget(
+    inputs.budget_php,
+    panelClass.wattageW,
+    costBasePhpPerKwp,
+  );
   const maxByDemand = maxPanelsByDemand(
     consumptionLimitedSystemSizeKwp,
     panelClass.wattageW,
@@ -253,13 +271,23 @@ function computeSizingForPanelClass(
     return null;
   }
 
-  const systemCapacityKwp = roundTo((panelCount * panelClass.wattageW) / 1000, 2);
-  const annualGenerationKwh = Math.round(systemCapacityKwp * annualYieldPerKwpKwh);
-  const billableGenerationKwh = Math.min(annualGenerationKwh, annualConsumptionKwh);
+  const systemCapacityKwp = roundTo(
+    (panelCount * panelClass.wattageW) / 1000,
+    2,
+  );
+  const annualGenerationKwh = Math.round(
+    systemCapacityKwp * annualYieldPerKwpKwh,
+  );
+  const billableGenerationKwh = Math.min(
+    annualGenerationKwh,
+    annualConsumptionKwh,
+  );
   const rate = Number(inputs.electricity_rate_php_per_kwh);
   const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
-  const estimatedBaseCostPhp = Math.floor(systemCapacityKwp * costBasePhpPerKwp);
+  const estimatedBaseCostPhp = Math.floor(
+    systemCapacityKwp * costBasePhpPerKwp,
+  );
   const paybackYears =
     annualSavingsPhp > 0
       ? roundTo(estimatedBaseCostPhp / annualSavingsPhp, 1)
@@ -302,7 +330,10 @@ export function formatBriefLocation(
   return address;
 }
 
-function buildPanelClassHint(panelCategoryId: string, usableAreaM2: number): string {
+function buildPanelClassHint(
+  panelCategoryId: string,
+  usableAreaM2: number,
+): string {
   const roundedArea = Math.round(usableAreaM2);
 
   if (panelCategoryId === "high-output-550") {
@@ -374,14 +405,22 @@ function buildMapPreview(
   panelCategoryId: string | null | undefined,
 ): MapPreview {
   const panelClass = resolvePanelClass(
-    panelCategoryId ?? result?.recommendation?.panel_category_id ?? "standard-450",
+    panelCategoryId ??
+      result?.recommendation?.panel_category_id ??
+      "standard-450",
   );
 
   return {
     panelCount:
-      sizing?.panelCount ?? result?.recommendation?.panel_count ?? DEMO_BRIEF.panelCount,
-    panelWidthM: Number(result?.assumptions?.panel_width_m ?? DEMO_BRIEF.panelWidthM),
-    panelHeightM: Number(result?.assumptions?.panel_height_m ?? DEMO_BRIEF.panelHeightM),
+      sizing?.panelCount ??
+      result?.recommendation?.panel_count ??
+      DEMO_BRIEF.panelCount,
+    panelWidthM: Number(
+      result?.assumptions?.panel_width_m ?? DEMO_BRIEF.panelWidthM,
+    ),
+    panelHeightM: Number(
+      result?.assumptions?.panel_height_m ?? DEMO_BRIEF.panelHeightM,
+    ),
     panelWattageW: sizing?.panelWattageW ?? panelClass.wattageW,
   };
 }
@@ -483,7 +522,9 @@ export function buildProjectBrief({
       financialRows: buildFinancialRows({
         monthlySavingsPhp: result.financials.monthly_savings_php,
         annualSavingsPhp: result.financials.annual_savings_php,
-        billCoverageRatio: Number(result.recommendation.annual_consumption_offset_ratio),
+        billCoverageRatio: Number(
+          result.recommendation.annual_consumption_offset_ratio,
+        ),
         paybackYears: Number(result.financials.payback_years),
       }),
       disclaimer: buildDisclaimer(result),
@@ -542,11 +583,15 @@ export function resolveReportDateLabel(
   return formatReportDate(parsed ?? generatedAt);
 }
 
-export function formatReportPageCount(pageCount: number = REPORT_PAGE_COUNT): string {
+export function formatReportPageCount(
+  pageCount: number = REPORT_PAGE_COUNT,
+): string {
   return `${pageCount} page${pageCount === 1 ? "" : "s"}`;
 }
 
-export function formatReportSizeLabel(sizeMb: number = REPORT_ESTIMATED_SIZE_MB): string {
+export function formatReportSizeLabel(
+  sizeMb: number = REPORT_ESTIMATED_SIZE_MB,
+): string {
   return `about ${sizeMb} MB`;
 }
 
@@ -601,7 +646,9 @@ export function buildReportPreview({
 
 export type ShareResult = "shared" | "copied" | "unsupported";
 
-export async function shareProjectBrief(shareText: string): Promise<ShareResult> {
+export async function shareProjectBrief(
+  shareText: string,
+): Promise<ShareResult> {
   const url = window.location.href;
 
   if (navigator.share) {

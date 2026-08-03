@@ -14,10 +14,17 @@ function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function useDownloadReport(): UseMutationResult<void, Error, ReportPdfRequest> {
+export function useDownloadReport(): UseMutationResult<
+  void,
+  Error,
+  ReportPdfRequest
+> {
   return useMutation({
     mutationFn: async (payload: ReportPdfRequest) => {
-      const { blob, filename } = await apiPostBlob(ENDPOINTS.reportsPdf, payload);
+      const { blob, filename } = await apiPostBlob(
+        ENDPOINTS.reportsPdf,
+        payload,
+      );
       downloadBlob(blob, filename);
     },
   });

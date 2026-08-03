@@ -51,7 +51,9 @@ export function formatSystemCapacity(result: AssessmentResult | null): string {
   return `${Number(kwp).toFixed(1)} kW`;
 }
 
-export function formatAnnualGeneration(result: AssessmentResult | null): string {
+export function formatAnnualGeneration(
+  result: AssessmentResult | null,
+): string {
   const kwh = result?.recommendation?.annual_generation_kwh;
   if (kwh == null) {
     return "—";
@@ -97,7 +99,9 @@ export function formatRatio(value: number | string | null | undefined): string {
   return Number.isFinite(ratio) ? `${Math.round(ratio * 100)}%` : "—";
 }
 
-export function formatShadingImpact(result: AssessmentResult | null): string | null {
+export function formatShadingImpact(
+  result: AssessmentResult | null,
+): string | null {
   const shading = result?.shading;
   if (!shading) {
     return null;
@@ -129,7 +133,9 @@ export function formatConfidenceLabel(result: AssessmentResult | null): string {
 
 export type ResultsStat = [label: string, value: string];
 
-export function buildResultsStats(result: AssessmentResult | null): ResultsStat[] {
+export function buildResultsStats(
+  result: AssessmentResult | null,
+): ResultsStat[] {
   const stats: ResultsStat[] = [
     ["System size", formatSystemCapacity(result)],
     ["Yearly yield", formatAnnualGeneration(result)],
