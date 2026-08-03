@@ -20,3 +20,12 @@ See [SETUP.md](SETUP.md) to install dependencies and run both applications.
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — architecture decisions, repository navigation, data flow.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branching, commits, review, and verification expectations.
 - [docs/calculations_guide.md](docs/calculations_guide.md) — the authoritative formulas, constants, and rounding rules.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — the post-deploy smoke checklist and outstanding handoff.
+
+## Deployment
+
+Both applications deploy to Vercel; see [SETUP.md](SETUP.md#deployment) for
+the required secrets and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the
+post-deploy smoke checklist. No external API key is required for either app
+to boot: the AI and solar providers default to `disabled` and the app falls
+back to deterministic behavior.

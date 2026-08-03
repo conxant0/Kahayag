@@ -117,3 +117,18 @@ Report route
 ```
 
 AI may explain validated values in plain language, but it must not calculate or alter technical and financial results.
+
+## Deployment
+
+`backend/vercel.json` builds `app/main.py` with `@vercel/python`, which
+installs from `backend/requirements.txt` and routes every path to that entry
+point; the versioned API prefix (`/api/v1/...`) is composed inside the
+FastAPI app itself, so the deployed health check is
+`https://<backend-project>.vercel.app/api/v1/health`.
+
+The frontend build reads `VITE_API_BASE_URL` from the hosting environment and
+fails the build outright if it is missing or lacks a scheme
+(`frontend/vite.config.ts`, `frontend/src/shared/config/env.ts`) — the
+browser bundle can never fall back to resolving the API against its own
+origin. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the post-deploy
+smoke checklist and the outstanding frontend handoff.
