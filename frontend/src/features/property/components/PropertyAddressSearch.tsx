@@ -115,32 +115,27 @@ export function PropertyAddressSearch({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleUseDemoProperty}
-          className="self-start font-sans text-sm font-semibold text-cobalt transition-colors duration-150 hover:underline"
-        >
+      {/* One row of ghost pills, so the two shortcuts share a baseline and a
+       * height instead of a text link sitting beside a button. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="ghost" onClick={handleUseDemoProperty}>
           Use demo property
-        </button>
+        </Button>
+
         {googleStatus === "ready" && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             aria-pressed={isSelectingPropertyFromMap}
             onClick={() => setIsSelectingPropertyFromMap((current) => !current)}
             className={cn(
-              "inline-flex items-center gap-1.5 self-start rounded-pill border px-3 py-1.5",
-              "font-sans text-sm font-semibold transition-colors duration-150",
               isSelectingPropertyFromMap
-                ? "border-cobalt bg-cobalt text-paper"
-                : "border-cobalt/35 bg-cobalt-wash text-cobalt hover:border-cobalt",
+                ? "border-cobalt bg-cobalt text-paper hover:border-cobalt hover:text-paper"
+                : "border-cobalt/35 bg-cobalt-wash text-cobalt hover:border-cobalt hover:text-cobalt",
             )}
           >
             <PinIcon size={14} />
-            {isSelectingPropertyFromMap
-              ? "Placing pin. Tap the map"
-              : "Drop a pin on the map"}
-          </button>
+            {isSelectingPropertyFromMap ? "Placing pin" : "Drop a pin"}
+          </Button>
         )}
       </div>
 
