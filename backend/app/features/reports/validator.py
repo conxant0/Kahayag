@@ -17,6 +17,10 @@ class AlteredReportValueError(ValueError):
 def build_report_input(
     assessment: CompletedAssessment,
 ) -> ValidatedReportInput:
+    if assessment.inputs.monthly_consumption_kwh is None:
+        raise ValueError(
+            "assessment must include monthly_consumption_kwh to generate a report"
+        )
     return ValidatedReportInput.model_validate(assessment.model_dump())
 
 
