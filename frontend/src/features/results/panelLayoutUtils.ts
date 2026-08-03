@@ -241,7 +241,7 @@ export interface LayoutPanel {
   corners: [GeoPoint, GeoPoint, GeoPoint, GeoPoint];
 }
 
-// ponytail: flux-aware panel scoring (the source's optional `flux` parameter,
+// flux-aware panel scoring (the source's optional `flux` parameter,
 // which biased placement toward higher-irradiance patches of roof using a
 // GeoTIFF sampler) is dropped here. Its only caller in this repo,
 // buildReportRequest, never supplies `flux`, and wiring it back in would pull

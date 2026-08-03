@@ -92,7 +92,7 @@ describe("buildReportPreview", () => {
     });
 
     expect(report.title).toBe("Kahayag Solar Brief");
-    expect(report.metaLine).toBe("Pajo, Lapu-Lapu City · 25 Jul 2026 · 8 pages");
+    expect(report.metaLine).toBe("Pajo, Lapu-Lapu City · 3 Aug 2026 · 8 pages");
     expect(report.footerCaption).toBe("No account needed · about 2 MB");
     expect(report.contents).toHaveLength(4);
   });

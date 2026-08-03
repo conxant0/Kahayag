@@ -47,7 +47,7 @@ export const REPORT_CONTENTS: readonly string[] = Object.freeze([
   "Prediction confidence breakdown",
 ]);
 
-const DEMO_REPORT_DATE_ISO = "2026-07-25";
+const DEMO_REPORT_DATE_ISO = "2026-08-03";
 
 const REPORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
