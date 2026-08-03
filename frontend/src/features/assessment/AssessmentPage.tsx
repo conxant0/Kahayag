@@ -13,6 +13,7 @@ import {
   resolveRoofAreaSquareMeters,
 } from "./liveEstimate";
 import { resolveRedirectForStep } from "./sessionGuard";
+import { RefineInputs } from "./components/RefineInputs";
 
 /**
  * /energy — Figma 2171:53 (desktop) and 2133:19 (mobile).
@@ -23,6 +24,10 @@ import { resolveRedirectForStep } from "./sessionGuard";
  *
  * The quick picks fill the same field rather than replacing it, and the live
  * estimate stays blank until there is a number to estimate from.
+ *
+ * A budget and the tariff both change the answer, so both are offered — behind
+ * a disclosure, because giving them equal weight with the bill would make the
+ * question most people can answer look like one of three they cannot.
  */
 const PRESETS = [2500, 4800, 8000, 12000];
 
@@ -148,6 +153,12 @@ export function AssessmentPage() {
       <UploadCard
         title="Snap a photo of your bill"
         hint="We’ll read it and fill everything in · optional"
+      />
+
+      <RefineInputs
+        budgetPhp={energyInputs.budgetPhp}
+        electricityRatePhpPerKwh={energyInputs.electricityRatePhpPerKwh}
+        onChange={setEnergyInputs}
       />
 
       <section
