@@ -13,7 +13,6 @@ export const ROUTE_PATHS = {
   why: "/why",
   brief: "/brief",
   report: "/report",
-  reportSaved: "/report/saved",
   editLayout: "/results/layout",
   components: "/components",
 } as const;
