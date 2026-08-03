@@ -1,1 +1,1 @@
-# Defines deterministic solar geometry, generation, and financial rules.
+# Defines the deterministic solar assessment domain.
