@@ -12,6 +12,10 @@ import {
   summarizeRoofGeometry,
 } from "./roofGeometry";
 
+// Fallbacks only, for the no-result demo view. Whenever assessment
+// assumptions are available, resolvePanelAreaM2/resolveCostBasePhpPerKwp/
+// resolveAnnualYieldPerKwpKwh below derive these from the backend's
+// domain/solar/assumptions.py values instead, so the two stay in sync.
 const PANEL_AREA_M2 = 1.13 * 1.76;
 const COST_BASE_PHP_PER_KWP = 60_000;
 const PERFORMANCE_RATIO = 0.8;
@@ -96,19 +100,20 @@ function formatKwp(systemCapacityKwp: number): string {
   return `${rounded.toFixed(1)} kW`;
 }
 
-function maxPanelsByRoof(usableAreaM2: number): number {
-  return Math.floor(usableAreaM2 / PANEL_AREA_M2);
+function maxPanelsByRoof(usableAreaM2: number, panelAreaM2: number): number {
+  return Math.floor(usableAreaM2 / panelAreaM2);
 }
 
 function maxPanelsByBudget(
   budgetPhp: number | null | undefined,
   panelWattageW: number,
+  costBasePhpPerKwp: number,
 ): number | null {
   if (budgetPhp == null || budgetPhp <= 0) {
     return null;
   }
 
-  const costPerPanel = (panelWattageW / 1000) * COST_BASE_PHP_PER_KWP;
+  const costPerPanel = (panelWattageW / 1000) * costBasePhpPerKwp;
   return Math.floor(budgetPhp / costPerPanel);
 }
 
@@ -153,6 +158,30 @@ function resolveAnnualYieldPerKwpKwh(
   }
 
   return PEAK_SUN_HOURS_PER_DAY * 365 * PERFORMANCE_RATIO;
+}
+
+function resolvePanelAreaM2(assumptions: AssessmentResult["assumptions"] | undefined): number {
+  const widthM = Number(assumptions?.panel_width_m);
+  const heightM = Number(assumptions?.panel_height_m);
+
+  if (Number.isFinite(widthM) && widthM > 0 && Number.isFinite(heightM) && heightM > 0) {
+    return widthM * heightM;
+  }
+
+  return PANEL_AREA_M2;
+}
+
+function resolveCostBasePhpPerKwp(
+  assumptions: AssessmentResult["assumptions"] | undefined,
+): number {
+  const low = Number(assumptions?.cost_low_php_per_kwp);
+  const high = Number(assumptions?.cost_high_php_per_kwp);
+
+  if (Number.isFinite(low) && Number.isFinite(high) && low > 0 && high > 0) {
+    return (low + high) / 2;
+  }
+
+  return COST_BASE_PHP_PER_KWP;
 }
 
 function resolvePanelClass(panelCategoryId: string | null | undefined): PanelClassOption {
@@ -210,8 +239,10 @@ function computeSizingForPanelClass(
   const annualConsumptionKwh = monthlyConsumptionKwh * 12;
   const consumptionLimitedSystemSizeKwp =
     annualConsumptionKwh / annualYieldPerKwpKwh;
-  const maxByRoof = maxPanelsByRoof(usableAreaM2);
-  const maxByBudget = maxPanelsByBudget(inputs.budget_php, panelClass.wattageW);
+  const panelAreaM2 = resolvePanelAreaM2(assumptions);
+  const costBasePhpPerKwp = resolveCostBasePhpPerKwp(assumptions);
+  const maxByRoof = maxPanelsByRoof(usableAreaM2, panelAreaM2);
+  const maxByBudget = maxPanelsByBudget(inputs.budget_php, panelClass.wattageW, costBasePhpPerKwp);
   const maxByDemand = maxPanelsByDemand(
     consumptionLimitedSystemSizeKwp,
     panelClass.wattageW,
@@ -228,7 +259,7 @@ function computeSizingForPanelClass(
   const rate = Number(inputs.electricity_rate_php_per_kwh);
   const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
-  const estimatedBaseCostPhp = Math.floor(systemCapacityKwp * COST_BASE_PHP_PER_KWP);
+  const estimatedBaseCostPhp = Math.floor(systemCapacityKwp * costBasePhpPerKwp);
   const paybackYears =
     annualSavingsPhp > 0
       ? roundTo(estimatedBaseCostPhp / annualSavingsPhp, 1)
