@@ -59,8 +59,12 @@ describe("buildProjectBrief", () => {
       panelCategoryId: "high-output-550",
     });
 
-    expect(highOutput.systemRows[1]!.value).not.toBe(standard.systemRows[1]!.value);
-    expect(Number.parseInt(highOutput.systemRows[1]!.value, 10)).toBeLessThan(9);
+    expect(highOutput.systemRows[1]!.value).not.toBe(
+      standard.systemRows[1]!.value,
+    );
+    expect(Number.parseInt(highOutput.systemRows[1]!.value, 10)).toBeLessThan(
+      9,
+    );
     expect(highOutput.panelClassHint).toContain("High Output");
   });
 });
@@ -123,7 +127,14 @@ describe("resolveReportDateLabel", () => {
   it("formats generated timestamps when no assessment date exists", () => {
     expect(
       resolveReportDateLabel(
-        { property: { address: "", latitude: "0", longitude: "0", assessment_date: "" } },
+        {
+          property: {
+            address: "",
+            latitude: "0",
+            longitude: "0",
+            assessment_date: "",
+          },
+        },
         new Date("2026-07-28T12:00:00"),
       ),
     ).toBe("28 Jul 2026");
@@ -132,6 +143,8 @@ describe("resolveReportDateLabel", () => {
 
 describe("formatReportDate", () => {
   it("uses a compact day-month-year label", () => {
-    expect(formatReportDate(new Date("2026-07-25T12:00:00"))).toBe("25 Jul 2026");
+    expect(formatReportDate(new Date("2026-07-25T12:00:00"))).toBe(
+      "25 Jul 2026",
+    );
   });
 });

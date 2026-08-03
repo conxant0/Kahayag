@@ -21,7 +21,9 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe("useDownloadReport", () => {
-  let createObjectURL: ReturnType<typeof vi.fn<(obj: Blob | MediaSource) => string>>;
+  let createObjectURL: ReturnType<
+    typeof vi.fn<(obj: Blob | MediaSource) => string>
+  >;
   let revokeObjectURL: ReturnType<typeof vi.fn<(url: string) => void>>;
   let clickSpy: ReturnType<typeof vi.spyOn>;
 
@@ -30,7 +32,9 @@ describe("useDownloadReport", () => {
     revokeObjectURL = vi.fn();
     URL.createObjectURL = createObjectURL;
     URL.revokeObjectURL = revokeObjectURL;
-    clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -56,7 +60,9 @@ describe("useDownloadReport", () => {
   });
 
   it("propagates request errors without downloading anything", async () => {
-    vi.spyOn(client, "apiPostBlob").mockRejectedValue(new Error("Request failed: 422"));
+    vi.spyOn(client, "apiPostBlob").mockRejectedValue(
+      new Error("Request failed: 422"),
+    );
 
     const { result } = renderHook(() => useDownloadReport(), { wrapper });
 

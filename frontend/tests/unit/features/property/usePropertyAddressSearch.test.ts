@@ -108,6 +108,53 @@ describe("usePropertyAddressSearch", () => {
       expect(result.current.locationTone).not.toBe("error");
     });
 
+    it.each([
+      [
+        "a map click",
+        (r: ReturnType<typeof usePropertyAddressSearch>) =>
+          r.handleMapSelect(CEBU),
+      ],
+      [
+        "typed coordinates",
+        (r: ReturnType<typeof usePropertyAddressSearch>) => {
+          r.setManualLatitude(String(CEBU.latitude));
+          r.setManualLongitude(String(CEBU.longitude));
+          r.handleManualCoordinateSelection();
+        },
+      ],
+    ])("gives %s no provider identifier", (_label, choose) => {
+      const { result } = renderHook(() => usePropertyAddressSearch());
+
+      act(() => choose(result.current));
+      act(() => result.current.handleManualCoordinateSelection());
+
+      // A bare point has no provider identifier, and inheriting one would
+      // misreport in session state where the pick came from.
+      expect(
+        useAssessmentStore.getState().selectedProperty?.placeId,
+      ).toBeNull();
+    });
+
+    it("keeps the identifier a search result actually carries", () => {
+      const { result } = renderHook(() => usePropertyAddressSearch());
+
+      act(() =>
+        result.current.handleSuggestionSelect({
+          placeId: "provider-42",
+          primary: "Pajo",
+          secondary: "Lapu-Lapu City",
+          address: "Pajo, Lapu-Lapu City, Cebu, Philippines",
+          latitude: CEBU.latitude,
+          longitude: CEBU.longitude,
+          precision: "exact",
+        }),
+      );
+
+      expect(useAssessmentStore.getState().selectedProperty?.placeId).toBe(
+        "provider-42",
+      );
+    });
+
     it("refuses a point outside the service area", () => {
       const { result } = renderHook(() => usePropertyAddressSearch());
 

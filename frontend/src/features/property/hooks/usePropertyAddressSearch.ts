@@ -18,7 +18,10 @@ import {
 } from "../../../shared/config/serviceArea";
 import { readJson, writeJson } from "../../../integrations/storage";
 import { useAssessmentStore } from "../../../state/assessmentStore";
-import type { SelectedProperty } from "../../../state/assessmentStore";
+import type {
+  PropertySource,
+  SelectedProperty,
+} from "../../../state/assessmentStore";
 import {
   getGeolocationErrorMessage,
   resolveCurrentPosition,
@@ -43,6 +46,16 @@ const SEARCH_DEBOUNCE_MS = 450;
  * answer only needs to outlive the visit, so it rides the session.
  */
 const LOCATION_ASKED_KEY = "kahayag-location-prompt-asked";
+
+/**
+ * The sources whose picks can carry a provider identifier.
+ *
+ * A search result has one because a provider named it, and the demo fixture
+ * has one because it stands in for such a result. A map click, a typed
+ * coordinate and a device position are bare points, so an identifier on any of
+ * them would be a claim about provenance that nothing supports.
+ */
+const PROVIDER_IDENTIFIED_SOURCES = new Set<PropertySource>(["search", "demo"]);
 
 export function usePropertyAddressSearch() {
   const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -181,10 +194,22 @@ export function usePropertyAddressSearch() {
     candidate: PropertyCandidate,
     note?: { message: string; tone: "error" | "info" },
   ): boolean => {
-    const nextProperty = normalizePropertySelection(candidate);
-    if (!nextProperty) {
+    const normalised = normalizePropertySelection(candidate);
+    if (!normalised) {
       return false;
     }
+
+    // Only a pick that came from a provider has a provider's identifier. A
+    // point on a map or a typed pair of numbers has none, and carrying one
+    // anyway would misreport in session state where the selection came from.
+    // Enforced here rather than trusted to each caller, because that trust is
+    // exactly what this funnel exists to remove.
+    const nextProperty: SelectedProperty = {
+      ...normalised,
+      placeId: PROVIDER_IDENTIFIED_SOURCES.has(normalised.source)
+        ? normalised.placeId
+        : null,
+    };
 
     if (!isWithinServiceArea(nextProperty)) {
       setLocationTone("error");
@@ -245,7 +270,7 @@ export function usePropertyAddressSearch() {
     }
 
     const committed = commitSelection({
-      ...DEMO_PROPERTY,
+      placeId: null,
       name: "Manual coordinate selection",
       address: `Manual selection (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`,
       latitude,
@@ -264,7 +289,7 @@ export function usePropertyAddressSearch() {
    */
   const handleMapSelect = ({ latitude, longitude }: LatLng) => {
     commitSelection({
-      ...DEMO_PROPERTY,
+      placeId: null,
       name: "Selected map location",
       address: `Selected map location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`,
       latitude,
@@ -294,7 +319,6 @@ export function usePropertyAddressSearch() {
 
     commitSelection(
       {
-        ...DEMO_PROPERTY,
         placeId: null,
         name: approximate ? "Approximate location" : "Current location",
         address,
