@@ -34,6 +34,66 @@ const PAYLOAD = {
   ],
 };
 
+const METRES_PER_DEGREE_LATITUDE = 111_320;
+const ORIGIN = { latitude: 10.3157, longitude: 123.8854 };
+const METRES_PER_DEGREE_LONGITUDE =
+  METRES_PER_DEGREE_LATITUDE * Math.cos((ORIGIN.latitude * Math.PI) / 180);
+
+/** A point so many metres east and north of the origin. */
+const metres = (east: number, north: number) => ({
+  latitude: ORIGIN.latitude + north / METRES_PER_DEGREE_LATITUDE,
+  longitude: ORIGIN.longitude + east / METRES_PER_DEGREE_LONGITUDE,
+});
+
+const metreBox = (
+  minEast: number,
+  minNorth: number,
+  maxEast: number,
+  maxNorth: number,
+) => ({
+  south: metres(minEast, minNorth).latitude,
+  west: metres(minEast, minNorth).longitude,
+  north: metres(maxEast, maxNorth).latitude,
+  east: metres(maxEast, maxNorth).longitude,
+});
+
+/** Shoelace over the returned corners, back in metres. */
+function areaOf(corners: { latitude: number; longitude: number }[]) {
+  const points = corners.map((corner) => ({
+    x: (corner.longitude - ORIGIN.longitude) * METRES_PER_DEGREE_LONGITUDE,
+    y: (corner.latitude - ORIGIN.latitude) * METRES_PER_DEGREE_LATITUDE,
+  }));
+
+  const twice = points.reduce((total, point, index) => {
+    const next = points[(index + 1) % points.length];
+    return total + point.x * next.y - next.x * point.y;
+  }, 0);
+
+  return Math.abs(twice) / 2;
+}
+
+/** Two wings: 14 by 8 along the bottom, 6 by 8 up the left of it. */
+const L_SHAPED_HOUSE = {
+  center: metres(7, 8),
+  bounding_box: metreBox(0, 0, 14, 16),
+  segments: [
+    {
+      bounding_box: metreBox(0, 0, 14, 8),
+      area_square_meters: 119,
+      ground_area_square_meters: 112,
+      pitch_degrees: 20,
+      azimuth_degrees: 180,
+    },
+    {
+      bounding_box: metreBox(0, 8, 6, 16),
+      area_square_meters: 51,
+      ground_area_square_meters: 48,
+      pitch_degrees: 20,
+      azimuth_degrees: 180,
+    },
+  ],
+};
+
 function mockFetch(payload: unknown, ok = true, status = 200) {
   const fetchMock = vi.fn().mockResolvedValue({
     ok,
@@ -155,20 +215,31 @@ describe("outlineToCorners", () => {
     expect(new Set(latitudes.map((value) => value.toFixed(8))).size).toBe(4);
   });
 
-  it("stays square to north when the planes report no direction", () => {
+  it("still finds an angle when the planes report no direction", () => {
+    /*
+     * A flat roof faces nowhere and a complex one faces everywhere, so a
+     * quarter of real buildings offer no usable direction at all. They used to
+     * be laid square to the compass at the full size of the box, which on this
+     * payload is 488 m² of box around 63 m² of roof.
+     *
+     * The box and the measured area are enough on their own: exactly one
+     * rectangle of that area fits that box, give or take which way it leans.
+     */
     const flat = {
       ...PAYLOAD,
       segments: [{ ...PAYLOAD.segments[0], azimuth_degrees: null }],
     };
 
-    const corners = outlineToCorners(flat);
+    const corners = outlineToCorners(flat)!;
+    const latitudes = corners.map((corner) => corner.latitude);
 
-    expect(corners?.map((c) => c.latitude).sort()).toEqual([
-      SEGMENT.south,
-      SEGMENT.south,
-      SEGMENT.north,
-      SEGMENT.north,
-    ]);
+    // Four distinct edges is a turned shape; a square-to-north box has two.
+    expect(new Set(latitudes.map((value) => value.toFixed(8))).size).toBe(4);
+    expect(areaOf(corners)).toBeCloseTo(
+      PAYLOAD.segments[0].area_square_meters *
+        Math.cos((PAYLOAD.segments[0].pitch_degrees * Math.PI) / 180),
+      0,
+    );
   });
 
   it("falls back to the building footprint when there are no planes", () => {
@@ -182,6 +253,19 @@ describe("outlineToCorners", () => {
     expect(
       outlineToCorners({ center: null, bounding_box: null, segments: [] }),
     ).toBeNull();
+  });
+
+  it("traces an L-shaped house as an L", () => {
+    // The whole reason the shape is worked out plane by plane. A single
+    // rectangle over this house covers the empty quarter as if it were roof,
+    // and the person tracing has to drag a corner in to take it back.
+    const corners = outlineToCorners(L_SHAPED_HOUSE, {
+      latitude: metres(7, 4).latitude,
+      longitude: metres(7, 4).longitude,
+    })!;
+
+    expect(corners).toHaveLength(6);
+    expect(areaOf(corners)).toBeCloseTo(14 * 8 + 6 * 8, 0);
   });
 
   it("walks the corners in order, so the seed is not a bowtie", () => {

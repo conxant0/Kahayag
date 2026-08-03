@@ -32,6 +32,16 @@ function boxAround(widthMeters: number, depthMeters: number, angleDeg: number) {
   };
 }
 
+const PITCH_DEGREES = 15;
+
+/**
+ * A building of these dimensions, described the way the provider describes one.
+ *
+ * The stated area is measured along the slope, so a roof standing over
+ * `width × depth` of ground reports more than that. Writing the ground figure
+ * into that field would describe a pitched roof lying flat, and the fit reads
+ * the two as different quantities.
+ */
 function outlineAt(angleDeg: number, width = 14, depth = 8) {
   const bounding_box = boxAround(width, depth, angleDeg);
   return {
@@ -40,8 +50,10 @@ function outlineAt(angleDeg: number, width = 14, depth = 8) {
     segments: [
       {
         bounding_box,
-        area_square_meters: width * depth,
-        pitch_degrees: 15,
+        area_square_meters:
+          (width * depth) / Math.cos((PITCH_DEGREES * Math.PI) / 180),
+        ground_area_square_meters: width * depth,
+        pitch_degrees: PITCH_DEGREES,
         azimuth_degrees: angleDeg,
       },
     ],
@@ -96,11 +108,36 @@ describe("the turned starting shape", () => {
     expect(long).toBeCloseTo(14, 1);
   });
 
-  it("leaves the box alone near 45 degrees, where the maths is noise", () => {
-    // Both equations say almost the same thing there, so the inversion
-    // amplifies any imprecision. A square box is a poor answer; a wildly wrong
-    // rectangle presented confidently is a worse one.
-    const corners = outlineToCorners(outlineAt(45), CENTRE)!;
+  it("recovers the rectangle at 45 degrees, where the pair of equations cannot", () => {
+    // Subtracting the two shadow equations is what degenerates at 45 degrees.
+    // Adding them does not, and the measured ground area supplies what the
+    // subtraction would have. This band used to give up and return the box.
+    const [shortA, shortB, longA, longB] = sides(
+      outlineToCorners(outlineAt(45), CENTRE)!,
+    );
+
+    expect(shortA).toBeCloseTo(8, 1);
+    expect(shortB).toBeCloseTo(8, 1);
+    expect(longA).toBeCloseTo(14, 1);
+    expect(longB).toBeCloseTo(14, 1);
+  });
+
+  it("keeps the box at 45 degrees when the area cannot close the system", () => {
+    // Without a believable area there is nothing to replace the subtraction
+    // with. A square box is a poor answer; a wildly wrong rectangle presented
+    // confidently is a worse one.
+    const outline = outlineAt(45);
+    outline.segments = [
+      {
+        ...outline.segments[0],
+        // Far more roof than the box could hold, so the two measurements are
+        // not describing the same building and neither is trusted.
+        area_square_meters: 4_000,
+        ground_area_square_meters: 4_000,
+      },
+    ];
+
+    const corners = outlineToCorners(outline, CENTRE)!;
     const latitudes = new Set(corners.map((c) => c.latitude.toFixed(9)));
 
     expect(latitudes.size).toBe(2);

@@ -3,6 +3,14 @@
 //
 // The provider behind it is the backend's business. This asks for "the roof
 // under this point" and gets plain corners back.
+import {
+  buildingRotationDegrees,
+  orientedRectangle,
+  polygonArea,
+  rectilinearFootprint,
+  resolveRotationDegrees,
+} from "./footprintGeometry";
+import type { LocalBox, LocalPoint, RoofPlane } from "./footprintGeometry";
 import { apiGet } from "../shared/api/client";
 import { ENDPOINTS } from "../shared/api/endpoints";
 
@@ -17,6 +25,12 @@ export type OutlineBounds = {
 export type RoofSegmentOutline = {
   bounding_box: OutlineBounds;
   area_square_meters: number;
+  /**
+   * Ground covered by the plane, where `area_square_meters` is measured along
+   * the slope. Optional because a payload predating the field still fits, and
+   * the pitch recovers it well enough when it is missing.
+   */
+  ground_area_square_meters?: number | null;
   pitch_degrees: number | null;
   azimuth_degrees: number | null;
 };
@@ -94,12 +108,26 @@ export async function fetchBuildingOutline(position: {
  */
 const EDGE_TOLERANCE_DEGREES = 0.0001;
 
-function padded(bounds: OutlineBounds): OutlineBounds {
+/**
+ * Roughly 3 m of slack, in degrees.
+ *
+ * The slack a pin needs and the slack two roof planes need are different
+ * questions, and answering both with the pin's figure was too generous by far.
+ * Planes of one roof meet along a shared edge, so a few metres covers every
+ * gap the provider's boxes leave between them, while 11 m in every direction
+ * reached across a firewall and pulled the neighbour's roof into the outline.
+ */
+const MERGE_TOLERANCE_DEGREES = 0.00003;
+
+function padded(
+  bounds: OutlineBounds,
+  tolerance: number = EDGE_TOLERANCE_DEGREES,
+): OutlineBounds {
   return {
-    south: bounds.south - EDGE_TOLERANCE_DEGREES,
-    west: bounds.west - EDGE_TOLERANCE_DEGREES,
-    north: bounds.north + EDGE_TOLERANCE_DEGREES,
-    east: bounds.east + EDGE_TOLERANCE_DEGREES,
+    south: bounds.south - tolerance,
+    west: bounds.west - tolerance,
+    north: bounds.north + tolerance,
+    east: bounds.east + tolerance,
   };
 }
 
@@ -166,8 +194,9 @@ function clip(bounds: OutlineBounds, limit: OutlineBounds | null | undefined) {
 function growThroughTouchingPlanes(
   start: RoofSegmentOutline,
   segments: RoofSegmentOutline[],
-): OutlineBounds {
+): RoofSegmentOutline[] {
   let bounds = start.bounding_box;
+  const joinedPlanes = [start];
   const remaining = segments.filter((segment) => segment !== start);
 
   // Each pass can bring the union into contact with planes the previous pass
@@ -176,122 +205,94 @@ function growThroughTouchingPlanes(
   while (joined) {
     joined = false;
     for (let index = remaining.length - 1; index >= 0; index -= 1) {
-      const candidate = remaining[index].bounding_box;
-      if (overlaps(padded(bounds), candidate)) {
-        bounds = union(bounds, candidate);
+      const candidate = remaining[index];
+      if (
+        overlaps(
+          padded(bounds, MERGE_TOLERANCE_DEGREES),
+          candidate.bounding_box,
+        )
+      ) {
+        bounds = union(bounds, candidate.bounding_box);
+        joinedPlanes.push(candidate);
         remaining.splice(index, 1);
         joined = true;
       }
     }
   }
 
-  return bounds;
+  return joinedPlanes;
+}
+
+function boundsAround(segments: RoofSegmentOutline[]): OutlineBounds | null {
+  return segments.reduce<OutlineBounds | null>(
+    (total, segment) =>
+      total ? union(total, segment.bounding_box) : segment.bounding_box,
+    null,
+  );
+}
+
+/**
+ * Ground the plane stands over, rather than metres measured along its slope.
+ *
+ * The provider states this directly. Where it does not, the pitch converts: a
+ * plane at `p` degrees covers `cos p` of its own area. Getting this wrong tilts
+ * every fitted outline the same way, since a roof's stated area is always the
+ * larger of the two figures and a footprint has to be the flat one.
+ */
+function groundArea(segment: RoofSegmentOutline) {
+  const stated = segment.ground_area_square_meters;
+  if (typeof stated === "number" && stated > 0) {
+    return stated;
+  }
+
+  if (segment.pitch_degrees === null) {
+    return segment.area_square_meters;
+  }
+
+  return (
+    segment.area_square_meters * Math.cos(toRadians(segment.pitch_degrees))
+  );
 }
 
 const METRES_PER_DEGREE_LATITUDE = 111_320;
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
 /**
- * How far the building is turned off the compass, in degrees.
+ * Metres east and north of a reference point, which is where the geometry runs.
  *
- * Each plane reports the direction it faces, and a plane faces square to the
- * wall below it, so the azimuths carry the building's angle. Only the angle
- * modulo 90 matters: a rectangle turned 90 degrees is the same rectangle.
- *
- * Averaged as directions rather than as numbers. Plain arithmetic on 1 degree
- * and 89 degrees gives 45, which is the one answer that is wrong in both
- * directions; folding to a quarter turn and averaging the vectors puts it at 0
- * where it belongs. Weighted by area so a large plane outvotes a dormer.
+ * Degrees of longitude are shorter than degrees of latitude everywhere but the
+ * equator, so any shape reasoned about in degrees is reasoned about stretched.
+ * A flat local frame is exact enough over a building and lets angles, lengths
+ * and areas all mean what they say.
  */
-function buildingRotationDegrees(segments: RoofSegmentOutline[]) {
-  let east = 0;
-  let north = 0;
+function localFrame(reference: OutlinePoint) {
+  const metresPerDegreeLongitude =
+    METRES_PER_DEGREE_LATITUDE * Math.cos(toRadians(reference.latitude));
 
-  for (const segment of segments) {
-    if (segment.azimuth_degrees === null) {
-      continue;
-    }
-
-    // Scaled by four so a quarter turn spans a full circle, which is what
-    // makes 89 degrees and 1 degree land next to each other.
-    const angle = toRadians((segment.azimuth_degrees % 90) * 4);
-    const weight = Math.max(segment.area_square_meters, 0);
-    east += Math.sin(angle) * weight;
-    north += Math.cos(angle) * weight;
-  }
-
-  if (east === 0 && north === 0) {
-    return null;
-  }
-
-  const mean = (Math.atan2(east, north) * 180) / Math.PI / 4;
-  return ((mean % 90) + 90) % 90;
+  return {
+    metresPerDegreeLongitude,
+    box: (bounds: OutlineBounds): LocalBox => ({
+      minX: (bounds.west - reference.longitude) * metresPerDegreeLongitude,
+      maxX: (bounds.east - reference.longitude) * metresPerDegreeLongitude,
+      minY: (bounds.south - reference.latitude) * METRES_PER_DEGREE_LATITUDE,
+      maxY: (bounds.north - reference.latitude) * METRES_PER_DEGREE_LATITUDE,
+    }),
+    toGeographic: (point: LocalPoint): OutlinePoint => ({
+      latitude: reference.latitude + point.y / METRES_PER_DEGREE_LATITUDE,
+      longitude: reference.longitude + point.x / metresPerDegreeLongitude,
+    }),
+  };
 }
 
 /**
- * A rectangle turned to sit square with the building, inside the same box.
+ * How far the joined-up shape may sit from the area the planes were measured at.
  *
- * The provider only ever describes a plane by an axis-aligned box around it,
- * so a house standing at 40 degrees to north arrives as a box that overshoots
- * on all four sides, and the starting shape covers as much garden as roof.
- *
- * The box is the shadow the turned rectangle casts on the axes, which is two
- * equations in the rectangle's own width and depth:
- *
- *   boxWidth  = width·|cos| + depth·|sin|
- *   boxHeight = width·|sin| + depth·|cos|
- *
- * Solved for width and depth, this recovers the rectangle. Near 45 degrees the
- * two equations say almost the same thing and the answer is noise, so that
- * band is left to the plain box rather than guessed at.
+ * The shape is assembled from plane extents and the area is measured
+ * independently, so the two agreeing is real corroboration. When they do not,
+ * one of the reads is wrong and there is no telling which, so the plainer
+ * answer wins.
  */
-function orientedCorners(bounds: OutlineBounds, rotationDegrees: number) {
-  const centreLatitude = (bounds.south + bounds.north) / 2;
-  const centreLongitude = (bounds.west + bounds.east) / 2;
-  const metresPerDegreeLongitude =
-    METRES_PER_DEGREE_LATITUDE * Math.cos(toRadians(centreLatitude));
-  if (metresPerDegreeLongitude <= 0) {
-    return null;
-  }
-
-  const boxWidth = (bounds.east - bounds.west) * metresPerDegreeLongitude;
-  const boxHeight = (bounds.north - bounds.south) * METRES_PER_DEGREE_LATITUDE;
-
-  const angle = toRadians(rotationDegrees);
-  const cos = Math.abs(Math.cos(angle));
-  const sin = Math.abs(Math.sin(angle));
-  const determinant = cos * cos - sin * sin;
-
-  // Roughly 40 to 50 degrees, where the inversion stops being trustworthy.
-  if (Math.abs(determinant) < 0.15) {
-    return null;
-  }
-
-  const width = (boxWidth * cos - boxHeight * sin) / determinant;
-  const depth = (boxHeight * cos - boxWidth * sin) / determinant;
-  if (!(width > 0) || !(depth > 0)) {
-    return null;
-  }
-
-  const halfWidth = width / 2;
-  const halfDepth = depth / 2;
-
-  // Walked in order, so the shape never opens as a bowtie.
-  return [
-    [-halfWidth, -halfDepth],
-    [halfWidth, -halfDepth],
-    [halfWidth, halfDepth],
-    [-halfWidth, halfDepth],
-  ].map(([x, y]) => {
-    const eastMetres = x * Math.cos(angle) + y * Math.sin(angle);
-    const northMetres = -x * Math.sin(angle) + y * Math.cos(angle);
-
-    return {
-      latitude: centreLatitude + northMetres / METRES_PER_DEGREE_LATITUDE,
-      longitude: centreLongitude + eastMetres / metresPerDegreeLongitude,
-    };
-  });
-}
+const FOOTPRINT_AREA_AGREEMENT = { min: 0.7, max: 1.3 } as const;
 
 /**
  * The corners to open tracing on.
@@ -332,20 +333,77 @@ export function outlineToCorners(
       )[0])
     : segments[0];
 
-  const grown = chosen
-    ? clip(growThroughTouchingPlanes(chosen, segments), outline?.bounding_box)
-    : null;
-  const bounds = grown ?? outline?.bounding_box;
+  // Only the planes that join up with the chosen one. The rest belong to a
+  // detached extension or to next door, and both the shape and the area below
+  // are about this roof.
+  const roofPlanes = chosen ? growThroughTouchingPlanes(chosen, segments) : [];
+  const grown = boundsAround(roofPlanes);
+  const bounds = grown
+    ? clip(grown, outline?.bounding_box)
+    : outline?.bounding_box;
   if (!bounds) {
     return null;
   }
 
-  // Turned to match the building where its planes agree on an angle, square to
-  // the compass where they do not.
-  const rotation = buildingRotationDegrees(segments);
-  const turned = rotation === null ? null : orientedCorners(bounds, rotation);
-  if (turned) {
-    return turned;
+  const reference = {
+    latitude: (bounds.south + bounds.north) / 2,
+    longitude: (bounds.west + bounds.east) / 2,
+  };
+  const frame = localFrame(reference);
+  if (frame.metresPerDegreeLongitude <= 0) {
+    return null;
+  }
+
+  const planes: RoofPlane[] = roofPlanes.map((segment) => ({
+    groundAreaSquareMeters: groundArea(segment),
+    pitchDegrees: segment.pitch_degrees,
+    azimuthDegrees: segment.azimuth_degrees,
+    box: frame.box(segment.bounding_box),
+  }));
+  const measuredArea = planes.reduce(
+    (total, plane) => total + plane.groundAreaSquareMeters,
+    0,
+  );
+
+  const azimuthRotation = buildingRotationDegrees(planes);
+
+  /*
+   * The joined-up shape first, because a house is not always a rectangle.
+   *
+   * Laid at the angle the planes themselves report, and taken only when the
+   * ground it covers agrees with what those planes were measured at. This runs
+   * before the angle is reconsidered below on purpose: that reconsideration
+   * asks which rectangle best explains the building, and asking it of a house
+   * that is not one produces a confident answer to the wrong question.
+   */
+  if (azimuthRotation !== null) {
+    const footprint = rectilinearFootprint(planes, azimuthRotation);
+    if (footprint) {
+      const ratio = polygonArea(footprint) / measuredArea;
+      if (
+        ratio >= FOOTPRINT_AREA_AGREEMENT.min &&
+        ratio <= FOOTPRINT_AREA_AGREEMENT.max
+      ) {
+        return footprint.map(frame.toGeographic);
+      }
+    }
+  }
+
+  // A rectangle, then — so the angle is now the angle of the rectangle that
+  // best explains this building, which the directions the planes face and the
+  // shape of the box they sit in answer between them.
+  const rotation = resolveRotationDegrees(
+    frame.box(bounds),
+    measuredArea,
+    azimuthRotation,
+  );
+  const rectangle = orientedRectangle(
+    frame.box(bounds),
+    rotation,
+    measuredArea,
+  );
+  if (rectangle) {
+    return rectangle.map(frame.toGeographic);
   }
 
   return [

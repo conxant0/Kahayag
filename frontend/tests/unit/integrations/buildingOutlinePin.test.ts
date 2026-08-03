@@ -68,6 +68,32 @@ describe("outlineToCorners with a pin", () => {
     expect(outlineToCorners(OUTLINE, onEdge)).not.toBeNull();
   });
 
+  it("leaves a plane across a gap out of the outline", () => {
+    // Planes of one roof meet along a shared edge. A plane six metres clear of
+    // every other one is over a firewall or an alley, and joining it stretched
+    // the starting shape across next door's roof.
+    const METRES_PER_DEGREE = 111_320;
+    const near = box(10.3157, 123.8854, 0.00007);
+    const across = {
+      south: near.north + 6 / METRES_PER_DEGREE,
+      north: near.north + 6 / METRES_PER_DEGREE + 0.00007,
+      west: near.west,
+      east: near.east,
+    };
+    const outline = {
+      center: { latitude: 10.3158, longitude: 123.8855 },
+      bounding_box: { ...near, north: across.north },
+      segments: [segment(near, 60), segment(across, 60)],
+    };
+    const pin = { latitude: 10.31573, longitude: 123.88545 };
+
+    const northernmost = Math.max(
+      ...outlineToCorners(outline, pin)!.map((corner) => corner.latitude),
+    );
+
+    expect(northernmost).toBeLessThan(across.south);
+  });
+
   it("still uses the building box when it knows of no planes", () => {
     const corners = outlineToCorners({ ...OUTLINE, segments: [] }, PIN);
 
