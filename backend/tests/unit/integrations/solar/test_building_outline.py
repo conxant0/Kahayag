@@ -1,3 +1,5 @@
+import pytest
+
 from app.integrations.solar.building_outline import extract_roof_outline
 
 
@@ -105,3 +107,31 @@ def test_survives_a_building_box_without_segments() -> None:
     assert outline["bounding_box"] is not None
     assert outline["segments"] == []
 
+
+def test_reads_the_ground_footprint_the_provider_states() -> None:
+    # `areaMeters2` is measured along the slope, so a pitched plane reports more
+    # than the ground it stands over. A footprint drawn from it has to be flat.
+    segment = _segment(40.0)
+    segment["stats"]["groundAreaMeters2"] = 37.5
+
+    outline = extract_roof_outline(_payload(segment))
+
+    assert outline is not None
+    assert outline["segments"][0]["ground_area_square_meters"] == 37.5
+
+
+def test_derives_the_ground_footprint_from_the_pitch_when_unstated() -> None:
+    outline = extract_roof_outline(_payload(_segment(40.0)))
+
+    assert outline is not None
+    # 40 m2 of roof at 15 degrees stands over 40 * cos(15) of ground.
+    assert outline["segments"][0]["ground_area_square_meters"] == pytest.approx(
+        38.637, abs=0.001
+    )
+
+
+def test_falls_back_to_the_stated_area_when_the_pitch_is_missing() -> None:
+    outline = extract_roof_outline(_payload(_segment(40.0, pitchDegrees=None)))
+
+    assert outline is not None
+    assert outline["segments"][0]["ground_area_square_meters"] == 40.0

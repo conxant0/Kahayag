@@ -4,6 +4,7 @@
 # and never see `solarPotential`, `roofSegmentStats`, or the `sw`/`ne` spelling
 # the API happens to use.
 
+import math
 from typing import Any
 
 # Below this, a "segment" is noise rather than a roof plane worth tracing onto.
@@ -44,6 +45,27 @@ def _bounding_box(value: Any) -> dict[str, float] | None:
     return {"south": south, "west": west, "north": north, "east": east}
 
 
+def _ground_area(stats: Any, area: float, pitch: float | None) -> float:
+    """The area the plane covers on the ground, rather than along the slope.
+
+    `areaMeters2` is documented as the roof area "accounting for tilt", so a
+    steep plane reports more than the ground it stands over. A footprint drawn
+    from it is the one number here that has to be flat, because it is compared
+    against a shape measured on a map.
+
+    The provider usually states the flat figure itself. Where it does not, the
+    pitch converts: a plane at `p` degrees covers `cos p` of its own area.
+    """
+    ground = stats.get("groundAreaMeters2") if isinstance(stats, dict) else None
+    if isinstance(ground, (int, float)) and ground > 0:
+        return float(ground)
+
+    if pitch is None:
+        return area
+
+    return area * math.cos(math.radians(pitch))
+
+
 def _segment(value: Any) -> dict[str, Any] | None:
     if not isinstance(value, dict):
         return None
@@ -59,10 +81,13 @@ def _segment(value: Any) -> dict[str, Any] | None:
 
     pitch = value.get("pitchDegrees")
     azimuth = value.get("azimuthDegrees")
+    pitch_degrees = float(pitch) if isinstance(pitch, (int, float)) else None
+
     return {
         "bounding_box": box,
         "area_square_meters": float(area),
-        "pitch_degrees": float(pitch) if isinstance(pitch, (int, float)) else None,
+        "ground_area_square_meters": _ground_area(stats, float(area), pitch_degrees),
+        "pitch_degrees": pitch_degrees,
         "azimuth_degrees": (
             float(azimuth) if isinstance(azimuth, (int, float)) else None
         ),
