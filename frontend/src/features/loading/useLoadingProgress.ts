@@ -106,16 +106,12 @@ export function useLoadingProgress({
   }, [isFluxRunning, raiseFloorTo]);
 
   useEffect(() => {
-    // With motion off there is no creep to watch, and an animated bar is the
-    // thing the preference asks not to see. It is simply full.
-    if (prefersReducedMotion) {
-      floorRef.current = 100;
-      setProgress(100);
-      return undefined;
-    }
-
-    // A stalled bar beside an error message would suggest the work continues.
-    if (hasError) {
+    // With motion off there is no creep to run: the bar is reported full below,
+    // and an animated bar is the thing the preference asks not to see.
+    //
+    // A stalled bar beside an error message would suggest the work continues,
+    // so a failure stops the timer too.
+    if (prefersReducedMotion || hasError) {
       return undefined;
     }
 
@@ -148,5 +144,10 @@ export function useLoadingProgress({
     setProgress(100);
   }, []);
 
-  return { progress, completeProgress };
+  // Derived rather than written into state: the preference is known at render,
+  // and a bar that is simply full needs no effect to make it so.
+  return {
+    progress: prefersReducedMotion ? 100 : progress,
+    completeProgress,
+  };
 }

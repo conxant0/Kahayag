@@ -53,7 +53,6 @@ export function LoadingPage() {
   const navigate = useNavigate();
 
   const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState<LoadingPhase>("assessment");
   const [fluxError, setFluxError] = useState<string | null>(null);
   const [isFluxRunning, setIsFluxRunning] = useState(false);
   const hasStartedFluxPreload = useRef(false);
@@ -74,6 +73,12 @@ export function LoadingPage() {
   });
 
   const { mutate, isPending, isSuccess, error } = useSubmitAssessment();
+
+  // The second phase begins exactly when the assessment lands, so it is read
+  // off the request rather than tracked alongside it, where the two could
+  // disagree for a render.
+  const phase: LoadingPhase = isSuccess ? "flux" : "assessment";
+
   const { progress, completeProgress } = useLoadingProgress({
     phase,
     isAssessmentPending: isPending,
@@ -103,7 +108,6 @@ export function LoadingPage() {
       return;
     }
 
-    setPhase("flux");
     setFluxError(null);
     setIsFluxRunning(true);
 
@@ -152,12 +156,6 @@ export function LoadingPage() {
 
     mutate(payload);
   }, [redirect, payload, isPending, isSuccess, mutate]);
-
-  useEffect(() => {
-    if (isSuccess && phase === "assessment") {
-      setPhase("flux");
-    }
-  }, [isSuccess, phase]);
 
   useEffect(() => {
     if (!isSuccess) {
