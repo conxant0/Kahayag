@@ -118,6 +118,8 @@ export function usePropertyAddressSearch() {
       ? "ready"
       : "idle";
 
+  const cancelMapSelection = () => setIsSelectingPropertyFromMap(false);
+
   const clearSelection = () => {
     setPropertySelection(null);
     setRoofPolygon(null);
@@ -310,6 +312,7 @@ export function usePropertyAddressSearch() {
     setManualLatitude,
     setManualLongitude,
     setIsSelectingPropertyFromMap,
+    cancelMapSelection,
     handleQueryChange,
     handleSuggestionSelect,
     handleUseDemoProperty,

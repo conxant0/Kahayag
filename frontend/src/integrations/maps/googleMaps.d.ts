@@ -36,9 +36,12 @@ interface GoogleMapOptions {
   streetViewControl?: boolean;
   mapTypeControl?: boolean;
   fullscreenControl?: boolean;
+  /** Cursor over the tiles. Maps paints its own, so CSS alone cannot set it. */
+  draggableCursor?: string;
 }
 
 interface GoogleMap {
+  setOptions(options: Partial<GoogleMapOptions>): void;
   setCenter(latLng: GoogleLatLngLiteral): void;
   setZoom(zoom: number): void;
   setMapTypeId(mapTypeId: string): void;

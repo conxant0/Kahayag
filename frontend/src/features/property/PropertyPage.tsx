@@ -30,6 +30,7 @@ export function PropertyPage() {
             googleStatus={search.googleStatus}
             isSelectingPropertyFromMap={search.isSelectingPropertyFromMap}
             onMapSelect={search.handleMapSelect}
+            onCancelMapSelect={search.cancelMapSelection}
           />
         </MapSurface>
       }
