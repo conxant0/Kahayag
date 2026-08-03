@@ -7,15 +7,13 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import { ComponentsPage } from "../features/components-demo";
+import { LandingPage } from "../features/landing";
 
 import { PendingScreen } from "./PendingScreen";
 import { ROUTE_PATHS } from "./routePaths";
 
 export const router = createBrowserRouter([
-  {
-    path: ROUTE_PATHS.landing,
-    element: <PendingScreen name="The landing page" />,
-  },
+  { path: ROUTE_PATHS.landing, element: <LandingPage /> },
   {
     path: ROUTE_PATHS.locate,
     element: <PendingScreen name="Property search" />,
