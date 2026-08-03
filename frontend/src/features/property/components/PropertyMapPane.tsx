@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { PinIcon } from "../../../shared/components/ui";
+import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { cn } from "../../../shared/lib/cn";
 import { getMapTypeId } from "../../../integrations/maps";
 import type { GoogleMapsStatus } from "../../../integrations/maps";
@@ -32,6 +33,19 @@ export function PropertyMapPane({
   const mapInstanceRef = useRef<GoogleMap | null>(null);
   const markerRef = useRef<GoogleMarker | null>(null);
   const mapClickListenerRef = useRef<GoogleMapsEventListener | null>(null);
+
+  /**
+   * A touch has to be held before it counts as placing a pin.
+   *
+   * Without this, every tap on a phone drops the pin, which leaves no plain
+   * gesture for panning the map to the roof in the first place. Holding is the
+   * deliberate act; a tap or a drag is left to Maps so the map still moves the
+   * way a map is expected to.
+   */
+  const isTouch = useMediaQuery("(hover: none)");
+  const heldLongEnoughRef = useRef(false);
+  const longPressTimerRef = useRef(0);
+  const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!selectedProperty || googleStatus !== "ready") {
@@ -122,6 +136,15 @@ export function PropertyMapPane({
           if (!event.latLng) {
             return;
           }
+
+          // Maps reports a tap as a click too, so on touch the press has to
+          // have been held first. A drag never reaches here: Maps pans instead
+          // of reporting a click.
+          if (isTouch && !heldLongEnoughRef.current) {
+            return;
+          }
+
+          heldLongEnoughRef.current = false;
           onMapSelect(event.latLng.lat(), event.latLng.lng());
         },
       );
@@ -136,7 +159,78 @@ export function PropertyMapPane({
         mapClickListenerRef.current = null;
       }
     };
-  }, [googleStatus, isSelectingPropertyFromMap, onMapSelect]);
+  }, [googleStatus, isSelectingPropertyFromMap, onMapSelect, isTouch]);
+
+  // Times the hold that turns a touch into a placement, and moves it far enough
+  // and it stops counting, because that is a pan.
+  useEffect(() => {
+    if (!isSelectingPropertyFromMap || !isTouch) {
+      return undefined;
+    }
+
+    const frame = frameRef.current;
+    if (!frame) {
+      return undefined;
+    }
+
+    const LONG_PRESS_MS = 400;
+    const PAN_SLOP_PX = 10;
+
+    const cancelHold = () => {
+      window.clearTimeout(longPressTimerRef.current);
+      heldLongEnoughRef.current = false;
+      pressOriginRef.current = null;
+    };
+
+    const handleDown = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") {
+        return;
+      }
+
+      pressOriginRef.current = { x: event.clientX, y: event.clientY };
+      heldLongEnoughRef.current = false;
+      longPressTimerRef.current = window.setTimeout(() => {
+        heldLongEnoughRef.current = true;
+        // Show where the pin would land the moment the hold registers, so the
+        // gesture confirms itself before the finger lifts.
+        const bounds = frame.getBoundingClientRect();
+        const origin = pressOriginRef.current;
+        if (origin) {
+          setPinPosition({
+            x: origin.x - bounds.left,
+            y: origin.y - bounds.top,
+          });
+        }
+      }, LONG_PRESS_MS);
+    };
+
+    const handleMove = (event: PointerEvent) => {
+      const origin = pressOriginRef.current;
+      if (!origin) {
+        return;
+      }
+
+      const travelled = Math.hypot(
+        event.clientX - origin.x,
+        event.clientY - origin.y,
+      );
+      if (travelled > PAN_SLOP_PX) {
+        cancelHold();
+        setPinPosition(null);
+      }
+    };
+
+    frame.addEventListener("pointerdown", handleDown);
+    frame.addEventListener("pointermove", handleMove);
+    frame.addEventListener("pointercancel", cancelHold);
+
+    return () => {
+      frame.removeEventListener("pointerdown", handleDown);
+      frame.removeEventListener("pointermove", handleMove);
+      frame.removeEventListener("pointercancel", cancelHold);
+      window.clearTimeout(longPressTimerRef.current);
+    };
+  }, [isSelectingPropertyFromMap, isTouch]);
 
   // Maps paints its own cursor over the tiles, so the crosshair has to be set
   // through the map rather than by a class on the container alone.
@@ -167,10 +261,10 @@ export function PropertyMapPane({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isSelectingPropertyFromMap, onCancelMapSelect]);
 
-  // The pin only rides the cursor while the mode is on, so the listener is not
-  // attached the rest of the time.
+  // The pin rides the cursor only where there is one. On touch it is driven by
+  // the hold instead, so tracking every pan would just drag a ghost around.
   useEffect(() => {
-    if (!isSelectingPropertyFromMap) {
+    if (!isSelectingPropertyFromMap || isTouch) {
       return undefined;
     }
 
@@ -199,7 +293,19 @@ export function PropertyMapPane({
       // mode never flashes the pin at wherever it was last time.
       setPinPosition(null);
     };
-  }, [isSelectingPropertyFromMap]);
+  }, [isSelectingPropertyFromMap, isTouch]);
+
+  /**
+   * Names the gesture this device actually has, and switches to the correction
+   * once a pin exists, since "place" is the wrong verb for moving one.
+   */
+  const placementHint = isTouch
+    ? selectedProperty
+      ? "Press and hold to move the pin"
+      : "Press and hold the map to place your pin"
+    : selectedProperty
+      ? "Click the map to move the pin"
+      : "Click the map to place your pin";
 
   return (
     <div ref={frameRef} className="absolute inset-0">
@@ -249,14 +355,14 @@ export function PropertyMapPane({
             <div className="pointer-events-auto flex items-center gap-3 rounded-pill bg-ink-veil px-4 py-2.5 backdrop-blur-sm">
               <span className="flex items-center gap-2 font-sans text-[13px] font-semibold text-paper">
                 <PinIcon size={16} />
-                Tap the map to place your pin
+                {placementHint}
               </span>
               <button
                 type="button"
                 onClick={onCancelMapSelect}
                 className="font-sans text-[13px] font-semibold text-paper/70 underline transition-colors duration-150 hover:text-paper"
               >
-                Cancel
+                {selectedProperty ? "Done" : "Cancel"}
               </button>
             </div>
           </div>
@@ -264,8 +370,7 @@ export function PropertyMapPane({
           {/* Announced once when the mode opens, for anyone not watching the
            * cursor change shape. */}
           <p role="status" className="sr-only">
-            Pin placement is on. Tap the map to place your pin, or press Escape
-            to cancel.
+            {`Pin placement is on. ${placementHint}, or press Escape to finish.`}
           </p>
         </>
       )}

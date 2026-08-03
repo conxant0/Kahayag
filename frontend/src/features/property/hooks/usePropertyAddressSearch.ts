@@ -190,6 +190,12 @@ export function usePropertyAddressSearch() {
     setIsSelectingPropertyFromMap(false);
   };
 
+  /**
+   * Moves the pin. Placement stays open afterwards, because the first spot you
+   * point at is rarely the exact corner of the roof you meant, and closing the
+   * mode on the first tap would make every correction a fresh trip through the
+   * button.
+   */
   const handleMapSelect = (latitude: number, longitude: number) => {
     const nextProperty = normalizePropertySelection({
       ...DEMO_PROPERTY,
@@ -202,7 +208,6 @@ export function usePropertyAddressSearch() {
     setPropertySelection(nextProperty);
     setQuery(nextProperty?.address ?? "");
     setSearchState("ready");
-    setIsSelectingPropertyFromMap(false);
     setManualCoordinateMessage("");
     setLocationMessage(null);
   };
