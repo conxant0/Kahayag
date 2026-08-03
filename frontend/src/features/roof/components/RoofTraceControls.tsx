@@ -95,7 +95,22 @@ export function RoofTraceControls({
               : startRoofTracing
           }
           disabled={!stage.actionEnabled}
-          className="h-12 text-[15px]"
+          className={cn(
+            "h-12 text-[15px]",
+            /*
+             * The one control on this screen that was not carrying an opaque
+             * pill. `secondary` fills with a 6% cobalt wash, which is a fill
+             * for a card sitting on the page; over a satellite photo it is
+             * 94% roof, and the step's main action read as a floating outline.
+             *
+             * Painted rather than swapped for a flat colour: the wash goes back
+             * on top as an image layer over paper, which composites to exactly
+             * what desktop already shows while stopping the map coming through.
+             * Hover clears the layer so the cobalt fill lands solid.
+             */
+            "bg-paper bg-[image:linear-gradient(var(--color-cobalt-wash),var(--color-cobalt-wash))]",
+            "hover:bg-none",
+          )}
         >
           {stage.action.label}
         </Button>
