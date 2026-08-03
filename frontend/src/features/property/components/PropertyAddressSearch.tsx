@@ -1,4 +1,5 @@
-import { Button } from "../../../shared/components/ui";
+import { Button, PinIcon } from "../../../shared/components/ui";
+import { cn } from "../../../shared/lib/cn";
 import type { usePropertyAddressSearch } from "../hooks/usePropertyAddressSearch";
 
 type PropertyAddressSearchProps = ReturnType<typeof usePropertyAddressSearch>;
@@ -24,12 +25,10 @@ export function PropertyAddressSearch({
   handleManualCoordinateSelection,
   requestCurrentLocation,
 }: PropertyAddressSearchProps) {
+  // A map that will not load is a note, not a failure: search still works and
+  // the whole screen still completes. Only a broken search reads as an error.
   const hasSearchError =
-    statusMessage &&
-    (googleStatus === "failed" ||
-      googleStatus === "missing-key" ||
-      statusMessage.includes("unavailable") ||
-      statusMessage.includes("Unable"));
+    statusMessage?.startsWith("Address search is unavailable") ?? false;
 
   return (
     <>
@@ -81,6 +80,41 @@ export function PropertyAddressSearch({
         </p>
       )}
 
+      {suggestions.length > 0 && (
+        // One card carrying hairline-separated rows, so the list reads as the
+        // field's own drawer rather than a stack of loose tiles. Same border,
+        // fill and horizontal rhythm as the input above it.
+        <div
+          id="address-suggestions"
+          role="listbox"
+          className="max-h-72 overflow-x-hidden overflow-y-auto rounded-card border border-hairline bg-white"
+        >
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={suggestion.placeId ?? `${suggestion.address}-${index}`}
+              type="button"
+              role="option"
+              onClick={() => handleSuggestionSelect(suggestion)}
+              className="flex w-full items-start gap-3 border-t border-hairline px-5 py-3.5 text-left transition-colors duration-150 first:border-t-0 hover:bg-paper"
+            >
+              <span className="mt-0.5 shrink-0 text-tertiary-ink">
+                <PinIcon size={14} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-sans text-[15px] font-semibold text-ink">
+                  {suggestion.primary}
+                </span>
+                {suggestion.secondary && (
+                  <span className="mt-0.5 block truncate font-sans text-sm text-secondary">
+                    {suggestion.secondary}
+                  </span>
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -92,12 +126,20 @@ export function PropertyAddressSearch({
         {googleStatus === "ready" && (
           <button
             type="button"
+            aria-pressed={isSelectingPropertyFromMap}
             onClick={() => setIsSelectingPropertyFromMap((current) => !current)}
-            className="self-start font-sans text-sm font-semibold text-cobalt transition-colors duration-150 hover:underline"
+            className={cn(
+              "inline-flex items-center gap-1.5 self-start rounded-pill border px-3 py-1.5",
+              "font-sans text-sm font-semibold transition-colors duration-150",
+              isSelectingPropertyFromMap
+                ? "border-cobalt bg-cobalt text-paper"
+                : "border-cobalt/35 bg-cobalt-wash text-cobalt hover:border-cobalt",
+            )}
           >
+            <PinIcon size={14} />
             {isSelectingPropertyFromMap
-              ? "Cancel map selection"
-              : "Select from map"}
+              ? "Placing pin. Tap the map"
+              : "Drop a pin on the map"}
           </button>
         )}
       </div>
@@ -131,33 +173,6 @@ export function PropertyAddressSearch({
               {manualCoordinateMessage}
             </p>
           )}
-        </div>
-      )}
-
-      {suggestions.length > 0 && (
-        <div
-          id="address-suggestions"
-          role="listbox"
-          className="max-h-64 overflow-y-auto"
-        >
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={suggestion.placeId ?? `${suggestion.address}-${index}`}
-              type="button"
-              role="option"
-              onClick={() => handleSuggestionSelect(suggestion)}
-              className="mb-2 block w-full rounded-lg border border-hairline bg-white p-3 text-left transition-colors hover:bg-paper"
-            >
-              <span className="block font-sans text-sm font-semibold text-ink">
-                {suggestion.primary}
-              </span>
-              {suggestion.secondary && (
-                <span className="mt-1 block font-sans text-sm text-secondary">
-                  {suggestion.secondary}
-                </span>
-              )}
-            </button>
-          ))}
         </div>
       )}
 
