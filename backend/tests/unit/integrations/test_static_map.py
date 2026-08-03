@@ -34,4 +34,4 @@ def test_static_map_failure_returns_no_image(monkeypatch) -> None:
 
     monkeypatch.setattr("app.integrations.maps.static_map.httpx.get", fail)
 
-    assert fetch_static_map(roof, api_key="test-key") is None
+    assert fetch_static_map(roof) is None

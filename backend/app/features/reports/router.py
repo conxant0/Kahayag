@@ -34,11 +34,7 @@ def download_report(
 
     report = build_report_input(request.assessment)
     narrative = resolve_narrative(report, get_ai_provider(settings).write(report))
-    satellite_image = (
-        fetch_static_map(request.roof_polygon, api_key=settings.google_solar_api_key)
-        if settings.google_solar_api_key
-        else None
-    )
+    satellite_image = fetch_static_map(request.roof_polygon)
     pdf = render_report_pdf(
         request=request,
         narrative=narrative,
