@@ -1,4 +1,5 @@
 # Defines approximate geolocation via client IP.
+import ipaddress
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -7,10 +8,6 @@ from app.integrations.geolocation.errors import GeolocationLookupError
 from app.integrations.geolocation.provider import GeolocationProvider
 
 router = APIRouter()
-
-_PRIVATE_IP_PREFIXES = ("127.", "10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.")
-_PRIVATE_IP_PREFIXES += tuple(f"172.{octet}." for octet in range(20, 32))
-_PRIVATE_IP_EXACT = frozenset({"::1", "0.0.0.0", "localhost", "testclient"})
 
 
 def _client_ip(request: Request) -> str:
@@ -23,11 +20,10 @@ def _client_ip(request: Request) -> str:
 
 
 def _is_private_ip(ip_address: str) -> bool:
-    if not ip_address or ip_address in _PRIVATE_IP_EXACT:
+    try:
+        return ipaddress.ip_address(ip_address).is_private
+    except ValueError:
         return True
-    if ip_address.startswith("::ffff:127."):
-        return True
-    return ip_address.startswith(_PRIVATE_IP_PREFIXES)
 
 
 @router.post("/geolocation/approximate")
