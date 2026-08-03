@@ -1,0 +1,56 @@
+{
+  "property": {
+    "address": "123 Demo Street, Cebu City, Philippines",
+    "latitude": "10.3157",
+    "longitude": "123.8854",
+    "assessment_date": "2026-07-25"
+  },
+  "roof": {
+    "area_m2": "40.00",
+    "usable_area_m2": "32.00"
+  },
+  "inputs": {
+    "monthly_bill_php": 6000,
+    "monthly_consumption_kwh": "500.00",
+    "electricity_rate_php_per_kwh": "12.00",
+    "budget_php": 300000,
+    "panel_category_id": "standard-450"
+  },
+  "recommendation": {
+    "panel_category_id": "standard-450",
+    "panel_wattage_w": 450,
+    "panel_count": 8,
+    "system_capacity_kwp": "3.60",
+    "annual_generation_kwh": "4730",
+    "annual_consumption_offset_ratio": "0.32",
+    "limiting_constraint": "budget",
+    "rationale": "Sized to 8 panels (3.60 kWp) to stay within budget (8 panels max); the usable roof area could support up to 12 panels."
+  },
+  "financials": {
+    "estimated_cost_low_php": 180000,
+    "estimated_base_cost_php": 216000,
+    "estimated_cost_high_php": 252000,
+    "annual_savings_php": 22704,
+    "monthly_savings_php": 1892,
+    "payback_years": "9.5",
+    "budget_compatible": true,
+    "budget_gap_php": 0
+  },
+    "assumptions": {
+        "panel_width_m": "1.13",
+        "panel_height_m": "1.76",
+        "peak_sun_hours_per_day": "5.00",
+        "performance_ratio": "0.80",
+        "annual_sunshine_hours_per_kwp": "1825.0",
+        "solar_resource_source": "nationwide_fallback",
+        "cost_low_php_per_kwp": 50000,
+        "cost_high_php_per_kwp": 70000,
+        "cost_inclusions": ["Solar panels", "Inverter", "Standard installation"],
+        "potential_exclusions": ["Roof repairs", "Electrical upgrades", "Permits"]
+    },
+  "limitations": [
+    "This result is a preliminary pre-feasibility estimate.",
+    "A licensed solar professional must verify the final design and quotation."
+  ],
+  "is_provisional": true
+}

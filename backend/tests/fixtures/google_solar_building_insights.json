@@ -1,0 +1,117 @@
+{
+  "name": "buildings/CebuCityDemo",
+  "center": {
+    "latitude": 10.3158684,
+    "longitude": 123.8852633
+  },
+  "boundingBox": {
+    "sw": {
+      "latitude": 10.3155,
+      "longitude": 123.8850
+    },
+    "ne": {
+      "latitude": 10.3161,
+      "longitude": 123.8856
+    }
+  },
+  "imageryDate": {
+    "year": 2015,
+    "month": 4,
+    "day": 6
+  },
+  "imageryProcessedDate": {
+    "year": 2023,
+    "month": 8,
+    "day": 12
+  },
+  "regionCode": "PH",
+  "solarPotential": {
+    "maxArrayPanelsCount": 42,
+    "panelCapacityWatts": 400,
+    "panelHeightMeters": 1.7,
+    "panelWidthMeters": 1.0,
+    "panelLifetimeYears": 20,
+    "maxArrayAreaMeters2": 71.4,
+    "maxSunshineHoursPerYear": 1677.2,
+    "carbonOffsetFactorKgPerMwh": 450,
+    "wholeRoofStats": {
+      "areaMeters2": 251.1,
+      "sunshineQuantiles": [560.5, 1450.0, 1612.3, 1655.0, 1677.2],
+      "groundAreaMeters2": 230.4
+    },
+    "buildingStats": {
+      "areaMeters2": 258.0,
+      "sunshineQuantiles": [540.0, 1420.0, 1590.0, 1640.0, 1670.0],
+      "groundAreaMeters2": 236.0
+    },
+    "roofSegmentStats": [
+      {
+        "stats": {
+          "areaMeters2": 40.8,
+          "sunshineQuantiles": [1420.0, 1520.0, 1585.0, 1610.0, 1629.6],
+          "groundAreaMeters2": 37.5
+        },
+        "center": { "latitude": 10.3159, "longitude": 123.8852 },
+        "pitchDegrees": 21.3,
+        "azimuthDegrees": 78.1,
+        "planeHeightAtCenterMeters": 14.2
+      },
+      {
+        "stats": {
+          "areaMeters2": 36.1,
+          "sunshineQuantiles": [1550.0, 1620.0, 1662.1, 1670.0, 1682.9],
+          "groundAreaMeters2": 33.0
+        },
+        "center": { "latitude": 10.3158, "longitude": 123.8854 },
+        "pitchDegrees": 10.5,
+        "azimuthDegrees": 121.9,
+        "planeHeightAtCenterMeters": 13.5
+      },
+      {
+        "stats": {
+          "areaMeters2": 29.4,
+          "sunshineQuantiles": [1540.0, 1620.0, 1661.4, 1670.0, 1679.2],
+          "groundAreaMeters2": 27.8
+        },
+        "center": { "latitude": 10.3157, "longitude": 123.8851 },
+        "pitchDegrees": 8.2,
+        "azimuthDegrees": 51.8,
+        "planeHeightAtCenterMeters": 13.0
+      },
+      {
+        "stats": {
+          "areaMeters2": 21.7,
+          "sunshineQuantiles": [1480.0, 1580.0, 1622.9, 1640.0, 1657.8],
+          "groundAreaMeters2": 20.5
+        },
+        "center": { "latitude": 10.3156, "longitude": 123.8853 },
+        "pitchDegrees": 11.9,
+        "azimuthDegrees": 165.1,
+        "planeHeightAtCenterMeters": 12.8
+      },
+      {
+        "stats": {
+          "areaMeters2": 9.8,
+          "sunshineQuantiles": [1200.0, 1350.0, 1438.2, 1520.0, 1591.0],
+          "groundAreaMeters2": 9.2
+        },
+        "center": { "latitude": 10.3155, "longitude": 123.8854 },
+        "pitchDegrees": 16.9,
+        "azimuthDegrees": 45.5,
+        "planeHeightAtCenterMeters": 12.2
+      },
+      {
+        "stats": {
+          "areaMeters2": 21.7,
+          "sunshineQuantiles": [900.0, 1100.0, 1210.9, 1450.0, 1612.0],
+          "groundAreaMeters2": 18.0
+        },
+        "center": { "latitude": 10.3158, "longitude": 123.8855 },
+        "pitchDegrees": 65.5,
+        "azimuthDegrees": 76.1,
+        "planeHeightAtCenterMeters": 15.0
+      }
+    ]
+  },
+  "imageryQuality": "HIGH"
+}
