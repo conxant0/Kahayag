@@ -191,6 +191,45 @@ describe("useAssessmentStore", () => {
     expect(storedSession()).not.toHaveProperty("result");
   });
 
+  it.each([
+    [
+      "the property changes",
+      () => useAssessmentStore.getState().setPropertySelection(PROPERTY),
+    ],
+    [
+      "the roof is retraced",
+      () => useAssessmentStore.getState().setRoofPolygon(ROOF),
+    ],
+    [
+      "an energy input changes",
+      () =>
+        useAssessmentStore.getState().setEnergyInputs({ budgetPhp: 300000 }),
+    ],
+  ])("discards a computed result when %s", (_label, editInput) => {
+    useAssessmentStore.getState().setResult({ is_provisional: true });
+
+    editInput();
+
+    // Going back a step, changing an answer, and returning to figures derived
+    // from the old one is the mismatch a reload avoids by never restoring the
+    // result. Editing in place has to reach the same outcome.
+    expect(useAssessmentStore.getState().result).toBeNull();
+  });
+
+  it("keeps the edited input while discarding the result", () => {
+    useAssessmentStore.getState().setPropertySelection(PROPERTY);
+    useAssessmentStore.getState().setResult({ is_provisional: true });
+
+    useAssessmentStore.getState().setEnergyInputs({ monthlyBillPhp: 4800 });
+
+    const state = useAssessmentStore.getState();
+
+    expect(state.result).toBeNull();
+    expect(state.energyInputs.monthlyBillPhp).toBe(4800);
+    expect(state.selectedProperty).toEqual(PROPERTY);
+    expect(storedSession()?.selectedProperty).toEqual(PROPERTY);
+  });
+
   it("clears memory and removes the stored key on reset", () => {
     const store = useAssessmentStore.getState();
     store.setPropertySelection(PROPERTY);

@@ -193,30 +193,41 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
     });
   };
 
+  /**
+   * Applies an input change: stores it, drops the result, and persists.
+   *
+   * Every input the result was computed from invalidates it on edit. Going back
+   * a step, changing an answer, and returning to figures derived from the old
+   * one is the same mismatch a reload avoids by not restoring the result at
+   * all — the only difference is that nothing reloaded.
+   *
+   * The setters route through here rather than each clearing `result`
+   * themselves, so a fourth input cannot be added that quietly keeps a stale
+   * result alive.
+   */
+  const commitInput = (changes: Partial<PersistedSession>) => {
+    set({ ...changes, result: null });
+    persist();
+  };
+
   return {
     ...readStoredSession(),
 
-    // Held in memory only. A reload means the inputs are still there but the
-    // computed result is not, which is the honest outcome: showing figures from
-    // a previous run beside inputs that may since have changed would be a lie.
+    // Held in memory only, and dropped the moment any input it was computed
+    // from changes. A reload means the inputs are still there but the computed
+    // result is not, which is the honest outcome: showing figures from a
+    // previous run beside inputs that may since have changed would be a lie.
     result: null,
 
     setResult: (result) => set({ result }),
 
-    setPropertySelection: (selectedProperty) => {
-      set({ selectedProperty });
-      persist();
-    },
+    setPropertySelection: (selectedProperty) =>
+      commitInput({ selectedProperty }),
 
-    setRoofPolygon: (roofPolygon) => {
-      set({ roofPolygon });
-      persist();
-    },
+    setRoofPolygon: (roofPolygon) => commitInput({ roofPolygon }),
 
-    setEnergyInputs: (changes) => {
-      set({ energyInputs: { ...get().energyInputs, ...changes } });
-      persist();
-    },
+    setEnergyInputs: (changes) =>
+      commitInput({ energyInputs: { ...get().energyInputs, ...changes } }),
 
     reset: () => {
       set({
