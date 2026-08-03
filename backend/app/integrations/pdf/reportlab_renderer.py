@@ -314,6 +314,9 @@ class _RoofLayout(Flowable):
         self.canv.setFont("Helvetica-Bold", 8)
         self.canv.drawString(8, 8, "N")
         self.canv.line(11, 15, 11, 28)
+        if self.satellite_image:
+            self.canv.setFont("Helvetica", 6)
+            self.canv.drawRightString(self.width - 6, 6, "Imagery: Esri World Imagery")
 
 
 def _page_title(title: str, styles: dict[str, ParagraphStyle]) -> list:
