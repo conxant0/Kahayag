@@ -25,12 +25,15 @@ def fetch_geotiff_bytes(source_url: str, *, api_key: str) -> bytes:
     responds with 400 INVALID_ARGUMENT.
     """
     asset_id = extract_geotiff_asset_id(source_url)
-    response = httpx.get(
-        GEOTIFF_GET_URL,
-        params={"id": asset_id, "key": api_key},
-        timeout=60.0,
-        follow_redirects=True,
-    )
+    try:
+        response = httpx.get(
+            GEOTIFF_GET_URL,
+            params={"id": asset_id, "key": api_key},
+            timeout=60.0,
+            follow_redirects=True,
+        )
+    except httpx.HTTPError as error:
+        raise SolarApiError(f"Google Solar GeoTIFF request failed: {error}") from error
 
     if response.status_code >= 400:
         detail = _extract_error_detail(response)
