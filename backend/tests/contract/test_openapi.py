@@ -42,6 +42,10 @@ def test_create_assessment_accepts_representative_request(
         >= (body["financials"]["estimated_cost_low_php"])
     )
     assert body["limitations"]
+    assert (
+        "Battery options and net-metering export credits are not included."
+        in body["limitations"]
+    )
     assert body["recommendation"]["rationale"]
     assert body["is_provisional"] is True
 
