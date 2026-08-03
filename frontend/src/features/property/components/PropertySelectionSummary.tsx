@@ -1,8 +1,22 @@
 import { Button, PinIcon } from "../../../shared/components/ui";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
-import type { usePropertyAddressSearch } from "../hooks/usePropertyAddressSearch";
+import type { MapStatus } from "../../../integrations/maps";
+import type { SelectedProperty } from "../../../state/assessmentStore";
 
-type Props = ReturnType<typeof usePropertyAddressSearch>;
+/** Named rather than the hook's whole return, for the same reason as the search panel. */
+type Props = {
+  mapStatus: MapStatus;
+  selectedProperty: SelectedProperty | null;
+  manualLatitude: string;
+  manualLongitude: string;
+  manualCoordinateMessage: string;
+  isLocating: boolean;
+  setManualLatitude: (value: string) => void;
+  setManualLongitude: (value: string) => void;
+  handleUseDemoProperty: () => void;
+  handleManualCoordinateSelection: () => void;
+  requestCurrentLocation: () => void;
+};
 
 /**
  * The shortcuts and the confirmed pick.
@@ -13,7 +27,7 @@ type Props = ReturnType<typeof usePropertyAddressSearch>;
  * under the rail, where there is room for both.
  */
 export function PropertySelectionSummary({
-  googleStatus,
+  mapStatus,
   selectedProperty,
   manualLatitude,
   manualLongitude,
@@ -44,7 +58,7 @@ export function PropertySelectionSummary({
 
   return (
     <>
-      {googleStatus === "ready" && (
+      {mapStatus === "ready" && (
         <p className="flex w-fit items-center gap-1.5 rounded-pill bg-ink-veil px-3 py-1.5 font-sans text-[12px] font-semibold text-paper backdrop-blur-sm lg:gap-2 lg:px-4 lg:py-2.5 lg:text-[14px]">
           <PinIcon size={13} />
           {hint}
@@ -72,7 +86,7 @@ export function PropertySelectionSummary({
         </Button>
       </div>
 
-      {googleStatus !== "ready" && (
+      {mapStatus !== "ready" && (
         <div className="grid gap-2 rounded-card border border-hairline bg-white p-4">
           <p className="font-sans text-sm font-semibold text-ink">
             Manual coordinate fallback

@@ -12,9 +12,9 @@ describe("getMapTypeId", () => {
   });
 
   it("falls back to hybrid when satellite is unavailable", () => {
-    expect(getMapTypeId({ MapTypeId: { HYBRID: "hybrid" } } as GoogleMapsApi)).toBe(
-      "hybrid",
-    );
+    expect(
+      getMapTypeId({ MapTypeId: { HYBRID: "hybrid" } } as GoogleMapsApi),
+    ).toBe("hybrid");
   });
 
   it("falls back to a satellite string when MapTypeId is missing", () => {

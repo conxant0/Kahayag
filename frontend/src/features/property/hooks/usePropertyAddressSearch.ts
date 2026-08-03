@@ -11,6 +11,7 @@ import {
   normalizePropertySelection,
   useGoogleMapsLoader,
 } from "../../../integrations/maps";
+import type { LatLng } from "../../../integrations/maps";
 import { readJson, writeJson } from "../../../integrations/storage";
 import { useAssessmentStore } from "../../../state/assessmentStore";
 import type { SelectedProperty } from "../../../state/assessmentStore";
@@ -40,7 +41,7 @@ const LOCATION_ASKED_KEY = "kahayag-location-prompt-asked";
 
 export function usePropertyAddressSearch() {
   const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  const googleStatus = useGoogleMapsLoader(googleApiKey);
+  const mapStatus = useGoogleMapsLoader(googleApiKey);
   const storedProperty = useAssessmentStore((state) => state.selectedProperty);
   const setPropertySelection = useAssessmentStore(
     (state) => state.setPropertySelection,
@@ -72,6 +73,14 @@ export function usePropertyAddressSearch() {
 
   const markLocationAsked = () => writeJson(LOCATION_ASKED_KEY, true);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  /**
+   * Whether the message above is a failure or just a note.
+   *
+   * Carried alongside the text because only the code that produced it knows,
+   * and reading it back out of the wording was a second, looser copy of a
+   * classification `getCurrentLocation` had already made from the error code.
+   */
+  const [locationTone, setLocationTone] = useState<"error" | "info">("info");
 
   const trimmedQuery = query.trim();
   const queryNamesSelection = Boolean(
@@ -208,7 +217,7 @@ export function usePropertyAddressSearch() {
    * mode on the first tap would make every correction a fresh trip through the
    * button.
    */
-  const handleMapSelect = (latitude: number, longitude: number) => {
+  const handleMapSelect = ({ latitude, longitude }: LatLng) => {
     const nextProperty = normalizePropertySelection({
       ...DEMO_PROPERTY,
       name: "Selected map location",
@@ -250,6 +259,7 @@ export function usePropertyAddressSearch() {
     setSuggestions([]);
     setSearchState("ready");
     setManualCoordinateMessage("");
+    setLocationTone("info");
     setLocationMessage(
       approximate
         ? "Using your approximate area. Search your address or tap Select from map to pin your roof exactly."
@@ -282,6 +292,7 @@ export function usePropertyAddressSearch() {
 
   const requestCurrentLocation = async () => {
     if (!navigator.geolocation) {
+      setLocationTone("error");
       setLocationMessage(
         "Your browser does not support location access. Search an address instead.",
       );
@@ -289,6 +300,7 @@ export function usePropertyAddressSearch() {
     }
 
     setIsLocating(true);
+    setLocationTone("info");
     setLocationMessage("Requesting your location…");
 
     try {
@@ -299,6 +311,7 @@ export function usePropertyAddressSearch() {
         result.source,
       );
     } catch (error) {
+      setLocationTone("error");
       setLocationMessage(getGeolocationErrorMessage(error));
     } finally {
       setIsLocating(false);
@@ -308,10 +321,10 @@ export function usePropertyAddressSearch() {
   // The map is the only thing that still needs Google, so a missing or failed
   // key is a note about the preview rather than a warning about search.
   const mapMessage = (() => {
-    if (googleStatus === "missing-key") {
+    if (mapStatus === "missing-key") {
       return "Map preview is unavailable because the Google Maps key is not configured. Address search still works.";
     }
-    if (googleStatus === "failed") {
+    if (mapStatus === "failed") {
       return "Map preview is temporarily unavailable. Address search still works.";
     }
     return null;
@@ -337,7 +350,7 @@ export function usePropertyAddressSearch() {
   })();
 
   return {
-    googleStatus,
+    mapStatus,
     query,
     suggestions: visibleSuggestions,
     selectedProperty,
@@ -347,6 +360,7 @@ export function usePropertyAddressSearch() {
     isLocating,
     isLocationPromptOpen,
     locationMessage,
+    locationTone,
     statusMessage,
     setManualLatitude,
     setManualLongitude,

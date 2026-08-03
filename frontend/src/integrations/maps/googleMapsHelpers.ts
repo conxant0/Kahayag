@@ -1,8 +1,11 @@
-import type { SelectedProperty } from "../../state/assessmentStore";
+import type {
+  PropertySource,
+  SelectedProperty,
+} from "../../state/assessmentStore";
 
 export const GOOGLE_MAPS_SCRIPT_ID = "google-maps-js";
 
-export const DEMO_PROPERTY = Object.freeze({
+export const DEMO_PROPERTY: SelectedProperty = Object.freeze({
   placeId: "demo-property",
   name: "Demo property",
   address: "Demo property, Cebu City, Philippines",
@@ -18,7 +21,7 @@ export type PropertyCandidate = {
   address?: string | null;
   latitude: number | string;
   longitude: number | string;
-  source?: string | null;
+  source?: PropertySource | null;
 };
 
 export function getGoogleMapsUrl({

@@ -1,6 +1,7 @@
 // Verifies session hydration, validation of stored data, and persistence rules.
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { SelectedProperty } from "../../../src/state/assessmentStore";
 import {
   ASSESSMENT_SESSION_STORAGE_KEY as KEY,
   DEFAULT_ENERGY_INPUTS,
@@ -8,7 +9,7 @@ import {
   useAssessmentStore,
 } from "../../../src/state/assessmentStore";
 
-const PROPERTY = {
+const PROPERTY: SelectedProperty = {
   placeId: "place-pajo",
   name: "Pajo",
   address: "Pajo, Lapu-Lapu City",

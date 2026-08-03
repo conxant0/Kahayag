@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
-import { getMapTypeId, propertyPinIcon } from "../../../integrations/maps";
-import type { GoogleMapsStatus } from "../../../integrations/maps";
+import { googleMapProvider } from "../../../integrations/maps";
+import type {
+  LatLng,
+  MapController,
+  MapStatus,
+} from "../../../integrations/maps";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 import { cn } from "../../../shared/lib/cn";
-import type { SelectedProperty } from "../../../state/assessmentStore";
 
 /** Held this long, a touch is placing a pin rather than starting a pan. */
 const LONG_PRESS_MS = 400;
 /** Past this much travel, a press is panning the map and not aiming at it. */
 const PAN_SLOP_PX = 10;
+const ROOF_ZOOM = 19;
 
 /**
  * The satellite pane, and the only place the pin is set.
@@ -18,23 +22,24 @@ const PAN_SLOP_PX = 10;
  * There is no placement mode. A mode meant the map ignored clicks until a
  * button had been pressed, which is the opposite of what a map affords: the
  * obvious thing to do with one is click the place you mean. The map is always
- * live, and the work is in telling a deliberate placement apart from someone
+ * live, and the work here is telling a deliberate placement apart from someone
  * moving the map around to look for their roof.
+ *
+ * The map itself is reached through `MapController`, so this component names no
+ * provider and holds nothing vendor-shaped.
  */
 export function PropertyMapPane({
   selectedProperty,
-  googleStatus,
+  mapStatus,
   onMapSelect,
 }: {
-  selectedProperty: SelectedProperty | null;
-  googleStatus: GoogleMapsStatus;
-  onMapSelect: (latitude: number, longitude: number) => void;
+  selectedProperty: { position: LatLng; address: string } | null;
+  mapStatus: MapStatus;
+  onMapSelect: (position: LatLng) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<GoogleMap | null>(null);
-  const markerRef = useRef<GoogleMarker | null>(null);
-  const mapClickListenerRef = useRef<GoogleMapsEventListener | null>(null);
+  const controllerRef = useRef<MapController | null>(null);
 
   /**
    * On a touch screen a tap has to be held before it places anything,
@@ -42,78 +47,87 @@ export function PropertyMapPane({
    * first place. With a mouse the click is already unambiguous.
    */
   const isTouch = useMediaQuery("(hover: none)");
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
   const draggedRef = useRef(false);
   const heldLongEnoughRef = useRef(false);
   const longPressTimerRef = useRef(0);
 
-  const prefersReducedMotion = usePrefersReducedMotion();
+  // Latest handler, read by the click subscription so it does not resubscribe
+  // on every render just to see a new closure.
+  const onMapSelectRef = useRef(onMapSelect);
+  useEffect(() => {
+    onMapSelectRef.current = onMapSelect;
+  }, [onMapSelect]);
 
-  /**
-   * Puts the pin down, dropping it in so the landing is seen.
-   *
-   * The marker is rebuilt on every placement rather than moved. Maps runs a
-   * marker's animation as it is added to the map, so setting one on a marker
-   * that is already there is unreliable: it played on some placements and not
-   * others. Building a fresh marker with the animation already set is the only
-   * version that runs every time, and one marker is cheap to replace.
-   *
-   * Reduced motion gets the same pin without the fall.
-   */
-  const placeMarker = useCallback(
-    (map: GoogleMap, center: GoogleLatLngLiteral, title?: string) => {
-      if (!window.google?.maps?.Marker) {
-        return;
-      }
-
-      markerRef.current?.setMap(null);
-      markerRef.current = new window.google.maps.Marker({
-        map,
-        position: center,
-        icon: propertyPinIcon(window.google?.maps),
-        title,
-        animation: prefersReducedMotion
-          ? undefined
-          : window.google?.maps?.Animation?.DROP,
-      });
-    },
-    [prefersReducedMotion],
-  );
+  const position = selectedProperty?.position ?? null;
+  const latitude = position?.latitude;
+  const longitude = position?.longitude;
 
   useEffect(() => {
-    if (!selectedProperty || googleStatus !== "ready") {
+    if (
+      mapStatus !== "ready" ||
+      latitude === undefined ||
+      longitude === undefined
+    ) {
       return;
     }
 
-    const { latitude, longitude } = selectedProperty;
-    const center = { lat: latitude, lng: longitude };
-    const mapTypeId = getMapTypeId(window.google?.maps);
+    const container = mapRef.current;
+    if (!container) {
+      return;
+    }
 
-    if (!mapInstanceRef.current) {
-      if (!window.google?.maps?.Map || !mapRef.current) {
+    const centre = { latitude, longitude };
+
+    if (!controllerRef.current) {
+      controllerRef.current = googleMapProvider.createMap(container, {
+        centre,
+        zoom: ROOF_ZOOM,
+      });
+
+      if (!controllerRef.current) {
         return;
       }
 
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center,
-        zoom: 19,
-        mapTypeId,
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
+      controllerRef.current.setCursor("crosshair");
+      controllerRef.current.onClick((clicked) => {
+        // A press that travelled is a pan, and on touch one that was not held
+        // is a tap the map should keep for itself.
+        if (draggedRef.current || (isTouch && !heldLongEnoughRef.current)) {
+          return;
+        }
+
+        heldLongEnoughRef.current = false;
+        onMapSelectRef.current(clicked);
       });
     } else {
-      mapInstanceRef.current.setCenter(center);
-      mapInstanceRef.current.setMapTypeId(mapTypeId);
+      controllerRef.current.setCentre(centre);
     }
 
-    placeMarker(mapInstanceRef.current, center, selectedProperty.address);
+    controllerRef.current.showMarker({
+      position: centre,
+      title: selectedProperty?.address,
+      animate: !prefersReducedMotion,
+    });
+    controllerRef.current.refresh();
+  }, [
+    latitude,
+    longitude,
+    mapStatus,
+    isTouch,
+    prefersReducedMotion,
+    selectedProperty?.address,
+  ]);
 
-    if (window.google?.maps?.event) {
-      window.google.maps.event.trigger(mapInstanceRef.current, "resize");
-    }
-  }, [selectedProperty, googleStatus, placeMarker]);
+  useEffect(
+    () => () => {
+      controllerRef.current?.destroy();
+      controllerRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const container = mapRef.current;
@@ -121,61 +135,21 @@ export function PropertyMapPane({
       return;
     }
 
-    const observer = new ResizeObserver(() => {
-      if (mapInstanceRef.current && window.google?.maps?.event) {
-        window.google.maps.event.trigger(mapInstanceRef.current, "resize");
-      }
-    });
-
+    const observer = new ResizeObserver(() => controllerRef.current?.refresh());
     observer.observe(container);
     return () => observer.disconnect();
-  }, [selectedProperty, googleStatus]);
-
-  // Sets the pin. Maps does not report a click after a drag, and the pointer
-  // guards below cover the smaller movements it still counts as a click.
-  useEffect(() => {
-    if (
-      googleStatus !== "ready" ||
-      !mapInstanceRef.current ||
-      !window.google?.maps
-    ) {
-      return;
-    }
-
-    mapClickListenerRef.current = mapInstanceRef.current.addListener(
-      "click",
-      (event) => {
-        if (!event.latLng || draggedRef.current) {
-          return;
-        }
-
-        if (isTouch && !heldLongEnoughRef.current) {
-          return;
-        }
-
-        heldLongEnoughRef.current = false;
-        onMapSelect(event.latLng.lat(), event.latLng.lng());
-      },
-    );
-
-    return () => {
-      if (mapClickListenerRef.current) {
-        mapClickListenerRef.current.remove();
-        mapClickListenerRef.current = null;
-      }
-    };
-  }, [googleStatus, onMapSelect, isTouch, selectedProperty]);
+  }, []);
 
   /**
    * Tells aiming apart from panning, for both kinds of pointer.
    *
    * A press that travels is someone moving the map, so it never places
    * anything. On touch a press also has to last, which leaves plain tap and
-   * drag to Maps so the map still moves the way a map should.
+   * drag to the map so it still moves the way a map should.
    */
   useEffect(() => {
     const frame = frameRef.current;
-    if (!frame || googleStatus !== "ready") {
+    if (!frame || mapStatus !== "ready") {
       return undefined;
     }
 
@@ -238,17 +212,7 @@ export function PropertyMapPane({
       frame.removeEventListener("pointerleave", handleLeave);
       window.clearTimeout(longPressTimerRef.current);
     };
-  }, [googleStatus, isTouch]);
-
-  // Maps paints its own cursor over the tiles, so the crosshair has to be set
-  // through the map rather than by a class on the container alone.
-  useEffect(() => {
-    if (googleStatus !== "ready" || !mapInstanceRef.current) {
-      return;
-    }
-
-    mapInstanceRef.current.setOptions({ draggableCursor: "crosshair" });
-  }, [googleStatus, selectedProperty]);
+  }, [mapStatus]);
 
   return (
     <div ref={frameRef} className="absolute inset-0">

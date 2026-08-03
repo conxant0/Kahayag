@@ -1,32 +1,38 @@
 import { PinIcon } from "../../../shared/components/ui";
-import type { usePropertyAddressSearch } from "../hooks/usePropertyAddressSearch";
+import type { AddressSuggestion } from "../../../integrations/geocoding";
 
-type PropertyAddressSearchProps = ReturnType<typeof usePropertyAddressSearch>;
+/**
+ * Named rather than the hook's whole return. Spreading that coupled this
+ * component to every field the hook happens to own, so any addition there
+ * silently widened what this could reach into.
+ */
+type PropertyAddressSearchProps = {
+  query: string;
+  suggestions: AddressSuggestion[];
+  statusMessage: string | null;
+  hasSearchError: boolean;
+  locationMessage: string | null;
+  locationTone: "error" | "info";
+  handleQueryChange: (value: string) => void;
+  handleSuggestionSelect: (suggestion: AddressSuggestion) => void;
+};
 
 export function PropertyAddressSearch({
   query,
   suggestions,
   locationMessage,
   statusMessage,
+  hasSearchError,
+  locationTone,
   handleQueryChange,
   handleSuggestionSelect,
 }: PropertyAddressSearchProps) {
-  // A map that will not load is a note, not a failure: search still works and
-  // the whole screen still completes. Only a broken search reads as an error.
-  const hasSearchError =
-    statusMessage?.startsWith("Address search is unavailable") ?? false;
-
   return (
     <>
       {locationMessage && (
         <p
           className={`font-sans text-sm ${
-            locationMessage.includes("denied") ||
-            locationMessage.includes("Unable") ||
-            locationMessage.includes("Couldn't") ||
-            locationMessage.includes("timed out")
-              ? "text-ember"
-              : "text-secondary"
+            locationTone === "error" ? "text-ember" : "text-secondary"
           }`}
         >
           {locationMessage}
