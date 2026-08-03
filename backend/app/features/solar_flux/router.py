@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
 from app.core.config import Settings, get_settings
-from app.features.solar_flux.cache import get_flux_layers
 from app.features.solar_flux.schemas import (
     FluxVisualizationOut,
     SolarFluxPrepareRequest,
 )
 from app.features.solar_flux.service import prepare_flux_visualization
+from app.features.solar_flux.url_codec import decode_flux_url
 from app.integrations.solar import get_solar_provider
 from app.integrations.solar.errors import SolarApiError, SolarProviderDisabledError
 from app.integrations.solar.geotiff import fetch_geotiff_bytes
@@ -42,22 +42,19 @@ def prepare_solar_flux(
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
-@router.get("/solar/flux/geotiff/{token}/{layer}")
+@router.get("/solar/flux/geotiff/{layer}/{token}")
 def proxy_solar_flux_geotiff(
-    token: str,
     layer: str,
+    token: str,
     settings: Settings = DependsSettings,
 ) -> Response:
-    cached = get_flux_layers(token)
-    if cached is None:
-        raise HTTPException(status_code=404, detail="Flux layer token expired or not found.")
-
-    if layer == "annual":
-        source_url = cached.annual_flux_url
-    elif layer == "mask":
-        source_url = cached.mask_url
-    else:
+    if layer not in ("annual", "mask"):
         raise HTTPException(status_code=404, detail="Unknown flux layer.")
+
+    try:
+        source_url = decode_flux_url(token)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail="Invalid flux layer token.") from error
 
     if not settings.google_solar_api_key:
         raise HTTPException(status_code=503, detail="Google Solar API key is not configured.")

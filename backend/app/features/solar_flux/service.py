@@ -1,10 +1,10 @@
 # Defines solar flux visualization orchestration.
 
-from app.features.solar_flux.cache import store_flux_layers
 from app.features.solar_flux.schemas import (
     FluxVisualizationOut,
     SolarFluxPrepareRequest,
 )
+from app.features.solar_flux.url_codec import encode_flux_url
 from app.integrations.solar.errors import SolarApiError, SolarProviderDisabledError
 from app.integrations.solar.provider import SolarDataProvider
 
@@ -19,13 +19,9 @@ def prepare_flux_visualization(
         longitude=request.longitude,
         radius_meters=request.radius_meters,
     )
-    token = store_flux_layers(
-        annual_flux_url=layers["annualFluxUrl"],
-        mask_url=layers["maskUrl"],
-    )
     return FluxVisualizationOut(
-        annual_flux_path=f"/solar/flux/geotiff/{token}/annual",
-        mask_path=f"/solar/flux/geotiff/{token}/mask",
+        annual_flux_path=f"/solar/flux/geotiff/annual/{encode_flux_url(layers['annualFluxUrl'])}",
+        mask_path=f"/solar/flux/geotiff/mask/{encode_flux_url(layers['maskUrl'])}",
         imagery_quality=layers.get("imageryQuality"),
     )
 
