@@ -12,7 +12,7 @@ deploy access, rather than once per developer machine.
 ## Post-Deploy Smoke Checklist
 
 Run this after the first deploy of a Vercel project, and after any change to
-`backend/vercel.json`, `APP_CORS_ORIGINS`, or `VITE_API_BASE_URL`. It has not
+`backend/vercel.json`, `APP_ENV`, `APP_CORS_ORIGINS`, or `VITE_API_BASE_URL`. It has not
 been executed for this branch — no deployment exists yet. Replace
 `$API_URL` and `$FRONTEND_URL` with the actual Vercel project URLs, and run
 each command from a shell with `curl` and `jq` available.
@@ -106,6 +106,11 @@ curl -s -i -X OPTIONS "$API_URL/api/v1/health" \
 Expect the response to echo `$FRONTEND_URL` (or `*`, which this app does not
 use) in `Access-Control-Allow-Origin`. If it is missing or wrong, `APP_CORS_ORIGINS`
 on the backend Vercel project does not list the frontend's deployed origin.
+
+With `APP_ENV=production`, the backend refuses to start unless `APP_CORS_ORIGINS`
+has been set to something other than the local default, and `/docs`/`/redoc`
+are disabled. A backend that fails to boot in production most often means this
+check tripped because `APP_CORS_ORIGINS` was left unset on the Vercel project.
 
 ## Outstanding Handoff
 

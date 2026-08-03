@@ -1,17 +1,23 @@
 # Defines the FastAPI application composition root.
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router
+from app.core.config import get_settings
 
-app = FastAPI(title="Kahayag Energy API")
+settings = get_settings()
 
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("APP_CORS_ORIGINS", "http://localhost:5173").split(",")
-]
+if settings.env == "production" and settings.cors_origins == "http://localhost:5173":
+    raise RuntimeError(
+        "APP_CORS_ORIGINS must be configured when APP_ENV=production."
+    )
+
+docs_url = None if settings.env == "production" else "/docs"
+redoc_url = None if settings.env == "production" else "/redoc"
+
+app = FastAPI(title="Kahayag Energy API", docs_url=docs_url, redoc_url=redoc_url)
+
+allowed_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
 
 app.add_middleware(
     CORSMiddleware,

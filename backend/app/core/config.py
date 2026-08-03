@@ -15,6 +15,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
+    env: str = "local"  # local | preview | production
+    cors_origins: str = "http://localhost:5173"
+
     ai_provider: str = "disabled"  # groq | disabled
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
