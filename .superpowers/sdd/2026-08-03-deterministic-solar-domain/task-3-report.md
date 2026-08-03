@@ -64,7 +64,21 @@ no output
 
 ## Commit
 
-Commit hash: `9631850090e86fcf820c63f26568afbc1b24bb9a` (updated after the final report amend).
+Implementation commit hash: `756778a624be4a2a4a36c01e13112acdd61a843e`.
+
+Final verification after commit:
+
+```text
+python3 -m pytest tests/unit/domain/solar -q
+.................                                                        [100%]
+17 passed in 0.23s
+
+ruff check app/domain/solar/geometry.py app/domain/solar/recommendations.py tests/unit/domain/solar/test_geometry.py tests/unit/domain/solar/test_panel_capacity.py
+All checks passed!
+
+git diff --check
+no output
+```
 
 ## Concerns
 
