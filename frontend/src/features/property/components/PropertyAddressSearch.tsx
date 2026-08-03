@@ -1,5 +1,4 @@
 import { Button, PinIcon } from "../../../shared/components/ui";
-import { cn } from "../../../shared/lib/cn";
 import type { usePropertyAddressSearch } from "../hooks/usePropertyAddressSearch";
 
 type PropertyAddressSearchProps = ReturnType<typeof usePropertyAddressSearch>;
@@ -12,13 +11,11 @@ export function PropertyAddressSearch({
   manualLatitude,
   manualLongitude,
   manualCoordinateMessage,
-  isSelectingPropertyFromMap,
   isLocating,
   locationMessage,
   statusMessage,
   setManualLatitude,
   setManualLongitude,
-  setIsSelectingPropertyFromMap,
   handleQueryChange,
   handleSuggestionSelect,
   handleUseDemoProperty,
@@ -49,7 +46,7 @@ export function PropertyAddressSearch({
             locationMessage.includes("Unable") ||
             locationMessage.includes("Couldn't") ||
             locationMessage.includes("timed out")
-              ? "text-crimson"
+              ? "text-ember"
               : "text-secondary"
           }`}
         >
@@ -74,7 +71,7 @@ export function PropertyAddressSearch({
 
       {statusMessage && (
         <p
-          className={`font-sans text-sm ${hasSearchError ? "text-crimson" : "text-secondary"}`}
+          className={`font-sans text-sm ${hasSearchError ? "text-ember" : "text-secondary"}`}
         >
           {statusMessage}
         </p>
@@ -115,28 +112,10 @@ export function PropertyAddressSearch({
         </div>
       )}
 
-      {/* One row of ghost pills, so the two shortcuts share a baseline and a
-       * height instead of a text link sitting beside a button. */}
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="ghost" onClick={handleUseDemoProperty}>
           Use demo property
         </Button>
-
-        {googleStatus === "ready" && (
-          <Button
-            variant="ghost"
-            aria-pressed={isSelectingPropertyFromMap}
-            onClick={() => setIsSelectingPropertyFromMap((current) => !current)}
-            className={cn(
-              isSelectingPropertyFromMap
-                ? "border-cobalt bg-cobalt text-paper hover:border-cobalt hover:text-paper"
-                : "border-cobalt/35 bg-cobalt-wash text-cobalt hover:border-cobalt hover:text-cobalt",
-            )}
-          >
-            <PinIcon size={14} />
-            {isSelectingPropertyFromMap ? "Placing pin" : "Drop a pin"}
-          </Button>
-        )}
       </div>
 
       {googleStatus !== "ready" && (
@@ -164,7 +143,7 @@ export function PropertyAddressSearch({
             Use entered coordinates
           </button>
           {manualCoordinateMessage && (
-            <p className="text-crimson font-sans text-sm">
+            <p className="font-sans text-sm text-ember">
               {manualCoordinateMessage}
             </p>
           )}

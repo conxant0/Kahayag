@@ -51,9 +51,28 @@ interface GoogleMap {
   ): GoogleMapsEventListener;
 }
 
+interface GoogleSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+interface GooglePoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A marker drawn from our own artwork rather than the stock red teardrop. */
+interface GoogleMarkerIcon {
+  url: string;
+  scaledSize?: GoogleSize;
+  anchor?: GooglePoint;
+}
+
 interface GoogleMarker {
   setPosition(latLng: GoogleLatLngLiteral): void;
   setMap(map: GoogleMap | null): void;
+  setIcon(icon: GoogleMarkerIcon | string | null): void;
+  setAnimation(animation: number | null): void;
 }
 
 interface GoogleGeocoderResult {
@@ -84,7 +103,12 @@ interface GoogleMapsApi {
   Marker: new (options: {
     map: GoogleMap;
     position: GoogleLatLngLiteral;
+    icon?: GoogleMarkerIcon | string;
+    title?: string;
   }) => GoogleMarker;
+  Animation?: { DROP?: number; BOUNCE?: number };
+  Size?: new (width: number, height: number) => GoogleSize;
+  Point?: new (x: number, y: number) => GooglePoint;
   Geocoder: new () => GoogleGeocoder;
   MapTypeId?: { SATELLITE?: string; HYBRID?: string };
   event?: { trigger(instance: object, eventName: string): void };

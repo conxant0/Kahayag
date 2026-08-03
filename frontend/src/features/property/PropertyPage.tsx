@@ -23,14 +23,13 @@ export function PropertyPage() {
       nextHref={ROUTE_PATHS.trace}
       nextLabel="Next: Trace your roof"
       nextDisabled={!search.selectedProperty}
+      paneClassName="px-4 py-3 lg:px-0 lg:py-0"
       pane={
-        <MapSurface className="relative min-h-72 lg:min-h-0">
+        <MapSurface className="relative min-h-[52svh] lg:min-h-0">
           <PropertyMapPane
             selectedProperty={search.selectedProperty}
             googleStatus={search.googleStatus}
-            isSelectingPropertyFromMap={search.isSelectingPropertyFromMap}
             onMapSelect={search.handleMapSelect}
-            onCancelMapSelect={search.cancelMapSelection}
           />
         </MapSurface>
       }

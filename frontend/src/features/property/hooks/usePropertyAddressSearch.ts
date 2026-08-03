@@ -52,8 +52,6 @@ export function usePropertyAddressSearch() {
   const [manualLatitude, setManualLatitude] = useState("");
   const [manualLongitude, setManualLongitude] = useState("");
   const [manualCoordinateMessage, setManualCoordinateMessage] = useState("");
-  const [isSelectingPropertyFromMap, setIsSelectingPropertyFromMap] =
-    useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
 
@@ -118,8 +116,6 @@ export function usePropertyAddressSearch() {
       ? "ready"
       : "idle";
 
-  const cancelMapSelection = () => setIsSelectingPropertyFromMap(false);
-
   const clearSelection = () => {
     setPropertySelection(null);
     setRoofPolygon(null);
@@ -162,7 +158,6 @@ export function usePropertyAddressSearch() {
     setSuggestions([]);
     setSearchState("ready");
     setManualCoordinateMessage("");
-    setIsSelectingPropertyFromMap(false);
   };
 
   const handleManualCoordinateSelection = () => {
@@ -187,7 +182,6 @@ export function usePropertyAddressSearch() {
     setQuery(nextProperty?.address ?? "");
     setSearchState("ready");
     setManualCoordinateMessage("");
-    setIsSelectingPropertyFromMap(false);
   };
 
   /**
@@ -238,7 +232,6 @@ export function usePropertyAddressSearch() {
     setSuggestions([]);
     setSearchState("ready");
     setManualCoordinateMessage("");
-    setIsSelectingPropertyFromMap(false);
     setLocationMessage(
       approximate
         ? "Using your approximate area. Search your address or tap Select from map to pin your roof exactly."
@@ -310,14 +303,11 @@ export function usePropertyAddressSearch() {
     manualLatitude,
     manualLongitude,
     manualCoordinateMessage,
-    isSelectingPropertyFromMap,
     isLocating,
     locationMessage,
     statusMessage,
     setManualLatitude,
     setManualLongitude,
-    setIsSelectingPropertyFromMap,
-    cancelMapSelection,
     handleQueryChange,
     handleSuggestionSelect,
     handleUseDemoProperty,

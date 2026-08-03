@@ -4,6 +4,7 @@ export {
   getGoogleMapsUrl,
   getMapTypeId,
   normalizePropertySelection,
+  propertyPinIcon,
 } from "./googleMapsHelpers";
 export type { PropertyCandidate } from "./googleMapsHelpers";
 export { useGoogleMapsLoader } from "./googleMapsLoader";
