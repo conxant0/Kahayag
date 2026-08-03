@@ -1,0 +1,34 @@
+# Environment and secrets
+.env
+.envrc
+.env.*
+!.env.example
+
+# Frontend dependencies and output
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/pnpm-lock.yaml
+
+# Python environments and output
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Deployment
+.vercel/
+
+# Agent tooling. `.mcp.json` is shared; per-machine overrides are not.
+.claude/settings.local.json
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
