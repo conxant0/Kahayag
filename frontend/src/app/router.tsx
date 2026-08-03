@@ -42,9 +42,5 @@ export const router = createBrowserRouter([
     element: <PendingScreen name="The project brief" />,
   },
   { path: ROUTE_PATHS.report, element: <PendingScreen name="The report" /> },
-  {
-    path: ROUTE_PATHS.reportSaved,
-    element: <PendingScreen name="The saved report" />,
-  },
   { path: ROUTE_PATHS.components, element: <ComponentsPage /> },
 ]);
