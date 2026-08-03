@@ -38,7 +38,10 @@ function unprojectPoint(point: Point2D, avgLat: number): GeoPoint {
   };
 }
 
-function isPointInPolygon(point: Point2D, polygon: readonly Point2D[]): boolean {
+function isPointInPolygon(
+  point: Point2D,
+  polygon: readonly Point2D[],
+): boolean {
   let inside = false;
 
   for (
@@ -51,7 +54,8 @@ function isPointInPolygon(point: Point2D, polygon: readonly Point2D[]): boolean 
     const intersects =
       current.y > point.y !== prior.y > point.y &&
       point.x <
-        ((prior.x - current.x) * (point.y - current.y)) / (prior.y - current.y) +
+        ((prior.x - current.x) * (point.y - current.y)) /
+          (prior.y - current.y) +
           current.x;
 
     if (intersects) {
@@ -71,7 +75,11 @@ function rotatePoint(point: Point2D, angle: number): Point2D {
   };
 }
 
-function rotatePointAround(origin: Point2D, point: Point2D, angle: number): Point2D {
+function rotatePointAround(
+  origin: Point2D,
+  point: Point2D,
+  angle: number,
+): Point2D {
   const translated = { x: point.x - origin.x, y: point.y - origin.y };
   const rotated = rotatePoint(translated, angle);
   return { x: rotated.x + origin.x, y: rotated.y + origin.y };
@@ -266,10 +274,14 @@ export function layoutPanelsInPolygon({
   }
 
   const avgLat = averageLatitude(coordinates);
-  const projected = coordinates.map((coordinate) => projectPoint(coordinate, avgLat));
+  const projected = coordinates.map((coordinate) =>
+    projectPoint(coordinate, avgLat),
+  );
   const seed = layoutSeed(projected);
   const roofAngle = primaryRoofAngleRadians(projected);
-  const alignedPolygon = projected.map((point) => rotatePointAround(seed, point, -roofAngle));
+  const alignedPolygon = projected.map((point) =>
+    rotatePointAround(seed, point, -roofAngle),
+  );
 
   const orientations = [
     { panelWidthM, panelHeightM },

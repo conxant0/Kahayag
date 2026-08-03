@@ -16,10 +16,45 @@ export const DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH = 12;
 /** A polygon needs three corners before it encloses any area at all. */
 const MINIMUM_POLYGON_POINTS = 3;
 
+/**
+ * Where a property came from.
+ *
+ * Kept closed so that reading it is a check the compiler can see. An
+ * approximate pin from an IP lookup has to be worded differently to an address
+ * someone chose, and a free string makes that difference easy to get wrong.
+ */
+export type PropertySource =
+  | "search"
+  | "map"
+  | "manual"
+  | "demo"
+  | "geolocation"
+  | "geolocation-approximate";
+
+const PROPERTY_SOURCES: readonly PropertySource[] = [
+  "search",
+  "map",
+  "manual",
+  "demo",
+  "geolocation",
+  "geolocation-approximate",
+];
+
+function parseSource(value: unknown): PropertySource {
+  return PROPERTY_SOURCES.includes(value as PropertySource)
+    ? (value as PropertySource)
+    : "search";
+}
+
 export type SelectedProperty = {
+  /** The provider's identifier when the pick came from search; null otherwise. */
+  placeId: string | null;
+  name: string;
   address: string;
   latitude: number;
   longitude: number;
+  /** How the pick was made. A closed set, because screens branch on it. */
+  source: PropertySource;
 };
 
 export type RoofCoordinate = {
@@ -96,7 +131,17 @@ function parseProperty(value: unknown): SelectedProperty | null {
     return null;
   }
 
-  return { address: value.address, latitude, longitude };
+  return {
+    placeId: typeof value.placeId === "string" ? value.placeId : null,
+    name: typeof value.name === "string" ? value.name : value.address,
+    address: value.address,
+    latitude,
+    longitude,
+    // How it was picked is provenance, not identity: a stored value with an
+    // unknown source is still a usable property, so it falls back to the
+    // commonest rather than discarding the pick.
+    source: parseSource(value.source),
+  };
 }
 
 /**
@@ -199,7 +244,7 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
    * Every input the result was computed from invalidates it on edit. Going back
    * a step, changing an answer, and returning to figures derived from the old
    * one is the same mismatch a reload avoids by not restoring the result at
-   * all — the only difference is that nothing reloaded.
+   * all, the only difference being that nothing reloaded.
    *
    * The setters route through here rather than each clearing `result`
    * themselves, so a fourth input cannot be added that quietly keeps a stale

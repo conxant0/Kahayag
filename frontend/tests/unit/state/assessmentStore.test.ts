@@ -1,6 +1,7 @@
 // Verifies session hydration, validation of stored data, and persistence rules.
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { SelectedProperty } from "../../../src/state/assessmentStore";
 import {
   ASSESSMENT_SESSION_STORAGE_KEY as KEY,
   DEFAULT_ENERGY_INPUTS,
@@ -8,10 +9,13 @@ import {
   useAssessmentStore,
 } from "../../../src/state/assessmentStore";
 
-const PROPERTY = {
+const PROPERTY: SelectedProperty = {
+  placeId: "place-pajo",
+  name: "Pajo",
   address: "Pajo, Lapu-Lapu City",
   latitude: 10.3103,
   longitude: 123.9494,
+  source: "search",
 };
 
 const ROOF = {
@@ -95,6 +99,25 @@ describe("readStoredSession", () => {
     });
 
     expect(readStoredSession().selectedProperty).toBeNull();
+  });
+
+  it("fills in the optional property fields a stored pick may lack", () => {
+    seed({
+      selectedProperty: {
+        address: "Pajo, Lapu-Lapu City",
+        latitude: 10.3103,
+        longitude: 123.9494,
+      },
+    });
+
+    expect(readStoredSession().selectedProperty).toEqual({
+      placeId: null,
+      name: "Pajo, Lapu-Lapu City",
+      address: "Pajo, Lapu-Lapu City",
+      latitude: 10.3103,
+      longitude: 123.9494,
+      source: "search",
+    });
   });
 
   it("rejects a polygon with fewer than three corners", () => {
