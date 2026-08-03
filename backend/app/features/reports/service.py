@@ -119,6 +119,11 @@ def _fallback_explanation(values: dict[str, object]) -> ResolvedReportExplanatio
     )
 
 
+# Unreachable from any route today (the router uses resolve_narrative only).
+# Unlike resolve_narrative, this does NOT reject digits in supplied text — a
+# future caller wiring this to AIReportProvider.explain() must apply
+# resolve_narrative's digit-rejection guard first, or an AI-produced number
+# could reach output in breach of "the domain computes; AI explains".
 def resolve_explanation(
     report: ValidatedReportInput,
     explanation: ReportExplanation | None,

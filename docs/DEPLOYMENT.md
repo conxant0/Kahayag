@@ -86,11 +86,14 @@ curl -s "$FRONTEND_URL" | grep -o 'VITE_API_BASE_URL[^"]*' || true
 The build inlines `VITE_API_BASE_URL` at build time, so it will not appear as
 a literal string in the served HTML/JS unless something went wrong; the real
 check is behavioral: open `$FRONTEND_URL` in a browser, open devtools network
-tab, and confirm every API request goes to `$API_URL`, never to
-`$FRONTEND_URL` itself. If `VITE_API_BASE_URL` was unset or scheme-less at
-build time, the build fails outright (see `frontend/vite.config.ts` and
-`frontend/src/shared/config/env.ts`), so a successful deploy already proves
-the value was present — this step confirms it was also the *correct* origin.
+tab, and confirm every API request goes to `$API_URL/api/v1/...` (i.e.
+`VITE_API_BASE_URL` must be set to `$API_URL` with the `/api/v1` suffix
+already included, not the bare origin used elsewhere in this checklist),
+never to `$FRONTEND_URL` itself. If `VITE_API_BASE_URL` was unset or
+scheme-less at build time, the build fails outright (see
+`frontend/vite.config.ts` and `frontend/src/shared/config/env.ts`), so a
+successful deploy already proves the value was present — this step confirms
+it was also the *correct* origin.
 
 ### 5. CORS
 

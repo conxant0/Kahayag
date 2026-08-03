@@ -38,7 +38,7 @@ export function buildReportRequest({
     assessment: result,
     roof_polygon: roof,
     panel_polygons: panels.map((panel) => ({
-      corners: panel.corners as [GeoPoint, GeoPoint, GeoPoint, GeoPoint],
+      corners: panel.corners,
     })),
   };
 }
