@@ -13,6 +13,8 @@ import {
   useAssessmentStore,
   type CompletedAssessment as StoreAssessmentResult,
 } from "../../state/assessmentStore";
+import { useFluxCacheStore } from "../../state/fluxCacheStore";
+import { computeFluxCacheKey } from "./fluxCacheKey";
 import { useAdjustPanelCount } from "./hooks/useAdjustPanelCount";
 import {
   mergePanelAdjustment,
@@ -26,7 +28,11 @@ export function EditLayoutPage() {
   const navigate = useNavigate();
   const rawResult = useAssessmentStore((state) => state.result);
   const setResult = useAssessmentStore((state) => state.setResult);
+  const selectedProperty = useAssessmentStore(
+    (state) => state.selectedProperty,
+  );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
+  const fluxEntry = useFluxCacheStore((state) => state.entry);
   const result = readAssessmentResult(rawResult);
   const { mutateAsync, isPending } = useAdjustPanelCount();
   const requestId = useRef(0);
@@ -36,10 +42,7 @@ export function EditLayoutPage() {
   const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
 
   const layoutContext = useMemo(
-    () =>
-      result
-        ? resolveLayoutContext({ result, roofPolygon })
-        : null,
+    () => (result ? resolveLayoutContext({ result, roofPolygon }) : null),
     [result, roofPolygon],
   );
   const initialPanelCount = layoutContext?.currentPanelCount ?? 0;
@@ -50,7 +53,11 @@ export function EditLayoutPage() {
   );
 
   useEffect(() => {
-    if (!result || requestedPanelCount < 1 || requestedPanelCount === initialPanelCount) {
+    if (
+      !result ||
+      requestedPanelCount < 1 ||
+      requestedPanelCount === initialPanelCount
+    ) {
       return;
     }
 
@@ -81,13 +88,20 @@ export function EditLayoutPage() {
   }
 
   const roofCoordinates = layoutContext.coordinates;
+  const fluxKey = computeFluxCacheKey({
+    roofCoordinates,
+    selectedProperty,
+  });
+  const cachedFlux = fluxEntry?.key === fluxKey ? fluxEntry : null;
   const panels = layoutPanelsInPolygon({
     coordinates: roofCoordinates,
     panelCount: requestedPanelCount,
     panelWidthM: layoutContext.panelWidthM,
     panelHeightM: layoutContext.panelHeightM,
+    flux: cachedFlux?.flux,
   });
-  const recommendation = candidateAdjustment?.recommendation ?? result.recommendation;
+  const recommendation =
+    candidateAdjustment?.recommendation ?? result.recommendation;
   const financials = candidateAdjustment?.financials ?? result.financials;
   const canSave =
     requestedPanelCount === initialPanelCount || candidateAdjustment !== null;
@@ -101,7 +115,10 @@ export function EditLayoutPage() {
   const handleSave = () => {
     if (candidateAdjustment) {
       setResult(
-        mergePanelAdjustment(result, candidateAdjustment) as unknown as StoreAssessmentResult,
+        mergePanelAdjustment(
+          result,
+          candidateAdjustment,
+        ) as unknown as StoreAssessmentResult,
       );
     }
     navigate(ROUTE_PATHS.results);
@@ -143,7 +160,9 @@ export function EditLayoutPage() {
       <div className="flex flex-col gap-2">
         <Button
           variant="ghost"
-          onClick={() => handlePanelCountChange(result.recommendation.panel_count)}
+          onClick={() =>
+            handlePanelCountChange(result.recommendation.panel_count)
+          }
           disabled={requestedPanelCount === result.recommendation.panel_count}
         >
           Set recommended
@@ -162,7 +181,10 @@ export function EditLayoutPage() {
         aria-label="Live results"
       >
         <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-cobalt" />
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full bg-cobalt"
+          />
           <Eyebrow tone="cobalt" className="text-[10px] tracking-[1.2px]">
             Live results — updates as you edit
           </Eyebrow>

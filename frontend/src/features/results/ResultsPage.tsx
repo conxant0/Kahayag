@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
@@ -14,18 +15,52 @@ import {
 } from "../assessment/formatAssessmentResult";
 import { FlowLayout } from "../../shared/components/layout";
 import {
+  Button,
   ButtonLink,
   HairlineList,
   HairlineRow,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
+import { useFluxCacheStore } from "../../state/fluxCacheStore";
+import { computeFluxCacheKey } from "./fluxCacheKey";
 import { layoutPanelsInPolygon } from "./panelLayoutUtils";
+import { preloadFluxLayersForAssessment } from "./preloadFluxLayers";
 import { PanelLayoutPreview } from "./components/PanelLayoutPreview";
 
 export function ResultsPage() {
   const rawResult = useAssessmentStore((state) => state.result);
+  const selectedProperty = useAssessmentStore(
+    (state) => state.selectedProperty,
+  );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
+  const fluxEntry = useFluxCacheStore((state) => state.entry);
   const result = readAssessmentResult(rawResult);
+  const [showFlux, setShowFlux] = useState(false);
+  const [fluxError, setFluxError] = useState<string | null>(null);
+  const roofCoordinates = roofPolygon?.coordinates ?? [];
+  const fluxKey = computeFluxCacheKey({
+    roofCoordinates,
+    selectedProperty,
+  });
+  const cachedFlux = fluxEntry?.key === fluxKey ? fluxEntry : null;
+  const loadFlux = useCallback(() => {
+    if (!result) {
+      return;
+    }
+    void preloadFluxLayersForAssessment({
+      result,
+      selectedProperty,
+      roofPolygon,
+    }).catch(() => {
+      setFluxError(
+        "Sunshine overlay is unavailable. Your assessment remains usable.",
+      );
+    });
+  }, [result, roofPolygon, selectedProperty]);
+
+  useEffect(() => {
+    loadFlux();
+  }, [loadFlux]);
 
   if (!result) {
     return <Navigate to={ROUTE_PATHS.energy} replace />;
@@ -34,12 +69,13 @@ export function ResultsPage() {
   const panelCount = result.recommendation.panel_count;
   const panelWidthM = Number(result.assumptions.panel_width_m);
   const panelHeightM = Number(result.assumptions.panel_height_m);
-  const roofCoordinates = roofPolygon?.coordinates ?? [];
+
   const panels = layoutPanelsInPolygon({
     coordinates: roofCoordinates,
     panelCount,
     panelWidthM,
     panelHeightM,
+    flux: cachedFlux?.flux,
   });
 
   return (
@@ -61,6 +97,8 @@ export function ResultsPage() {
           roofCoordinates={roofCoordinates}
           panels={panels}
           status={result.is_provisional ? "Preliminary estimate" : undefined}
+          flux={showFlux ? cachedFlux?.flux : null}
+          mask={showFlux ? cachedFlux?.mask : null}
         />
       }
       lead={
@@ -72,15 +110,15 @@ export function ResultsPage() {
           <p className="font-sans text-sm font-medium text-tertiary-ink">
             saved every month
           </p>
-          <p className="font-serif text-lg italic text-secondary">
+          <p className="font-serif text-lg text-secondary italic">
             {result.recommendation.rationale}
           </p>
           <HairlineList className="pt-1.5">
+            <HairlineRow label="Panels" value={`${panelCount} panels`} />
             <HairlineRow
-              label="Panels"
-              value={`${panelCount} panels`}
+              label="System size"
+              value={formatSystemCapacity(result)}
             />
-            <HairlineRow label="System size" value={formatSystemCapacity(result)} />
             <HairlineRow
               label="Yearly yield"
               value={formatAnnualGeneration(result)}
@@ -104,12 +142,17 @@ export function ResultsPage() {
         </ButtonLink>
       }
     >
-      <section className="flex w-full flex-col gap-3" aria-label="Assessment result">
+      <section
+        className="flex w-full flex-col gap-3"
+        aria-label="Assessment result"
+      >
         <HairlineList>
           <HairlineRow
             label="Budget compatibility"
             value={formatBudgetCompatibility(result)}
-            valueClassName={result.financials.budget_compatible ? "text-cobalt" : undefined}
+            valueClassName={
+              result.financials.budget_compatible ? "text-cobalt" : undefined
+            }
           />
           <HairlineRow
             label="Monthly savings"
@@ -119,9 +162,43 @@ export function ResultsPage() {
             label="Limiting constraint"
             value={result.recommendation.limiting_constraint}
           />
-          <HairlineRow label="Budget" value={formatPeso(result.inputs.budget_php)} />
+          <HairlineRow
+            label="Budget"
+            value={formatPeso(result.inputs.budget_php)}
+          />
         </HairlineList>
       </section>
+
+      {result.shading ? (
+        <section
+          className="flex w-full flex-col gap-2"
+          aria-label="Sunshine visualization"
+        >
+          <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
+            Sunshine visualization
+          </h2>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (cachedFlux) {
+                setShowFlux((visible) => !visible);
+              } else {
+                setFluxError(null);
+                loadFlux();
+              }
+            }}
+          >
+            {cachedFlux
+              ? showFlux
+                ? "Hide sunshine overlay"
+                : "Show sunshine overlay"
+              : "Load sunshine overlay"}
+          </Button>
+          {fluxError ? (
+            <p className="font-sans text-sm text-secondary">{fluxError}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="flex w-full flex-col gap-3" aria-label="Assumptions">
         <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
@@ -149,7 +226,8 @@ export function ResultsPage() {
           Cost includes {result.assumptions.cost_inclusions.join(", ")}.
         </p>
         <p className="font-sans text-sm text-secondary">
-          Potential exclusions: {result.assumptions.potential_exclusions.join(", ")}.
+          Potential exclusions:{" "}
+          {result.assumptions.potential_exclusions.join(", ")}.
         </p>
       </section>
 

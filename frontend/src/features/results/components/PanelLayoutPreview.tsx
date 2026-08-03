@@ -1,12 +1,14 @@
 import type { GeoPoint } from "../../../shared/api/types";
 import { MapSurface } from "../../../shared/components/ui";
+import type { GeoTiffRaster } from "../../../integrations/solar/geoTiffLoader";
+import { renderSolarFluxOverlay } from "../../../integrations/solar/fluxRenderer";
 import type { LayoutPanel } from "../panelLayoutUtils";
 
-function allPoints(roofCoordinates: readonly GeoPoint[], panels: LayoutPanel[]) {
-  return [
-    ...roofCoordinates,
-    ...panels.flatMap((panel) => panel.corners),
-  ];
+function allPoints(
+  roofCoordinates: readonly GeoPoint[],
+  panels: LayoutPanel[],
+) {
+  return [...roofCoordinates, ...panels.flatMap((panel) => panel.corners)];
 }
 
 function pointsForSvg(
@@ -29,10 +31,14 @@ export function PanelLayoutPreview({
   roofCoordinates,
   panels,
   status,
+  flux = null,
+  mask = null,
 }: {
   roofCoordinates: readonly GeoPoint[];
   panels: LayoutPanel[];
   status?: string;
+  flux?: GeoTiffRaster | null;
+  mask?: GeoTiffRaster | null;
 }) {
   const points = allPoints(roofCoordinates, panels);
   if (!points.length) {
@@ -59,6 +65,27 @@ export function PanelLayoutPreview({
   const viewMaxLongitude = maxLongitude + longitudePadding;
   const viewLatitudeSpan = viewMaxLatitude - viewMinLatitude;
   const viewLongitudeSpan = viewMaxLongitude - viewMinLongitude;
+  const heatmap = flux
+    ? (() => {
+        const overlay = renderSolarFluxOverlay({ flux, mask, roofCoordinates });
+        return {
+          href: overlay.canvas.toDataURL(),
+          x:
+            ((overlay.bounds.west - viewMinLongitude) / viewLongitudeSpan) *
+            100,
+          y:
+            ((viewMaxLatitude - overlay.bounds.north) / viewLatitudeSpan) * 100,
+          width:
+            ((overlay.bounds.east - overlay.bounds.west) / viewLongitudeSpan) *
+            100,
+          height:
+            ((overlay.bounds.north - overlay.bounds.south) / viewLatitudeSpan) *
+            100,
+          min: overlay.min,
+          max: overlay.max,
+        };
+      })()
+    : null;
 
   return (
     <MapSurface>
@@ -70,6 +97,17 @@ export function PanelLayoutPreview({
         aria-label={`${panels.length} panels in the roof layout`}
       >
         <rect width="100" height="100" fill="var(--color-paper)" />
+        {heatmap ? (
+          <image
+            href={heatmap.href}
+            x={heatmap.x}
+            y={heatmap.y}
+            width={heatmap.width}
+            height={heatmap.height}
+            preserveAspectRatio="none"
+            opacity="0.72"
+          />
+        ) : null}
         {roofCoordinates.length >= 3 ? (
           <polygon
             points={pointsForSvg(
@@ -101,6 +139,28 @@ export function PanelLayoutPreview({
           />
         ))}
       </svg>
+      {heatmap ? (
+        <div className="absolute right-3 bottom-3 rounded bg-paper/90 px-2 py-1.5 font-sans text-[10px] text-secondary">
+          <p>
+            Sunshine: {Math.round(heatmap.min)}–{Math.round(heatmap.max)}{" "}
+            kWh/kW/yr
+          </p>
+          <div
+            className="mt-1 flex items-center gap-1.5"
+            aria-label="Low to high sunshine legend"
+          >
+            <span>Low</span>
+            <span
+              className="h-1.5 w-16 rounded-full"
+              style={{
+                background:
+                  "linear-gradient(90deg, #2b0057, #7a1f9a, #d45c2a, #f08c00, #fff3a3)",
+              }}
+            />
+            <span>High</span>
+          </div>
+        </div>
+      ) : null}
       <p className="sr-only">
         {panels.length} panels shown in the roof layout.
         {status ? ` ${status}` : ""}

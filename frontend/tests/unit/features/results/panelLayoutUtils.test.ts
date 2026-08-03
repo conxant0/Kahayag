@@ -7,6 +7,7 @@ import {
 import { resolveLayoutContext } from "../../../../src/features/results/layoutContext";
 import { assessmentFixture as fixture } from "../../../fixtures/assessmentFixture";
 import type { GeoPoint } from "../../../../src/shared/api/types";
+import type { GeoTiffRaster } from "../../../../src/integrations/solar/geoTiffLoader";
 
 const cebuRoof: GeoPoint[] = [
   { latitude: 10.3157, longitude: 123.8854 },
@@ -59,8 +60,7 @@ function buildRotatedRectangleRoof({
   angleRadians: number;
 }): GeoPoint[] {
   const metersPerDegreeLat = 111_320;
-  const metersPerDegreeLng =
-    111_320 * Math.cos((centerLat * Math.PI) / 180);
+  const metersPerDegreeLng = 111_320 * Math.cos((centerLat * Math.PI) / 180);
   const halfWidthLat =
     (widthM / 2 / metersPerDegreeLat) * Math.sin(angleRadians);
   const halfWidthLng =
@@ -191,6 +191,48 @@ describe("layoutPanelsInPolygon", () => {
     expect(
       layoutPanelsInPolygon({ coordinates: cebuRoof, panelCount: -1 }),
     ).toEqual([]);
+  });
+
+  it("prefers higher-flux roof areas when an optional raster is available", () => {
+    const flux: GeoTiffRaster = {
+      width: 4,
+      height: 4,
+      bounds: { north: 10.316, south: 10.315, east: 123.886, west: 123.884 },
+      rasters: [
+        [
+          900, 1200, 2200, 3200, 900, 1200, 2200, 3200, 900, 1200, 2200, 3200,
+          900, 1200, 2200, 3200,
+        ],
+      ],
+    };
+    const roof = [
+      { latitude: 10.315, longitude: 123.884 },
+      { latitude: 10.316, longitude: 123.884 },
+      { latitude: 10.316, longitude: 123.886 },
+      { latitude: 10.315, longitude: 123.886 },
+    ];
+    const centerLongitude = (
+      panels: ReturnType<typeof layoutPanelsInPolygon>,
+    ) =>
+      panels[0]!.corners.reduce((sum, corner) => sum + corner.longitude, 0) / 4;
+
+    const centered = layoutPanelsInPolygon({
+      coordinates: roof,
+      panelCount: 1,
+      panelWidthM: 1.13,
+      panelHeightM: 1.76,
+    });
+    const fluxRanked = layoutPanelsInPolygon({
+      coordinates: roof,
+      panelCount: 1,
+      panelWidthM: 1.13,
+      panelHeightM: 1.76,
+      flux,
+    });
+
+    expect(centerLongitude(fluxRanked)).toBeGreaterThan(
+      centerLongitude(centered),
+    );
   });
 });
 
