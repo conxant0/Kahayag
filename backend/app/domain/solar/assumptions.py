@@ -55,4 +55,5 @@ POTENTIAL_EXCLUSIONS = ("Roof repairs", "Electrical upgrades", "Permits")
 LIMITATIONS = (
     "This result is a preliminary pre-feasibility estimate.",
     "A licensed solar professional must verify the final design and quotation.",
+    "Battery options and net-metering export credits are not included.",
 )

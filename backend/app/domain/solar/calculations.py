@@ -98,6 +98,13 @@ def calculate_annual_generation_kwh(
     ).quantize(Decimal("1"), rounding=ROUND_HALF_EVEN)
 
 
+def calculate_billable_generation_kwh(
+    annual_generation_kwh: Decimal,
+    annual_consumption_kwh: Decimal,
+) -> Decimal:
+    return min(annual_generation_kwh, annual_consumption_kwh)
+
+
 def calculate_consumption_offset_ratio(
     self_consumed_energy_kwh: Decimal,
     annual_consumption_kwh: Decimal,

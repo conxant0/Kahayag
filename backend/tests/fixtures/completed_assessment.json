@@ -16,6 +16,9 @@
     "budget_php": 300000,
     "panel_category_id": "standard-450"
   },
+  "estimated_monthly_consumption_kwh": "500.00",
+  "consumption_source": "direct",
+  "uses_default_tariff": false,
   "recommendation": {
     "panel_category_id": "standard-450",
     "panel_wattage_w": 450,

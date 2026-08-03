@@ -1,9 +1,6 @@
 # Defines assessment request and response API schemas.
-# ruff: noqa: I001 -- verbatim port from the source worktree; do not reformat imports.
-
 from datetime import date
 from decimal import Decimal
-
 from typing import Literal
 
 from pydantic import (
@@ -41,13 +38,21 @@ class RoofDetails(ContractModel):
 
 
 class AssessmentInputs(ContractModel):
-    monthly_bill_php: StrictInt = Field(gt=0)
+    monthly_bill_php: StrictInt | None = Field(default=None, gt=0)
     # Consumption is derived from the bill against a default tariff
     # (see estimate_demand) when not supplied directly.
     monthly_consumption_kwh: Decimal | None = Field(default=None, gt=0)
     electricity_rate_php_per_kwh: Decimal | None = Field(default=None, gt=0)
     budget_php: StrictInt | None = Field(default=None, gt=0)
     panel_category_id: PanelCategoryId = DEFAULT_PANEL_CATEGORY_ID
+
+    @model_validator(mode="after")
+    def requires_bill_or_consumption(self) -> "AssessmentInputs":
+        if self.monthly_bill_php is None and self.monthly_consumption_kwh is None:
+            raise ValueError(
+                "monthly_bill_php is required when monthly_consumption_kwh is absent"
+            )
+        return self
 
 
 class Recommendation(ContractModel):
@@ -155,6 +160,9 @@ class CompletedAssessment(ContractModel):
     property: PropertyDetails
     roof: RoofDetails
     inputs: AssessmentInputs
+    estimated_monthly_consumption_kwh: Decimal = Field(gt=0)
+    consumption_source: Literal["direct", "bill"]
+    uses_default_tariff: StrictBool
     recommendation: Recommendation
     financials: FinancialValues
     assumptions: AssessmentAssumptions

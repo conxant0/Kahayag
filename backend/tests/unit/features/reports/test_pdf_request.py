@@ -51,4 +51,3 @@ def test_report_request_rejects_panel_geometry_that_disagrees_with_assessment(
 
     with pytest.raises(ValueError, match="panel polygon count"):
         request.validate_panel_count()
-

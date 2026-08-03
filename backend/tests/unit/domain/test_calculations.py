@@ -7,6 +7,7 @@ from app.domain.solar.calculations import (
     calculate_annual_generation_kwh,
     calculate_annual_savings_php,
     calculate_base_cost_php,
+    calculate_billable_generation_kwh,
     calculate_consumption_offset_ratio,
     calculate_monthly_savings_php,
     calculate_payback_years,
@@ -90,6 +91,12 @@ def test_calculates_monthly_savings_from_annual_savings() -> None:
 
 def test_calculates_base_cost_from_system_capacity() -> None:
     assert calculate_base_cost_php(Decimal("2.70")) == 162_000
+
+
+def test_caps_billable_generation_at_annual_consumption() -> None:
+    assert calculate_billable_generation_kwh(
+        Decimal("7000"), Decimal("6000")
+    ) == Decimal("6000")
 
 
 def test_calculates_offset_from_self_consumed_energy() -> None:

@@ -35,4 +35,3 @@ def test_groq_provider_returns_valid_structured_narrative(
 
     assert narrative is not None
     assert narrative.contractor_observations == tuple(payload["contractor_observations"])
-
