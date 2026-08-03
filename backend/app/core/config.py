@@ -1,16 +1,22 @@
 # Defines environment-based backend settings.
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="APP_",
         extra="ignore",
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
     )
+
+    env: str = "local"  # local | preview | production
+    cors_origins: str = "http://localhost:5173"
 
     ai_provider: str = "disabled"  # groq | disabled
     groq_api_key: str = ""

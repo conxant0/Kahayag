@@ -1,0 +1,1 @@
+# Defines deterministic report templates.

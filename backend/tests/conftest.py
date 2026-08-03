@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from app.features.assessment.schemas import CompletedAssessment
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
@@ -14,9 +16,9 @@ def completed_assessment_data() -> dict[str, object]:
 
 
 @pytest.fixture
-def completed_assessment(completed_assessment_data):
-    from app.features.assessment.schemas import CompletedAssessment
-
+def completed_assessment(
+    completed_assessment_data: dict[str, object],
+) -> CompletedAssessment:
     return CompletedAssessment.model_validate(completed_assessment_data)
 
 
@@ -34,4 +36,3 @@ def cebu_building_insights_payload() -> dict:
     return json.loads(
         (FIXTURES_DIR / "google_solar_building_insights.json").read_text()
     )
-

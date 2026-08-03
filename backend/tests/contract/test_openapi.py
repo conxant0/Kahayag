@@ -36,6 +36,9 @@ def test_create_assessment_accepts_representative_request(
     assert body["property"] == assessment_request_data["property"]
     assert body["roof"] == assessment_request_data["roof"]
     assert body["inputs"] == assessment_request_data["inputs"]
+    assert body["estimated_monthly_consumption_kwh"] == "500.00"
+    assert body["consumption_source"] == "direct"
+    assert body["uses_default_tariff"] is False
     assert body["recommendation"]["panel_count"] > 0
     assert (
         body["financials"]["estimated_cost_high_php"]
@@ -189,6 +192,32 @@ def test_create_assessment_accepts_bill_only_and_sizes_with_default_tariff(
     bill_only_body = bill_only_response.json()
     assert bill_only_body["recommendation"] == explicit_response.json()["recommendation"]
     assert bill_only_body["financials"] == explicit_response.json()["financials"]
+    assert bill_only_body["consumption_source"] == "bill"
+    assert bill_only_body["uses_default_tariff"] is True
+
+
+def test_create_assessment_accepts_consumption_without_a_bill(
+    assessment_request_data: dict[str, object],
+) -> None:
+    request = deepcopy(assessment_request_data)
+    del request["inputs"]["monthly_bill_php"]
+
+    response = client.post("/api/v1/assessments", json=request)
+
+    assert response.status_code == 200
+    assert response.json()["consumption_source"] == "direct"
+
+
+def test_create_assessment_rejects_missing_bill_and_consumption(
+    assessment_request_data: dict[str, object],
+) -> None:
+    request = deepcopy(assessment_request_data)
+    del request["inputs"]["monthly_bill_php"]
+    del request["inputs"]["monthly_consumption_kwh"]
+
+    response = client.post("/api/v1/assessments", json=request)
+
+    assert response.status_code == 422
 
 
 def test_create_assessment_exposes_base_cost_used_for_payback(
