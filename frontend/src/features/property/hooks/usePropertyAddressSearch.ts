@@ -9,9 +9,14 @@ import type { AddressSuggestion } from "../../../integrations/geocoding";
 import {
   DEMO_PROPERTY,
   normalizePropertySelection,
-  useGoogleMapsLoader,
+  useMapLoader,
 } from "../../../integrations/maps";
 import type { LatLng } from "../../../integrations/maps";
+import type { PropertyCandidate } from "../../../integrations/maps";
+import {
+  OUTSIDE_SERVICE_AREA_MESSAGE,
+  isWithinServiceArea,
+} from "../../../shared/config/serviceArea";
 import { readJson, writeJson } from "../../../integrations/storage";
 import { useAssessmentStore } from "../../../state/assessmentStore";
 import type { SelectedProperty } from "../../../state/assessmentStore";
@@ -40,8 +45,8 @@ const SEARCH_DEBOUNCE_MS = 450;
 const LOCATION_ASKED_KEY = "kahayag-location-prompt-asked";
 
 export function usePropertyAddressSearch() {
-  const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  const mapStatus = useGoogleMapsLoader(googleApiKey);
+  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const mapStatus = useMapLoader(mapsApiKey);
   const storedProperty = useAssessmentStore((state) => state.selectedProperty);
   const setPropertySelection = useAssessmentStore(
     (state) => state.setPropertySelection,
@@ -159,32 +164,75 @@ export function usePropertyAddressSearch() {
   };
 
   /**
-   * A search result already carries its coordinates, so picking one needs no
-   * second round trip and cannot half-fail the way a details lookup could.
+   * Commits a pick, or refuses it.
+   *
+   * Every route in goes through here: search, the map, typed coordinates, the
+   * demo fixture and geolocation all produce the same kind of answer and were
+   * each repeating the same normalise-then-set-four-things dance, which is how
+   * one of them ends up quietly skipping a rule the others apply.
+   *
+   * The rule that matters is the service area. The figures downstream are
+   * built on Philippine irradiance and a Philippine tariff, so a point outside
+   * the country would produce numbers that look real and mean nothing. It is
+   * checked here rather than at each call site precisely so a sixth route
+   * cannot be added that forgets.
    */
-  const handleSuggestionSelect = (suggestion: AddressSuggestion) => {
-    const nextProperty = normalizePropertySelection({
-      placeId: suggestion.placeId,
-      name: suggestion.primary,
-      address: suggestion.address,
-      latitude: suggestion.latitude,
-      longitude: suggestion.longitude,
-      source: "search",
-    });
+  const commitSelection = (
+    candidate: PropertyCandidate,
+    note?: { message: string; tone: "error" | "info" },
+  ): boolean => {
+    const nextProperty = normalizePropertySelection(candidate);
+    if (!nextProperty) {
+      return false;
+    }
+
+    if (!isWithinServiceArea(nextProperty)) {
+      setLocationTone("error");
+      setLocationMessage(OUTSIDE_SERVICE_AREA_MESSAGE);
+      return false;
+    }
 
     setPropertySelection(nextProperty);
-    setQuery(suggestion.address);
-    setSuggestions([]);
-    setSearchState("ready");
-  };
-
-  const handleUseDemoProperty = () => {
-    const nextProperty = normalizePropertySelection(DEMO_PROPERTY);
-    setPropertySelection(nextProperty);
-    setQuery(nextProperty?.address ?? "");
+    setQuery(nextProperty.address);
     setSuggestions([]);
     setSearchState("ready");
     setManualCoordinateMessage("");
+    setLocationTone(note?.tone ?? "info");
+    setLocationMessage(note?.message ?? null);
+    return true;
+  };
+
+  /**
+   * A search result already carries its coordinates, so picking one needs no
+   * second round trip and cannot half-fail the way a details lookup could.
+   *
+   * A coarse result is still committed, with a note. Nominatim answers a vague
+   * query with a municipality or a province, which points at a centroid rather
+   * than a roof; saying so is more useful than refusing the pick, since the
+   * map is right there to correct it.
+   */
+  const handleSuggestionSelect = (suggestion: AddressSuggestion) => {
+    commitSelection(
+      {
+        placeId: suggestion.placeId,
+        name: suggestion.primary,
+        address: suggestion.address,
+        latitude: suggestion.latitude,
+        longitude: suggestion.longitude,
+        source: "search",
+      },
+      suggestion.precision === "approximate"
+        ? {
+            tone: "info",
+            message:
+              "That address matched an area rather than a building. Click the map to move the pin onto your roof.",
+          }
+        : undefined,
+    );
+  };
+
+  const handleUseDemoProperty = () => {
+    commitSelection(DEMO_PROPERTY);
   };
 
   const handleManualCoordinateSelection = () => {
@@ -196,7 +244,7 @@ export function usePropertyAddressSearch() {
       return;
     }
 
-    const nextProperty = normalizePropertySelection({
+    const committed = commitSelection({
       ...DEMO_PROPERTY,
       name: "Manual coordinate selection",
       address: `Manual selection (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`,
@@ -205,20 +253,17 @@ export function usePropertyAddressSearch() {
       source: "manual",
     });
 
-    setPropertySelection(nextProperty);
-    setQuery(nextProperty?.address ?? "");
-    setSearchState("ready");
-    setManualCoordinateMessage("");
+    if (!committed) {
+      setManualCoordinateMessage(OUTSIDE_SERVICE_AREA_MESSAGE);
+    }
   };
 
   /**
-   * Moves the pin. Placement stays open afterwards, because the first spot you
-   * point at is rarely the exact corner of the roof you meant, and closing the
-   * mode on the first tap would make every correction a fresh trip through the
-   * button.
+   * Moves the pin, and can be called again to move it once more: the first
+   * spot someone points at is rarely the exact corner of the roof they meant.
    */
   const handleMapSelect = ({ latitude, longitude }: LatLng) => {
-    const nextProperty = normalizePropertySelection({
+    commitSelection({
       ...DEMO_PROPERTY,
       name: "Selected map location",
       address: `Selected map location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`,
@@ -226,13 +271,15 @@ export function usePropertyAddressSearch() {
       longitude,
       source: "map",
     });
-    setPropertySelection(nextProperty);
-    setQuery(nextProperty?.address ?? "");
-    setSearchState("ready");
-    setManualCoordinateMessage("");
-    setLocationMessage(null);
   };
 
+  /**
+   * Takes whatever the browser or the backend fallback reported.
+   *
+   * Routed through `commitSelection` like every other path, so a device
+   * reporting a location outside the country is refused with the same message
+   * rather than quietly seeding an assessment that cannot be produced.
+   */
   const applyCurrentLocation = async (
     latitude: number,
     longitude: number,
@@ -244,40 +291,30 @@ export function usePropertyAddressSearch() {
       `Current location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
     const approximate = source === "google-ip" || source === "ip-approximate";
 
-    const nextProperty = normalizePropertySelection({
-      ...DEMO_PROPERTY,
-      placeId: null,
-      name: approximate ? "Approximate location" : "Current location",
-      address,
-      latitude,
-      longitude,
-      source: approximate ? "geolocation-approximate" : "geolocation",
-    });
-
-    setPropertySelection(nextProperty);
-    setQuery(address);
-    setSuggestions([]);
-    setSearchState("ready");
-    setManualCoordinateMessage("");
-    setLocationTone("info");
-    setLocationMessage(
+    commitSelection(
+      {
+        ...DEMO_PROPERTY,
+        placeId: null,
+        name: approximate ? "Approximate location" : "Current location",
+        address,
+        latitude,
+        longitude,
+        source: approximate ? "geolocation-approximate" : "geolocation",
+      },
       approximate
-        ? "Using your approximate area. Search your address or tap Select from map to pin your roof exactly."
-        : null,
+        ? {
+            tone: "info",
+            message:
+              "Using your approximate area. Search your address or click the map to pin your roof exactly.",
+          }
+        : undefined,
     );
   };
 
   /**
-   * Opens the explainer rather than the browser prompt.
-   *
-   * The browser only asks once and gives no reason of its own, so a dismissed
-   * prompt permanently closes this route off. Asking first means the real
-   * prompt only appears for someone who has already agreed to it.
-   */
-  /**
-   * Straight to the browser. The explainer opened on arrival, so pressing this
-   * afterwards is already the answer to it and asking again would be a wall
-   * between someone and the thing they just asked for.
+   * Straight to the browser. The explainer opened on arrival, so pressing the
+   * button afterwards is already the answer to it, and asking again would be a
+   * wall between someone and the thing they just asked for.
    */
   const dismissLocationPrompt = () => {
     markLocationAsked();

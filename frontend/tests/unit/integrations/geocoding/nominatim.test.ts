@@ -13,6 +13,7 @@ const PLACE = {
   display_name: "Pajo, Lapu-Lapu City, Cebu, Philippines",
   lat: "10.3103",
   lon: "123.9494",
+  place_rank: 26,
 };
 
 function mockFetch(payload: unknown, ok = true, status = 200) {
@@ -73,7 +74,36 @@ describe("searchAddresses", () => {
       address: "Pajo, Lapu-Lapu City, Cebu, Philippines",
       latitude: 10.3103,
       longitude: 123.9494,
+      precision: "exact",
     });
+  });
+
+  it("scopes the search to the country this assessment covers", async () => {
+    const fetchMock = mockFetch([PLACE]);
+
+    await searchAddresses("Pajo");
+
+    // A result the rest of the step would only have to reject is better not
+    // returned at all.
+    expect(requestedUrl(fetchMock).searchParams.get("countrycodes")).toBe("ph");
+  });
+
+  it("marks a result that names an area rather than a building", async () => {
+    // Nominatim answers a vague query with a municipality, which points at a
+    // centroid and not a roof.
+    mockFetch([{ ...PLACE, place_rank: 16 }]);
+
+    const [result] = await searchAddresses("Lapu-Lapu");
+
+    expect(result.precision).toBe("approximate");
+  });
+
+  it("treats a result with no rank as approximate rather than exact", async () => {
+    mockFetch([{ ...PLACE, place_rank: undefined }]);
+
+    const [result] = await searchAddresses("Pajo");
+
+    expect(result.precision).toBe("approximate");
   });
 
   it("parses the string coordinates Nominatim returns into numbers", async () => {

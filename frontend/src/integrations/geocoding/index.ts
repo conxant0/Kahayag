@@ -5,4 +5,4 @@ export {
   reverseGeocode,
   searchAddresses,
 } from "./nominatim";
-export type { AddressSuggestion } from "./nominatim";
+export type { AddressSuggestion, MatchPrecision } from "./nominatim";

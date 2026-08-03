@@ -9,6 +9,8 @@
 // `MIN_QUERY_LENGTH` and `SUGGESTION_LIMIT` live here for the same reason: they
 // are properties of the provider, not of the screen using it.
 
+import { SERVICE_AREA_COUNTRY_CODE } from "../../shared/config/serviceArea";
+
 const DEFAULT_BASE_URL = "https://nominatim.openstreetmap.org";
 
 /**
@@ -24,6 +26,22 @@ const BASE_URL = (
 export const MIN_QUERY_LENGTH = 3;
 export const SUGGESTION_LIMIT = 7;
 
+/**
+ * How precisely a result names a place.
+ *
+ * Nominatim will happily answer a vague query with a city or a province. Those
+ * are real results, but they point at a centroid rather than a roof, so the
+ * screen has to be able to say so instead of dropping a pin in the middle of a
+ * municipality and calling it a house.
+ */
+export type MatchPrecision = "exact" | "approximate";
+
+/**
+ * `place_rank` above this is a building, a house number or a road. Below it,
+ * the answer is an area: a municipality, a province, a country.
+ */
+const PRECISE_PLACE_RANK = 20;
+
 export type AddressSuggestion = {
   /** Nominatim's own identifier, kept so a pick can be traced back. */
   placeId: string | null;
@@ -35,6 +53,8 @@ export type AddressSuggestion = {
   address: string;
   latitude: number;
   longitude: number;
+  /** Whether this names a building or merely the area around one. */
+  precision: MatchPrecision;
 };
 
 type NominatimPlace = {
@@ -43,6 +63,8 @@ type NominatimPlace = {
   name?: string;
   lat?: string;
   lon?: string;
+  place_rank?: number;
+  addresstype?: string;
 };
 
 function coordinate(value: string | undefined): number {
@@ -84,6 +106,11 @@ function toSuggestion(place: NominatimPlace): AddressSuggestion | null {
     address,
     latitude,
     longitude,
+    precision:
+      typeof place.place_rank === "number" &&
+      place.place_rank >= PRECISE_PLACE_RANK
+        ? "exact"
+        : "approximate",
   };
 }
 
@@ -101,6 +128,9 @@ export async function searchAddresses(
   url.searchParams.set("q", trimmed);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", String(options.limit ?? SUGGESTION_LIMIT));
+  // Scoped to the country this assessment covers, so a search cannot return a
+  // result the rest of the step would then have to reject.
+  url.searchParams.set("countrycodes", SERVICE_AREA_COUNTRY_CODE);
 
   const response = await fetch(url, {
     signal: options.signal,

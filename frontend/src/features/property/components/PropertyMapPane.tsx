@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { googleMapProvider } from "../../../integrations/maps";
+import { mapProvider } from "../../../integrations/maps";
 import type {
   LatLng,
   MapController,
@@ -82,7 +82,7 @@ export function PropertyMapPane({
     const centre = { latitude, longitude };
 
     if (!controllerRef.current) {
-      controllerRef.current = googleMapProvider.createMap(container, {
+      controllerRef.current = mapProvider.createMap(container, {
         centre,
         zoom: ROOF_ZOOM,
       });
