@@ -7,6 +7,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { assessmentFixture as fixture } from "../../../fixtures/assessmentFixture";
+import { roofPolygonFixture } from "../../../fixtures/roofPolygonFixture";
 import { ResultsPage } from "../../../../src/features/results/ResultsPage";
 import {
   useAssessmentStore,
@@ -48,9 +49,7 @@ describe("ResultsPage", () => {
     );
 
     expect(screen.getByText("Shading")).toBeInTheDocument();
-    expect(
-      screen.getByText("Moderate impact"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Moderate impact")).toBeInTheDocument();
   });
 
   it("omits shading impact when shading data is absent", () => {
@@ -111,14 +110,16 @@ describe("ResultsPage", () => {
       longitude: 123.8854,
       source: "manual",
     });
-    useAssessmentStore.getState().setRoofPolygon({
-      coordinates: [
-        { latitude: 10.3157, longitude: 123.8854 },
-        { latitude: 10.3158, longitude: 123.8854 },
-        { latitude: 10.3158, longitude: 123.8855 },
-      ],
-      areaSquareMeters: 40,
-    });
+    useAssessmentStore.getState().setRoofPolygon(
+      roofPolygonFixture({
+        coordinates: [
+          { latitude: 10.3157, longitude: 123.8854 },
+          { latitude: 10.3158, longitude: 123.8854 },
+          { latitude: 10.3158, longitude: 123.8855 },
+        ],
+        areaSquareMeters: 40,
+      }),
+    );
     useAssessmentStore.getState().setResult({
       ...fixture,
       shading: {
