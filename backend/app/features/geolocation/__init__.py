@@ -1,0 +1,1 @@
+# Defines geolocation feature boundaries.
