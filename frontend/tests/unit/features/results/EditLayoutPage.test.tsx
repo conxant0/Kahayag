@@ -35,6 +35,28 @@ afterEach(() => {
 });
 
 describe("EditLayoutPage", () => {
+  it("starts the untouched editor from the recommended panel count", () => {
+    useAssessmentStore.getState().setRoofPolygon({
+      coordinates: cebuRoof,
+      areaSquareMeters: 40,
+    });
+    useAssessmentStore
+      .getState()
+      .setResult(fixture as unknown as StoreAssessmentResult);
+
+    render(
+      <MemoryRouter initialEntries={["/results/layout"]}>
+        <EditLayoutPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("slider")).toHaveValue("8");
+    expect(screen.getByText(/^8 of \d+ max$/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /set recommended/i }),
+    ).toBeDisabled();
+  });
+
   it("keeps the stored result unchanged until a successful save", async () => {
     const user = userEvent.setup();
     mutateAsync.mockResolvedValue({
@@ -73,6 +95,39 @@ describe("EditLayoutPage", () => {
     );
   });
 
+  it("resets a candidate adjustment when an assessment with the same panel count replaces it", async () => {
+    mutateAsync.mockResolvedValue({
+      recommendation: { ...fixture.recommendation, panel_count: 10 },
+      financials: { ...fixture.financials, estimated_base_cost_php: 270000 },
+    });
+    useAssessmentStore.getState().setRoofPolygon({
+      coordinates: cebuRoof,
+      areaSquareMeters: 40,
+    });
+    useAssessmentStore
+      .getState()
+      .setResult(fixture as unknown as StoreAssessmentResult);
+
+    render(
+      <MemoryRouter initialEntries={["/results/layout"]}>
+        <EditLayoutPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "10" } });
+    await waitFor(() => expect(screen.getByText("10")).toBeInTheDocument());
+
+    useAssessmentStore.getState().setResult({
+      ...fixture,
+      property: { ...fixture.property, address: "Replacement assessment" },
+    } as unknown as StoreAssessmentResult);
+
+    await waitFor(() => {
+      expect(screen.getByRole("slider")).toHaveValue("8");
+      expect(screen.queryByText("10")).not.toBeInTheDocument();
+    });
+  });
+
   it("shows an adjustment error and preserves the stored result", async () => {
     mutateAsync.mockRejectedValue(new Error("Panel count is over budget."));
     useAssessmentStore.getState().setRoofPolygon({
@@ -98,6 +153,16 @@ describe("EditLayoutPage", () => {
       (useAssessmentStore.getState().result as unknown as typeof fixture).recommendation
         .panel_count,
     ).toBe(8);
+
+    useAssessmentStore.getState().setResult({
+      ...fixture,
+      property: { ...fixture.property, address: "Replacement assessment" },
+    } as unknown as StoreAssessmentResult);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByRole("slider")).toHaveValue("8");
+    });
   });
 
   it("redirects to energy when the stored result is missing", async () => {

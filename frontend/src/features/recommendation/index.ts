@@ -3,9 +3,10 @@ export { RecommendationPage } from "./RecommendationPage";
 export { WhyPage } from "./WhyPage";
 export {
   buildInvestmentDefaults,
+  buildInvestmentProjectionPayload,
+  buildGrowthBars,
   buildInvestmentSliderBounds,
   clampInvestmentInputs,
-  computeInvestmentProjection,
   formatBreakEvenYear,
   formatCompactPeso,
   formatInsightText,

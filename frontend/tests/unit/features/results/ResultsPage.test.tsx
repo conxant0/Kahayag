@@ -27,6 +27,47 @@ afterEach(() => {
 });
 
 describe("ResultsPage", () => {
+  it("renders shading impact when the assessment includes shading", () => {
+    useAssessmentStore.getState().setResult({
+      ...fixture,
+      shading: {
+        shading_impact: "moderate",
+        sunshine_retention_ratio: "0.84",
+        whole_roof_median_sunshine_hours_per_year: "1408.8",
+        max_sunshine_hours_per_year: "1677.2",
+        data_source: "google_solar_api",
+        applied_to_generation: true,
+        roof_segments: [],
+      },
+    } as unknown as StoreAssessmentResult);
+
+    render(
+      <MemoryRouter initialEntries={["/results"]}>
+        <ResultsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Shading")).toBeInTheDocument();
+    expect(
+      screen.getByText("Moderate impact"),
+    ).toBeInTheDocument();
+  });
+
+  it("omits shading impact when shading data is absent", () => {
+    useAssessmentStore.getState().setResult({
+      ...fixture,
+      shading: null,
+    } as unknown as StoreAssessmentResult);
+
+    render(
+      <MemoryRouter initialEntries={["/results"]}>
+        <ResultsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Shading")).not.toBeInTheDocument();
+  });
+
   it("renders recommendation and financial values from the stored result", () => {
     useAssessmentStore
       .getState()

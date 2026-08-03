@@ -1,7 +1,7 @@
 # Defines report-generation use-case orchestration.
 
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from string import Formatter
 from uuid import uuid4
 
@@ -14,6 +14,7 @@ from app.features.reports.schemas import (
     SensitivityCase,
     ValidatedReportInput,
 )
+from app.domain.solar.projection import project_investment
 from app.features.reports.templates.fallback import (
     FALLBACK_NEXT_STEPS,
     FALLBACK_REASON,
@@ -21,10 +22,6 @@ from app.features.reports.templates.fallback import (
 )
 
 _MAX_EXPLANATION_LENGTH = 4_000
-_ANALYSIS_YEARS = 25
-_ANNUAL_DEGRADATION = Decimal("0.005")
-
-
 def _placeholder_values(report: ValidatedReportInput) -> dict[str, object]:
     return {
         "panel_count": report.recommendation.panel_count,
@@ -145,10 +142,6 @@ def resolve_explanation(
     return _fallback_explanation(values)
 
 
-def _rounded_php(value: Decimal) -> int:
-    return int(value.quantize(Decimal(1), rounding=ROUND_HALF_UP))
-
-
 def _effective_rate_php_per_kwh(report: ValidatedReportInput) -> Decimal:
     """Back out the per-kWh rate implied by year-1 savings against the
     self-consumption cap, since no battery/net-metering split is modeled
@@ -168,27 +161,26 @@ def _scenario_rows(
     generation_ratio: Decimal = Decimal(1),
     installed_cost_ratio: Decimal = Decimal(1),
 ) -> tuple[ProjectionRow, ...]:
-    annual_consumption_kwh = report.inputs.monthly_consumption_kwh * 12
-    rate = _effective_rate_php_per_kwh(report)
-    generation = report.recommendation.annual_generation_kwh * generation_ratio
-    cumulative = -Decimal(report.financials.estimated_base_cost_php) * installed_cost_ratio
-    rows = []
-
-    for year in range(1, _ANALYSIS_YEARS + 1):
-        self_consumed_kwh = min(generation, annual_consumption_kwh)
-        annual_savings = _rounded_php(self_consumed_kwh * rate)
-        cumulative += annual_savings
-        rows.append(
-            ProjectionRow(
-                year=year,
-                generation_kwh=generation.quantize(Decimal("0.1")),
-                annual_savings_php=annual_savings,
-                cumulative_net_php=_rounded_php(cumulative),
-            )
+    projection = project_investment(
+        year_one_generation_kwh=report.recommendation.annual_generation_kwh,
+        baseline_monthly_consumption_kwh=report.inputs.monthly_consumption_kwh,
+        baseline_rate_php_per_kwh=_effective_rate_php_per_kwh(report),
+        baseline_annual_savings_php=report.financials.annual_savings_php,
+        monthly_consumption_kwh=report.inputs.monthly_consumption_kwh,
+        rate_php_per_kwh=_effective_rate_php_per_kwh(report),
+        system_cost_php=report.financials.estimated_base_cost_php,
+        generation_ratio=generation_ratio,
+        installed_cost_ratio=installed_cost_ratio,
+    )
+    return tuple(
+        ProjectionRow(
+            year=row.year,
+            generation_kwh=row.generation_kwh,
+            annual_savings_php=row.annual_savings_php,
+            cumulative_net_php=row.cumulative_net_php,
         )
-        generation *= Decimal(1) - _ANNUAL_DEGRADATION
-
-    return tuple(rows)
+        for row in projection.years
+    )
 
 
 def build_projection(report: ValidatedReportInput) -> tuple[ProjectionRow, ...]:

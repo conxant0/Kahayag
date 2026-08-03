@@ -486,3 +486,45 @@ def test_adjust_panel_count_rejects_non_positive_counts(
     )
 
     assert response.status_code == 422
+
+
+def test_investment_projection_rejects_non_positive_inputs(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    response = client.post(
+        "/api/v1/assessments/investment-projection",
+        json={
+            "assessment": completed_assessment_data,
+            "monthly_consumption_kwh": "0",
+            "electricity_rate_php_per_kwh": "12",
+            "system_cost_php": 216000,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("monthly_consumption_kwh", "10000.01"),
+        ("electricity_rate_php_per_kwh", "100.01"),
+        ("system_cost_php", 5_000_001),
+    ],
+)
+def test_investment_projection_rejects_inputs_above_residential_bounds(
+    completed_assessment_data: dict[str, object],
+    field: str,
+    value: object,
+) -> None:
+    payload = {
+        "assessment": completed_assessment_data,
+        "monthly_consumption_kwh": "500",
+        "electricity_rate_php_per_kwh": "12",
+        "system_cost_php": 216000,
+    }
+    payload[field] = value
+
+    response = client.post("/api/v1/assessments/investment-projection", json=payload)
+
+    assert response.status_code == 422

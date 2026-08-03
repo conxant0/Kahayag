@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
@@ -13,15 +13,18 @@ import { useAssessmentStore } from "../../state/assessmentStore";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import {
   buildInvestmentDefaults,
+  buildGrowthBars,
+  buildInvestmentProjectionPayload,
   buildInvestmentSliderBounds,
   clampInvestmentInputs,
-  computeInvestmentProjection,
   formatBreakEvenYear,
   formatCompactPeso,
   formatInsightText,
   formatPeso,
   formatTimelinePeso,
 } from "./investmentProjection";
+import { useInvestmentProjection } from "./useInvestmentProjection";
+import type { InvestmentProjectionResponse } from "../../shared/api/types";
 
 export function RecommendationPage() {
   const rawResult = useAssessmentStore((state) => state.result);
@@ -43,20 +46,43 @@ export function RecommendationPage() {
   );
   const [cost, setCost] = useState(() => baseline?.systemCostPhp ?? 0);
   const [usage, setUsage] = useState(() => baseline?.monthlyUsageKwh ?? 0);
+  const { mutateAsync, isPending } = useInvestmentProjection();
+  const requestId = useRef(0);
+  const [projection, setProjection] =
+    useState<InvestmentProjectionResponse | null>(null);
+  const [projectionError, setProjectionError] = useState<string | null>(null);
 
-  const projection = useMemo(() => {
-    if (!baseline) {
-      return null;
-    }
-    return computeInvestmentProjection({
-      ...baseline,
-      electricityRatePhpPerKwh: rate,
-      systemCostPhp: cost,
-      monthlyUsageKwh: usage,
-    });
-  }, [baseline, cost, rate, usage]);
+  useEffect(() => {
+    if (!result || !baseline) return;
+    const currentRequestId = ++requestId.current;
+    const timer = window.setTimeout(() => {
+      void mutateAsync(
+        buildInvestmentProjectionPayload(result, {
+          electricityRatePhpPerKwh: rate,
+          systemCostPhp: cost,
+          monthlyUsageKwh: usage,
+        }),
+      )
+        .then((response) => {
+          if (currentRequestId === requestId.current) {
+            setProjection(response);
+            setProjectionError(null);
+          }
+        })
+        .catch((error: unknown) => {
+          if (currentRequestId === requestId.current) {
+            setProjectionError(
+              error instanceof Error
+                ? error.message
+                : "Could not update the projection.",
+            );
+          }
+        });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [baseline, cost, mutateAsync, rate, result, usage]);
 
-  if (!result || !defaults || !bounds || !baseline || !projection) {
+  if (!result || !defaults || !bounds || !baseline) {
     return <Navigate to={ROUTE_PATHS.energy} replace />;
   }
 
@@ -66,10 +92,17 @@ export function RecommendationPage() {
     usage === baseline.monthlyUsageKwh;
 
   const reset = () => {
+    requestId.current += 1;
+    setProjection(null);
+    setProjectionError(null);
     setRate(baseline.electricityRatePhpPerKwh);
     setCost(baseline.systemCostPhp);
     setUsage(baseline.monthlyUsageKwh);
   };
+  const growthBars = projection ? buildGrowthBars(projection.milestones) : [];
+  const breakEvenYear = projection?.break_even_year
+    ? Number(projection.break_even_year)
+    : null;
 
   return (
     <ContentScreen
@@ -99,7 +132,12 @@ export function RecommendationPage() {
             max={bounds.rateMax}
             step={bounds.rateStep}
             value={rate}
-            onChange={setRate}
+            onChange={(value) => {
+              requestId.current += 1;
+              setProjection(null);
+              setProjectionError(null);
+              setRate(value);
+            }}
             formatValue={(value) => `₱${value.toFixed(2)} / kWh`}
           />
           <Slider
@@ -108,7 +146,12 @@ export function RecommendationPage() {
             max={bounds.costMax}
             step={bounds.costStep}
             value={cost}
-            onChange={setCost}
+            onChange={(value) => {
+              requestId.current += 1;
+              setProjection(null);
+              setProjectionError(null);
+              setCost(value);
+            }}
             formatValue={formatPeso}
           />
           <Slider
@@ -117,7 +160,12 @@ export function RecommendationPage() {
             max={bounds.usageMax}
             step={bounds.usageStep}
             value={usage}
-            onChange={setUsage}
+            onChange={(value) => {
+              requestId.current += 1;
+              setProjection(null);
+              setProjectionError(null);
+              setUsage(value);
+            }}
             formatValue={(value) => `${value.toLocaleString("en-PH")} kWh`}
           />
         </section>
@@ -125,56 +173,55 @@ export function RecommendationPage() {
       cta={<ButtonLink to={ROUTE_PATHS.why} fullWidth>Why this estimate?</ButtonLink>}
     >
       <section className="flex w-full flex-col gap-4" aria-label="Investment projection">
-        <p className="font-serif text-[64px] leading-none font-medium text-ink lg:text-[76px]">
-          {formatCompactPeso(projection.year25Net)}
-        </p>
-        <div className="flex h-28 w-full items-end gap-2.5 pt-6 pb-3" aria-hidden="true">
-          {projection.growthBars.map((bar) => (
-            <span
-              key={bar.year}
-              className="min-w-0 flex-1 rounded-[4.65px] bg-sun"
-              style={{ height: `${bar.heightPct}%` }}
-            />
-          ))}
-        </div>
-        <p className="font-sans text-[15px] text-tertiary-ink">
-          total savings by year 25 · today&apos;s pesos
-        </p>
-        <HairlineList>
-          <HairlineRow label="System cost" value={formatPeso(cost)} />
-          <HairlineRow
-            label="Monthly savings"
-            value={formatPeso(projection.monthlySavingsPhp)}
-          />
-          <HairlineRow
-            label="Annual savings"
-            value={formatPeso(projection.annualSavingsPhp)}
-          />
-          <HairlineRow
-            label="CO₂ avoided"
-            value={`${projection.co2TonnesPerYear} t per year`}
-            valueClassName="text-cobalt"
-          />
-        </HairlineList>
-        <section aria-label="Payback timeline" className="flex w-full flex-col">
-          <HairlineRow label="Year 0 · Installation" value={`−${formatPeso(cost).slice(1)}`} />
-          <HairlineRow
-            label="Break-even"
-            value={formatBreakEvenYear(projection.breakEvenYear)}
-            valueClassName="text-cobalt"
-          />
-          <HairlineRow label="Year 10 · Positive return" value={formatTimelinePeso(projection.year10Net)} />
-          <HairlineRow label="Year 25 · Warranty end" value={formatTimelinePeso(projection.year25Net)} />
-        </section>
-        <p className="font-serif text-xl italic text-secondary">
-          {formatInsightText(projection.breakEvenYear)}
-        </p>
-        <p className="font-sans text-sm text-secondary">
-          0% electricity escalation
-        </p>
-        <p className="font-sans text-sm text-secondary">
-          0.5% annual panel degradation
-        </p>
+        {projection ? (
+          <>
+            <p className="font-serif text-[64px] leading-none font-medium text-ink lg:text-[76px]">
+              {formatCompactPeso(projection.year_25_net_php)}
+            </p>
+            <div className="flex h-28 w-full items-end gap-2.5 pt-6 pb-3" aria-hidden="true">
+              {growthBars.map((bar) => (
+                <span
+                  key={bar.year}
+                  className="min-w-0 flex-1 rounded-[4.65px] bg-sun"
+                  style={{ height: `${bar.heightPct}%` }}
+                />
+              ))}
+            </div>
+            <p className="font-sans text-[15px] text-tertiary-ink">
+              total savings by year 25 · today&apos;s pesos
+            </p>
+            <HairlineList>
+              <HairlineRow label="System cost" value={formatPeso(projection.system_cost_php)} />
+              <HairlineRow label="Monthly savings" value={formatPeso(projection.monthly_savings_php)} />
+              <HairlineRow label="Annual savings" value={formatPeso(projection.annual_savings_php)} />
+              <HairlineRow
+                label="CO₂ avoided"
+                value={`${projection.co2_tonnes_per_year} t per year`}
+                valueClassName="text-cobalt"
+              />
+            </HairlineList>
+            <section aria-label="Payback timeline" className="flex w-full flex-col">
+              <HairlineRow label="Year 0 · Installation" value={`−${formatPeso(projection.system_cost_php).slice(1)}`} />
+              <HairlineRow label="Break-even" value={formatBreakEvenYear(breakEvenYear)} valueClassName="text-cobalt" />
+              <HairlineRow label="Year 10 · Positive return" value={formatTimelinePeso(projection.year_10_net_php)} />
+              <HairlineRow label="Year 25 · Warranty end" value={formatTimelinePeso(projection.year_25_net_php)} />
+            </section>
+            <p className="font-serif text-xl italic text-secondary">
+              {formatInsightText(breakEvenYear)}
+            </p>
+            <p className="font-sans text-sm text-secondary">
+              {Number(projection.assumptions.electricity_escalation_ratio) * 100}% electricity escalation
+            </p>
+            <p className="font-sans text-sm text-secondary">
+              {Number(projection.assumptions.annual_panel_degradation_ratio) * 100}% annual panel degradation
+            </p>
+          </>
+        ) : projectionError ? null : (
+          <p className="font-sans text-sm text-secondary" aria-busy={isPending}>
+            Calculating projection…
+          </p>
+        )}
+        {projectionError ? <p role="alert">{projectionError}</p> : null}
       </section>
     </ContentScreen>
   );

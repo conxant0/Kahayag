@@ -18,6 +18,7 @@ from app.domain.solar.calculations import (
     estimate_demand,
 )
 from app.domain.solar.geometry import max_panels_by_roof
+from app.domain.solar.projection import project_investment
 from app.domain.solar.recommendations import (
     build_adjustment_rationale,
     build_rationale,
@@ -36,6 +37,10 @@ from app.features.assessment.schemas import (
     AssessmentRequest,
     CompletedAssessment,
     FinancialValues,
+    InvestmentProjectionAssumptions,
+    InvestmentProjectionMilestone,
+    InvestmentProjectionRequest,
+    InvestmentProjectionResponse,
     PanelCountAdjustmentRequest,
     PanelCountAdjustmentResponse,
     Recommendation,
@@ -230,12 +235,54 @@ def build_assessment_response(
         estimated_monthly_consumption_kwh=demand.estimated_monthly_consumption_kwh,
         consumption_source=demand.consumption_source,
         uses_default_tariff=demand.uses_default_tariff,
+        resolved_tariff_php_per_kwh=demand.resolved_tariff_php_per_kwh,
         recommendation=recommendation,
         financials=financials,
         assumptions=_build_assumptions(panel_category, solar_resource),
         shading=_build_shading_summary(shading_analysis),
         limitations=_build_limitations(solar_limitation),
         is_provisional=True,
+    )
+
+
+def build_investment_projection(
+    request: InvestmentProjectionRequest,
+) -> InvestmentProjectionResponse:
+    assessment = request.assessment
+    projection = project_investment(
+        year_one_generation_kwh=assessment.recommendation.annual_generation_kwh,
+        baseline_monthly_consumption_kwh=(
+            assessment.estimated_monthly_consumption_kwh
+        ),
+        baseline_rate_php_per_kwh=assessment.resolved_tariff_php_per_kwh,
+        baseline_annual_savings_php=assessment.financials.annual_savings_php,
+        monthly_consumption_kwh=request.monthly_consumption_kwh,
+        rate_php_per_kwh=request.electricity_rate_php_per_kwh,
+        system_cost_php=request.system_cost_php,
+    )
+    milestone_years = {6, 12, 18, 25}
+    return InvestmentProjectionResponse(
+        system_cost_php=request.system_cost_php,
+        monthly_savings_php=projection.monthly_savings_php,
+        annual_savings_php=projection.annual_savings_php,
+        co2_tonnes_per_year=projection.co2_tonnes_per_year,
+        break_even_year=projection.break_even_year,
+        year_10_net_php=projection.year_10_net_php,
+        year_25_net_php=projection.year_25_net_php,
+        lifetime_gross_savings_php=projection.lifetime_gross_savings_php,
+        milestones=tuple(
+            InvestmentProjectionMilestone(
+                year=row.year,
+                cumulative_net_php=row.cumulative_net_php,
+            )
+            for row in projection.years
+            if row.year in milestone_years
+        ),
+        assumptions=InvestmentProjectionAssumptions(
+            analysis_years=assumptions.ANALYSIS_YEARS,
+            electricity_escalation_ratio=assumptions.ELECTRICITY_ESCALATION_RATIO,
+            annual_panel_degradation_ratio=assumptions.ANNUAL_PANEL_DEGRADATION_RATIO,
+        ),
     )
 
 

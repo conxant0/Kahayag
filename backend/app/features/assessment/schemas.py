@@ -163,9 +163,43 @@ class CompletedAssessment(ContractModel):
     estimated_monthly_consumption_kwh: Decimal = Field(gt=0)
     consumption_source: Literal["direct", "bill"]
     uses_default_tariff: StrictBool
+    resolved_tariff_php_per_kwh: Decimal = Field(gt=0)
     recommendation: Recommendation
     financials: FinancialValues
     assumptions: AssessmentAssumptions
     shading: ShadingSummary | None = None
     limitations: tuple[str, ...] = Field(min_length=1)
     is_provisional: StrictBool
+
+
+class InvestmentProjectionRequest(ContractModel):
+    assessment: CompletedAssessment
+    monthly_consumption_kwh: Decimal = Field(gt=0, le=10_000)
+    electricity_rate_php_per_kwh: Decimal = Field(gt=0, le=100)
+    system_cost_php: StrictInt = Field(gt=0, le=5_000_000)
+
+
+class InvestmentProjectionMilestone(ContractModel):
+    year: StrictInt = Field(ge=1, le=25)
+    cumulative_net_php: int
+
+
+class InvestmentProjectionAssumptions(ContractModel):
+    analysis_years: StrictInt = Field(gt=0)
+    electricity_escalation_ratio: Decimal = Field(ge=0)
+    annual_panel_degradation_ratio: Decimal = Field(ge=0, lt=1)
+
+
+class InvestmentProjectionResponse(ContractModel):
+    system_cost_php: StrictInt = Field(gt=0)
+    monthly_savings_php: StrictInt = Field(ge=0)
+    annual_savings_php: StrictInt = Field(ge=0)
+    co2_tonnes_per_year: Decimal = Field(ge=0)
+    break_even_year: Decimal | None = Field(default=None, ge=0)
+    year_10_net_php: int
+    year_25_net_php: int
+    lifetime_gross_savings_php: StrictInt = Field(ge=0)
+    milestones: tuple[InvestmentProjectionMilestone, ...] = Field(
+        min_length=4, max_length=4
+    )
+    assumptions: InvestmentProjectionAssumptions

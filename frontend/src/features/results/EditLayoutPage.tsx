@@ -36,7 +36,10 @@ export function EditLayoutPage() {
   const result = readAssessmentResult(rawResult);
   const { mutateAsync, isPending } = useAdjustPanelCount();
   const requestId = useRef(0);
-  const [requestedPanelCount, setRequestedPanelCount] = useState(0);
+  const isInitialPanelCount = useRef(true);
+  const [requestedPanelCount, setRequestedPanelCount] = useState(
+    () => result?.recommendation.panel_count ?? 0,
+  );
   const [candidateAdjustment, setCandidateAdjustment] =
     useState<PanelCountAdjustmentResponse | null>(null);
   const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
@@ -51,6 +54,19 @@ export function EditLayoutPage() {
     layoutContext?.maxPanels ?? 0,
     initialPanelCount,
   );
+
+  useEffect(() => {
+    if (isInitialPanelCount.current) {
+      isInitialPanelCount.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setRequestedPanelCount(initialPanelCount);
+      setCandidateAdjustment(null);
+      setAdjustmentError(null);
+    });
+    return () => window.clearTimeout(timer);
+  }, [initialPanelCount, result]);
 
   useEffect(() => {
     if (

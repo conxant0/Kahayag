@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import {
   formatAnnualGeneration,
   formatBudgetCompatibility,
@@ -11,7 +10,9 @@ import {
   formatOffset,
   formatPaybackYears,
   formatPeso,
+  formatShadingImpact,
   formatSystemCapacity,
+  readAssessmentResult,
 } from "../assessment/formatAssessmentResult";
 import { FlowLayout } from "../../shared/components/layout";
 import {
@@ -67,6 +68,7 @@ export function ResultsPage() {
   }
 
   const panelCount = result.recommendation.panel_count;
+  const shadingImpact = formatShadingImpact(result);
   const panelWidthM = Number(result.assumptions.panel_width_m);
   const panelHeightM = Number(result.assumptions.panel_height_m);
 
@@ -123,6 +125,9 @@ export function ResultsPage() {
               label="Yearly yield"
               value={formatAnnualGeneration(result)}
             />
+            {shadingImpact ? (
+              <HairlineRow label="Shading" value={shadingImpact} />
+            ) : null}
             <HairlineRow label="Offset" value={formatOffset(result)} />
             <HairlineRow label="Payback" value={formatPaybackYears(result)} />
             <HairlineRow

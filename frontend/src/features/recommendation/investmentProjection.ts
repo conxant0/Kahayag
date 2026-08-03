@@ -1,9 +1,9 @@
-import type { AssessmentResult } from "../../shared/api/types";
+import type {
+  AssessmentResult,
+  InvestmentProjectionRequest,
+  InvestmentProjectionResponse,
+} from "../../shared/api/types";
 
-const ANALYSIS_YEARS = 25;
-const ANNUAL_PANEL_DEGRADATION_RATIO = 0.005;
-const ELECTRICITY_ESCALATION_RATIO = 0;
-const GRID_CO2_KG_PER_KWH = 0.444;
 const COST_SLIDER_STEP = 10_000;
 const USAGE_SLIDER_STEP = 10;
 const ABSOLUTE_COST_MIN = 150_000;
@@ -13,12 +13,6 @@ export interface InvestmentDefaults {
   electricityRatePhpPerKwh: number;
   systemCostPhp: number;
   monthlyUsageKwh: number;
-  baselineElectricityRatePhpPerKwh: number;
-  baselineMonthlyUsageKwh: number;
-  year1GenerationKwh: number;
-  annualYieldPerKwpKwh: number;
-  annualSavingsPhp: number;
-  monthlySavingsPhp: number;
 }
 
 export interface InvestmentSliderBounds {
@@ -37,26 +31,6 @@ export interface InvestmentInputs {
   electricityRatePhpPerKwh: number;
   systemCostPhp: number;
   monthlyUsageKwh: number;
-  baselineElectricityRatePhpPerKwh: number;
-  baselineMonthlyUsageKwh: number;
-  year1GenerationKwh: number;
-  annualSavingsPhp: number;
-}
-
-export interface InvestmentProjection {
-  systemCostPhp: number;
-  monthlySavingsPhp: number;
-  annualSavingsPhp: number;
-  co2TonnesPerYear: number;
-  breakEvenYear: number | null;
-  year10Net: number;
-  year25Net: number;
-  lifetimeGrossSavings: number;
-  growthBars: Array<{ year: number; heightPct: number }>;
-  assumptions: {
-    electricityEscalationRatio: number;
-    annualPanelDegradationRatio: number;
-  };
 }
 
 function numberValue(value: number | string | null | undefined): number {
@@ -72,44 +46,11 @@ function snapToStep(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
-function roundTo(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
-function roundMonthlyUsageKwh(value: number): number {
-  return Math.round(value / USAGE_SLIDER_STEP) * USAGE_SLIDER_STEP;
-}
-
-function resolveMonthlyUsageKwh(result: AssessmentResult): number {
-  const directConsumption = numberValue(result.inputs.monthly_consumption_kwh);
-  if (directConsumption > 0) {
-    return roundMonthlyUsageKwh(directConsumption);
-  }
-
-  const bill = numberValue(result.inputs.monthly_bill_php);
-  const rate = numberValue(result.inputs.electricity_rate_php_per_kwh);
-  return rate > 0 ? roundMonthlyUsageKwh(bill / rate) : 0;
-}
-
 export function buildInvestmentDefaults(result: AssessmentResult): InvestmentDefaults {
-  const assumptions = result.assumptions;
-  const annualYieldPerKwpKwh =
-    numberValue(assumptions.annual_sunshine_hours_per_kwp) *
-    numberValue(assumptions.performance_ratio);
-
   return {
-    electricityRatePhpPerKwh: numberValue(result.inputs.electricity_rate_php_per_kwh),
+    electricityRatePhpPerKwh: numberValue(result.resolved_tariff_php_per_kwh),
     systemCostPhp: result.financials.estimated_base_cost_php,
-    monthlyUsageKwh: resolveMonthlyUsageKwh(result),
-    baselineElectricityRatePhpPerKwh: numberValue(
-      result.inputs.electricity_rate_php_per_kwh,
-    ),
-    baselineMonthlyUsageKwh: resolveMonthlyUsageKwh(result),
-    year1GenerationKwh: numberValue(result.recommendation.annual_generation_kwh),
-    annualYieldPerKwpKwh,
-    annualSavingsPhp: result.financials.annual_savings_php,
-    monthlySavingsPhp: result.financials.monthly_savings_php,
+    monthlyUsageKwh: numberValue(result.estimated_monthly_consumption_kwh),
   };
 }
 
@@ -150,115 +91,45 @@ export function clampInvestmentInputs(
   defaults: InvestmentDefaults,
   bounds: InvestmentSliderBounds,
 ): InvestmentInputs {
-  const cost = clamp(
-    snapToStep(defaults.systemCostPhp, bounds.costStep),
-    bounds.costMin,
-    bounds.costMax,
-  );
-  const usage = clamp(
-    snapToStep(defaults.monthlyUsageKwh, bounds.usageStep),
-    bounds.usageMin,
-    bounds.usageMax,
-  );
-  const rate = clamp(
-    snapToStep(defaults.electricityRatePhpPerKwh, bounds.rateStep),
-    bounds.rateMin,
-    bounds.rateMax,
-  );
-
   return {
-    electricityRatePhpPerKwh: rate,
-    systemCostPhp: cost,
-    monthlyUsageKwh: usage,
-    baselineElectricityRatePhpPerKwh: defaults.baselineElectricityRatePhpPerKwh,
-    baselineMonthlyUsageKwh: defaults.baselineMonthlyUsageKwh,
-    year1GenerationKwh: defaults.year1GenerationKwh,
-    annualSavingsPhp: defaults.annualSavingsPhp,
-  };
-}
-
-function yearSavings(
-  year: number,
-  year1SavingsPhp: number,
-): number {
-  return (
-    year1SavingsPhp *
-    (1 - ANNUAL_PANEL_DEGRADATION_RATIO) ** (year - 1) *
-    (1 + ELECTRICITY_ESCALATION_RATIO) ** (year - 1)
-  );
-}
-
-export function computeInvestmentProjection(
-  inputs: InvestmentInputs,
-): InvestmentProjection {
-  const defaultsAnnualSavings = Math.max(inputs.annualSavingsPhp, 0);
-  const defaultsUsage = Math.max(inputs.baselineMonthlyUsageKwh, 1);
-  const usageFactor = clamp(inputs.monthlyUsageKwh / defaultsUsage, 0.5, 1.5);
-  const rateFactor = clamp(
-    inputs.electricityRatePhpPerKwh /
-      Math.max(inputs.baselineElectricityRatePhpPerKwh, 0.01),
-    0.5,
-    1.5,
-  );
-  const annualSavingsPhp = Math.floor(
-    defaultsAnnualSavings * usageFactor * rateFactor,
-  );
-  const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
-  const annualGenerationKwh = Math.max(inputs.year1GenerationKwh, 0);
-
-  let cumulativeNet = -inputs.systemCostPhp;
-  let breakEvenYear: number | null = null;
-  let lifetimeGrossSavings = 0;
-  const milestoneNets: Record<number, number> = {};
-
-  for (let year = 1; year <= ANALYSIS_YEARS; year += 1) {
-    const savings = yearSavings(year, annualSavingsPhp);
-    const previousNet = cumulativeNet;
-    lifetimeGrossSavings += savings;
-    cumulativeNet += savings;
-
-    if (breakEvenYear === null && cumulativeNet >= 0) {
-      const gain = cumulativeNet - previousNet;
-      breakEvenYear =
-        gain > 0 ? roundTo(year - 1 + -previousNet / gain, 1) : year;
-    }
-
-    if (year === 10 || year === 25) {
-      milestoneNets[year] = cumulativeNet;
-    }
-  }
-
-  const barYears = [6, 12, 18, 25];
-  const barNets = barYears.map((year) => {
-    let net = -inputs.systemCostPhp;
-    for (let current = 1; current <= year; current += 1) {
-      net += yearSavings(current, annualSavingsPhp);
-    }
-    return net;
-  });
-  const maxBarNet = Math.max(...barNets, 1);
-
-  return {
-    systemCostPhp: inputs.systemCostPhp,
-    monthlySavingsPhp,
-    annualSavingsPhp,
-    co2TonnesPerYear: roundTo(
-      (annualGenerationKwh * GRID_CO2_KG_PER_KWH) / 1000,
-      1,
+    electricityRatePhpPerKwh: clamp(
+      snapToStep(defaults.electricityRatePhpPerKwh, bounds.rateStep),
+      bounds.rateMin,
+      bounds.rateMax,
     ),
-    breakEvenYear,
-    year10Net: milestoneNets[10] ?? cumulativeNet,
-    year25Net: milestoneNets[25] ?? cumulativeNet,
-    lifetimeGrossSavings,
-    growthBars: barYears.map((year, index) => ({
-      year,
-      heightPct: Math.max(8, Math.round((barNets[index]! / maxBarNet) * 100)),
-    })),
-    assumptions: {
-      electricityEscalationRatio: ELECTRICITY_ESCALATION_RATIO,
-      annualPanelDegradationRatio: ANNUAL_PANEL_DEGRADATION_RATIO,
-    },
+    systemCostPhp: clamp(
+      snapToStep(defaults.systemCostPhp, bounds.costStep),
+      bounds.costMin,
+      bounds.costMax,
+    ),
+    monthlyUsageKwh: clamp(
+      snapToStep(defaults.monthlyUsageKwh, bounds.usageStep),
+      bounds.usageMin,
+      bounds.usageMax,
+    ),
   };
+}
+
+export function buildInvestmentProjectionPayload(
+  result: AssessmentResult,
+  inputs: InvestmentInputs,
+): InvestmentProjectionRequest {
+  return {
+    assessment: result,
+    electricity_rate_php_per_kwh: inputs.electricityRatePhpPerKwh,
+    system_cost_php: inputs.systemCostPhp,
+    monthly_consumption_kwh: inputs.monthlyUsageKwh,
+  };
+}
+
+export function buildGrowthBars(
+  milestones: InvestmentProjectionResponse["milestones"],
+): Array<{ year: number; heightPct: number }> {
+  const maxNet = Math.max(...milestones.map((row) => row.cumulative_net_php), 1);
+  return milestones.map((row) => ({
+    year: row.year,
+    heightPct: Math.max(8, Math.round((row.cumulative_net_php / maxNet) * 100)),
+  }));
 }
 
 export function formatInsightText(breakEvenYear: number | null): string {

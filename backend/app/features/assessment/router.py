@@ -7,16 +7,29 @@ from app.features.assessment.dependencies import get_assessment_solar_provider
 from app.features.assessment.schemas import (
     AssessmentRequest,
     CompletedAssessment,
+    InvestmentProjectionRequest,
+    InvestmentProjectionResponse,
     PanelCountAdjustmentRequest,
     PanelCountAdjustmentResponse,
 )
 from app.features.assessment.service import (
     adjust_panel_count,
     build_assessment_response,
+    build_investment_projection,
 )
 from app.integrations.solar.provider import SolarDataProvider
 
 router = APIRouter()
+
+
+@router.post(
+    "/assessments/investment-projection",
+    response_model=InvestmentProjectionResponse,
+)
+def recompute_investment_projection(
+    request: InvestmentProjectionRequest,
+) -> InvestmentProjectionResponse:
+    return build_investment_projection(request)
 
 
 @router.post("/assessments", response_model=CompletedAssessment)

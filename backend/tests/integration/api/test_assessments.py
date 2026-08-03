@@ -15,6 +15,7 @@ def test_create_assessment_uses_fallback_and_returns_completed_assessment(
     assert response.status_code == 200
     body = response.json()
     assert body["assumptions"]["solar_resource_source"] == "nationwide_fallback"
+    assert body["resolved_tariff_php_per_kwh"] == "12.00"
     assert body["shading"] is None
     assert body["is_provisional"] is True
 
@@ -52,3 +53,28 @@ def test_infeasible_assessment_returns_readable_422(
     assert response.status_code == 422
     assert "single standard-450 panel" in response.json()["detail"]
 
+
+def test_investment_projection_endpoint_recomputes_slider_inputs(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    response = client.post(
+        "/api/v1/assessments/investment-projection",
+        json={
+            "assessment": completed_assessment_data,
+            "monthly_consumption_kwh": "300",
+            "electricity_rate_php_per_kwh": "15",
+            "system_cost_php": 216000,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["annual_savings_php"] == 21600
+    assert body["monthly_savings_php"] == 1800
+    assert body["co2_tonnes_per_year"] == "2.1"
+    assert body["assumptions"] == {
+        "analysis_years": 25,
+        "electricity_escalation_ratio": "0.00",
+        "annual_panel_degradation_ratio": "0.005",
+    }
+    assert [row["year"] for row in body["milestones"]] == [6, 12, 18, 25]
