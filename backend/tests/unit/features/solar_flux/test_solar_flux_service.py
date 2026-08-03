@@ -1,22 +1,15 @@
 import pytest
 
-from app.features.solar_flux.cache import get_flux_layers, store_flux_layers
 from app.features.solar_flux.schemas import SolarFluxPrepareRequest
 from app.features.solar_flux.service import prepare_flux_visualization
+from app.features.solar_flux.url_codec import decode_flux_url, encode_flux_url
 
 
-class TestSolarFluxCache:
-    def test_stores_and_retrieves_flux_layers(self):
-        token = store_flux_layers(
-            annual_flux_url="https://example.com/annual",
-            mask_url="https://example.com/mask",
-        )
+class TestFluxUrlCodec:
+    def test_round_trips_a_url(self):
+        token = encode_flux_url("https://example.com/annual?id=abc")
 
-        cached = get_flux_layers(token)
-
-        assert cached is not None
-        assert cached.annual_flux_url == "https://example.com/annual"
-        assert cached.mask_url == "https://example.com/mask"
+        assert decode_flux_url(token) == "https://example.com/annual?id=abc"
 
 
 class TestPrepareFluxVisualization:
@@ -36,10 +29,9 @@ class TestPrepareFluxVisualization:
             solar_provider=FakeProvider(),
         )
 
-        assert response.annual_flux_path.endswith("/annual")
-        assert response.mask_path.endswith("/mask")
+        assert response.annual_flux_path.startswith("/solar/flux/geotiff/annual/")
+        assert response.mask_path.startswith("/solar/flux/geotiff/mask/")
         assert response.imagery_quality == "HIGH"
 
-        token = response.annual_flux_path.split("/")[-2]
-        cached = get_flux_layers(token)
-        assert cached is not None
+        annual_token = response.annual_flux_path.rsplit("/", 1)[-1]
+        assert decode_flux_url(annual_token) == "https://example.com/annual"
