@@ -35,7 +35,7 @@ export function PropertyPage() {
       // The PRD names this step's primary action "Confirm Property". The pin is
       // a claim about which roof is being assessed, so confirming it is the
       // decision being made here, not merely moving on to the next screen.
-      nextLabel="Confirm property"
+      nextLabel="Confirm Property"
       nextDisabled={!search.selectedProperty}
       mobilePaneBehind
       pane={

@@ -161,6 +161,8 @@ export function PropertyMapPane({
     const handleDown = (event: PointerEvent) => {
       pressOriginRef.current = { x: event.clientX, y: event.clientY };
       draggedRef.current = false;
+      // Every gesture starts disarmed, so a stale flag from a hold that never
+      // produced a click cannot carry into this one.
       clearHold();
 
       if (event.pointerType !== "touch") {
@@ -191,6 +193,10 @@ export function PropertyMapPane({
     const handleUp = () => {
       pressOriginRef.current = null;
       window.clearTimeout(longPressTimerRef.current);
+      // Cleared on the next press rather than here, because the click that
+      // consumes it arrives after pointerup. Anything else that ends the
+      // gesture does clear it, so a hold that never became a click cannot
+      // stay armed into whatever happens next.
     };
 
     const handleLeave = () => {
@@ -198,11 +204,16 @@ export function PropertyMapPane({
       clearHold();
     };
 
+    // A context menu or a text selection ends the gesture without a click, and
+    // the flag has to come down with it.
+    const handleContextMenu = () => clearHold();
+
     frame.addEventListener("pointerdown", handleDown);
     frame.addEventListener("pointermove", handleMove);
     frame.addEventListener("pointerup", handleUp);
     frame.addEventListener("pointercancel", handleLeave);
     frame.addEventListener("pointerleave", handleLeave);
+    frame.addEventListener("contextmenu", handleContextMenu);
 
     return () => {
       frame.removeEventListener("pointerdown", handleDown);
@@ -210,6 +221,7 @@ export function PropertyMapPane({
       frame.removeEventListener("pointerup", handleUp);
       frame.removeEventListener("pointercancel", handleLeave);
       frame.removeEventListener("pointerleave", handleLeave);
+      frame.removeEventListener("contextmenu", handleContextMenu);
       window.clearTimeout(longPressTimerRef.current);
     };
   }, [mapStatus]);

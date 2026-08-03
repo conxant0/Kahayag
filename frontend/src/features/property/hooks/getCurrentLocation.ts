@@ -1,4 +1,4 @@
-import { resolveApproximateLocationFromBackend } from "../../../integrations/maps/googleGeolocation";
+import { resolveApproximateLocationFromBackend } from "../../../integrations/geolocationFallback";
 
 const GEOLOCATION_ATTEMPTS: PositionOptions[] = [
   // Network/WiFi positioning works on most laptops without GPS.

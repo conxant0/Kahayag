@@ -2,7 +2,6 @@
 export {
   MIN_QUERY_LENGTH,
   SUGGESTION_LIMIT,
-  reverseGeocode,
   searchAddresses,
-} from "./nominatim";
-export type { AddressSuggestion, MatchPrecision } from "./nominatim";
+} from "./geocodingApi";
+export type { AddressSuggestion, MatchPrecision } from "./geocodingApi";

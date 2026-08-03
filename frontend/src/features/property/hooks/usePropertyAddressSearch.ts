@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   MIN_QUERY_LENGTH,
-  reverseGeocode,
   searchAddresses,
 } from "../../../integrations/geocoding";
 import type { AddressSuggestion } from "../../../integrations/geocoding";
@@ -280,15 +279,16 @@ export function usePropertyAddressSearch() {
    * reporting a location outside the country is refused with the same message
    * rather than quietly seeding an assessment that cannot be produced.
    */
-  const applyCurrentLocation = async (
+  const applyCurrentLocation = (
     latitude: number,
     longitude: number,
     source = "browser",
   ) => {
-    const formattedAddress = await reverseGeocode(latitude, longitude);
-    const address =
-      formattedAddress ??
-      `Current location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
+    // Labelled by coordinate rather than by a reverse lookup. The backend has
+    // no reverse endpoint, and reaching past it to a geocoder is exactly the
+    // thing the proxy rule exists to prevent. The address the search box shows
+    // is the one someone typed; a pin they dropped is a pin they can see.
+    const address = `Current location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
     const approximate = source === "google-ip" || source === "ip-approximate";
 
     commitSelection(
@@ -342,7 +342,7 @@ export function usePropertyAddressSearch() {
 
     try {
       const result = await resolveCurrentPosition();
-      await applyCurrentLocation(
+      applyCurrentLocation(
         result.coords.latitude,
         result.coords.longitude,
         result.source,

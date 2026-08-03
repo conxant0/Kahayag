@@ -23,8 +23,13 @@ export function formatErrorDetail(detail: unknown, status: number) {
   return `Request failed: ${status}`;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+export async function apiGet<T>(
+  path: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    signal: options.signal,
+  });
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }

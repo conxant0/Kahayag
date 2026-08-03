@@ -94,6 +94,20 @@ describe("usePropertyAddressSearch", () => {
       expect(stored?.source).toBe("map");
     });
 
+    it("stores the demo property, and it is inside the service area", () => {
+      const { result } = renderHook(() => usePropertyAddressSearch());
+
+      act(() => result.current.handleUseDemoProperty());
+
+      const stored = useAssessmentStore.getState().selectedProperty;
+      // The fixture goes through the same rule as everything else, so a demo
+      // that drifted outside the country would fail here rather than seed an
+      // assessment that cannot be produced.
+      expect(stored?.source).toBe("demo");
+      expect(stored?.address).toMatch(/Philippines/);
+      expect(result.current.locationTone).not.toBe("error");
+    });
+
     it("refuses a point outside the service area", () => {
       const { result } = renderHook(() => usePropertyAddressSearch());
 
