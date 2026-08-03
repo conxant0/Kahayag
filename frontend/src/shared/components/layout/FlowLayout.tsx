@@ -144,14 +144,7 @@ export function FlowLayout({
             <CtaArrow />
           </Button>
         ) : (
-          <ButtonLink
-            to={nextHref ?? "#"}
-            fullWidth
-            // A link cannot be disabled, so a blocked step is taken out of the
-            // tab order and made unclickable rather than just dimmed.
-            aria-disabled={blocked || undefined}
-            className={blocked ? "pointer-events-none opacity-45" : undefined}
-          >
+          <ButtonLink to={nextHref ?? "#"} fullWidth disabled={blocked}>
             {nextLabel}
             <CtaArrow />
           </ButtonLink>

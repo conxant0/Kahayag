@@ -2,6 +2,7 @@
 import { forwardRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link } from "react-router-dom";
+import type { LinkProps } from "react-router-dom";
 
 import { cn } from "../../lib/cn";
 
@@ -80,7 +81,12 @@ type PillProps = {
 export type ButtonProps = PillProps &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "className">;
 
-export type ButtonLinkProps = PillProps & { to: string };
+export type ButtonLinkProps = PillProps &
+  Omit<LinkProps, "to" | "children" | "className"> & {
+    to: string;
+    /** Blocks the link. See `ButtonLink` for what that has to cover. */
+    disabled?: boolean;
+  };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(
@@ -107,16 +113,44 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 
-/** The same pill rendered as a route link, for every "next step" CTA. */
+/**
+ * The same pill rendered as a route link, for every "next step" CTA.
+ *
+ * An anchor has no `disabled`, and dimming one does not stop it working:
+ * `pointer-events-none` blocks the mouse but leaves the link in the tab order,
+ * and Enter on a focused anchor still navigates. Blocking therefore takes all
+ * three routes at once — out of the tab order, pointer events off, and the
+ * click cancelled, which also covers Enter because that fires a click.
+ */
 export function ButtonLink({
   to,
   variant = "primary",
   fullWidth = false,
   className,
   children,
+  disabled = false,
+  onClick,
+  tabIndex,
+  ...rest
 }: ButtonLinkProps) {
   return (
-    <Link to={to} className={pillClasses(variant, fullWidth, className)}>
+    <Link
+      {...rest}
+      to={to}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : tabIndex}
+      onClick={(event) => {
+        if (disabled) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
+      className={cn(
+        pillClasses(variant, fullWidth, className),
+        disabled && "pointer-events-none opacity-45",
+      )}
+    >
       {children}
     </Link>
   );

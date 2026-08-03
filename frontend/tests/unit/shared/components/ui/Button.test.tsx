@@ -52,4 +52,68 @@ describe("ButtonLink", () => {
     expect(link).toHaveAttribute("href", "/trace");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
+
+  it("forwards link props through to the anchor", () => {
+    render(
+      <MemoryRouter>
+        <ButtonLink to="/trace" replace target="_blank">
+          Next
+        </ButtonLink>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+  });
+
+  it("announces itself as disabled and leaves the tab order when blocked", () => {
+    render(
+      <MemoryRouter>
+        <ButtonLink to="/trace" disabled>
+          Next
+        </ButtonLink>
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link", { name: "Next" });
+
+    expect(link).toHaveAttribute("aria-disabled", "true");
+    expect(link).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("does not navigate on keyboard activation while blocked", async () => {
+    const onClick = vi.fn();
+    render(
+      <MemoryRouter initialEntries={["/here"]}>
+        <ButtonLink to="/trace" disabled onClick={onClick}>
+          Next
+        </ButtonLink>
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link", { name: "Next" });
+    // Enter on a focused anchor fires a click, which is the path
+    // `pointer-events-none` alone leaves wide open.
+    await userEvent.click(link, { pointerEventsCheck: 0 });
+
+    expect(onClick).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Next" })).toBeInTheDocument();
+  });
+
+  it("still navigates and calls its handler when not blocked", async () => {
+    const onClick = vi.fn();
+    render(
+      <MemoryRouter>
+        <ButtonLink to="/trace" onClick={onClick}>
+          Next
+        </ButtonLink>
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(screen.getByRole("link", { name: "Next" }));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });
