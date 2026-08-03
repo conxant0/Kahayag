@@ -4,11 +4,15 @@ from decimal import Decimal
 import pytest
 
 from app.domain.solar.calculations import (
+    calculate_annual_generation_kwh,
+    calculate_annual_savings_php,
     calculate_base_cost_php,
+    calculate_consumption_offset_ratio,
     calculate_monthly_savings_php,
     calculate_payback_years,
     estimate_demand,
 )
+from app.domain.solar.resource import SolarResource
 
 
 def test_estimates_demand_from_bill_with_default_tariff() -> None:
@@ -86,6 +90,43 @@ def test_calculates_monthly_savings_from_annual_savings() -> None:
 
 def test_calculates_base_cost_from_system_capacity() -> None:
     assert calculate_base_cost_php(Decimal("2.70")) == 162_000
+
+
+def test_calculates_offset_from_self_consumed_energy() -> None:
+    assert calculate_consumption_offset_ratio(
+        self_consumed_energy_kwh=Decimal("2400"),
+        annual_consumption_kwh=Decimal("6000"),
+    ) == Decimal("0.40")
+
+
+def test_rejects_zero_annual_consumption_for_offset() -> None:
+    with pytest.raises(
+        ValueError,
+        match="annual_consumption_kwh must be greater than zero",
+    ):
+        calculate_consumption_offset_ratio(
+            self_consumed_energy_kwh=Decimal("100"),
+            annual_consumption_kwh=Decimal("0"),
+        )
+
+
+def test_calculates_annual_savings_from_self_consumed_energy() -> None:
+    assert calculate_annual_savings_php(
+        self_consumed_energy_kwh=Decimal("2400"),
+        electricity_rate_php_per_kwh=Decimal("12"),
+    ) == 28_800
+
+
+def test_generation_uses_explicit_half_even_rounding() -> None:
+    resource = SolarResource(
+        annual_sunshine_hours_per_kwp=Decimal("3.125"),
+        peak_sun_hours_per_day=Decimal("0"),
+        source="google_solar_api",
+    )
+
+    assert calculate_annual_generation_kwh(
+        Decimal("1"), solar_resource=resource
+    ) == Decimal("2")
 
 
 def test_calculates_payback_years() -> None:

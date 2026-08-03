@@ -2,21 +2,21 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Transfer the deterministic solar domain and focused tests from `Kahayag-old` into `Kahayag-Final/kahayag` while preserving the old behavior.
+**Goal:** Implement Kahayag’s deterministic solar domain and focused tests using `Kahayag-old` as the behavioral reference.
 
-**Architecture:** Keep all calculations in framework-independent modules under `backend/app/domain/solar`. Reuse the target's shared Pydantic schemas only at the geometry boundary, keep Decimal arithmetic and existing error semantics, and defer the missing shading type import so section 1 runs without section 4.
+**Architecture:** Keep all calculations and domain value objects in framework-independent modules under `backend/app/domain/solar`. Keep Pydantic schemas at the API boundary, keep Decimal arithmetic and existing error semantics, and defer the missing shading type import so section 1 runs without section 4.
 
 **Tech Stack:** Python 3.12+, Decimal, dataclasses, Shapely, pytest.
 
 ## Global Constraints
 
-- `Kahayag-old` is the source of truth for this transfer.
+- `Kahayag-old` is the behavioral reference for this functionality.
 - Preserve the old helper names, constants, dataclasses, Decimal arithmetic, rounding/flooring rules, validation rules, and recommendation semantics.
-- Allow no-behavior lint cleanups required by the target toolchain; record each source-parity cleanup in the checklist for future ports.
-- Reuse `Kahayag-Final/kahayag/backend/app/shared/schemas.py`; do not duplicate `GeoCoordinate`, `RoofPolygon`, or `RoofArea`.
+- Allow no-behavior lint cleanups required by the target toolchain; record each reference-aligned cleanup in the checklist for future sections.
+- Define `GeoCoordinate`, `RoofPolygon`, and `RoofArea` as frozen dataclasses in `backend/app/domain/solar/value_objects.py`; keep API Pydantic schemas separate.
 - Use the existing `shapely` dependency; add no dependencies.
 - Do not add assessment routes, provider code, frontend behavior, report logic, or shading implementation.
-- Defer `ShadingAnalysis` to `TYPE_CHECKING` in `resource.py`; do not make runtime imports of the not-yet-ported shading module.
+- Defer `ShadingAnalysis` to `TYPE_CHECKING` in `resource.py`; do not make runtime imports of the not-yet-implemented shading module.
 - Update `Kahayag-old/JEZREEL_CHECKLIST.md` with progress, comments, exact verification, and the section-4 deferral.
 - Commit each completed task on the isolated branch so task reviews can inspect exact commit ranges; never push unless explicitly requested.
 
@@ -29,13 +29,14 @@
 - `backend/app/domain/solar/calculations.py`: demand, capacity, generation, offset, cost, savings, and payback helpers.
 - `backend/app/domain/solar/recommendations.py`: roof/demand/budget limits, selected count, rationale, and adjustment helpers.
 - `backend/app/domain/solar/geometry.py`: coordinate projection, polygon validation, area, and roof panel capacity.
-- `backend/app/domain/solar/value_objects.py`: framework-independent value-object module placeholder from the source implementation.
+- `backend/app/domain/solar/value_objects.py`: framework-independent coordinate, polygon, and area value objects.
 - `backend/tests/unit/domain/test_calculations.py`: demand and financial behavior.
 - `backend/tests/unit/domain/solar/test_geometry.py`: polygon validation and area behavior.
 - `backend/tests/unit/domain/solar/test_panel_capacity.py`: explicit panel-area flooring behavior.
+- `backend/tests/unit/domain/solar/test_recommendations.py`: recommendation constraints, layout validation, classification, and rationale behavior.
 - `Kahayag-old/JEZREEL_CHECKLIST.md`: section-1 progress and verification record.
 
-### Task 1: Mark the transfer in progress and port domain constants/resources
+### Task 1: Establish domain constants and resources
 
 **Files:**
 
@@ -53,9 +54,9 @@
 
 - [ ] **Step 1: Mark the first section-1 checklist item in progress.**
 
-In `Kahayag-old/JEZREEL_CHECKLIST.md`, change the first checklist item under `## 1. Deterministic Solar Domain` from `[ ]` to `[~]`, set `Last updated` to `2026-08-03`, and add a comment that the target transfer is using `Kahayag-old` as the source of truth and shading is deferred to section 4. Leave the remaining section-1 items unchecked until their tasks finish.
+In `Kahayag-old/JEZREEL_CHECKLIST.md`, set `Last updated` to `2026-08-03`, and add a comment that Kahayag-old is the behavioral reference and shading is deferred to section 4.
 
-- [ ] **Step 2: Port the source modules exactly.**
+- [ ] **Step 2: Add the reference domain modules.**
 
 Use `apply_patch` to add the old contents of `assumptions.py`, `entities.py`, `errors.py`, `resource.py`, `value_objects.py`, and `__init__.py` to the target. Keep the module header comments and names unchanged.
 
@@ -84,7 +85,7 @@ python -c "from app.domain.solar.resource import nationwide_fallback_solar_resou
 
 Expected: the fallback `SolarResource` prints without a `ModuleNotFoundError`.
 
-### Task 2: Port calculations and their tests
+### Task 2: Add calculations and their tests
 
 **Files:**
 
@@ -110,15 +111,15 @@ python -m pytest tests/unit/domain/test_calculations.py -q
 
 Expected: collection fails because `app.domain.solar.calculations` is not yet present.
 
-- [ ] **Step 3: Port the source calculation module.**
+- [ ] **Step 3: Add the calculation module.**
 
-Port `Kahayag-old/backend/app/domain/solar/calculations.py` into the target with `apply_patch`. Preserve behavior; remove only the unused `PERFORMANCE_RATIO` import required for the target Ruff check. Do not replace Decimal operations with floats or change quantization/flooring.
+Add the calculation behavior with `apply_patch`. Preserve the reference behavior; remove only the unused `PERFORMANCE_RATIO` import required for the target Ruff check. Do not replace Decimal operations with floats or change quantization/flooring.
 
 - [ ] **Step 4: Run the calculation tests again.**
 
 Run the same command. Expected: all calculation tests pass.
 
-### Task 3: Port recommendations, geometry, and capacity tests
+### Task 3: Add recommendations, geometry, and capacity tests
 
 **Files:**
 
@@ -129,7 +130,7 @@ Run the same command. Expected: all calculation tests pass.
 
 **Interfaces:**
 
-- Consumes: target shared `GeoCoordinate`, `RoofPolygon`, and `RoofArea`, plus target solar assumptions/errors.
+- Consumes: domain `GeoCoordinate`, `RoofPolygon`, and `RoofArea` value objects, plus target solar assumptions/errors.
 - Produces: recommendation helpers including `max_panels_by_budget()`, `max_panels_by_demand()`, `determine_panel_count()`, `build_rationale()`, `calculate_budget_gap_php()`, `validate_layout_panel_count()`, and `classify_adjustment_constraint()`; geometry helpers `calculate_roof_area()` and `max_panels_by_roof()`.
 
 - [ ] **Step 1: Add the source geometry and capacity tests.**
@@ -146,7 +147,7 @@ python -m pytest tests/unit/domain/solar -q
 
 Expected: collection fails because the target geometry module is not yet present.
 
-- [ ] **Step 3: Port the source geometry and recommendation modules.**
+- [ ] **Step 3: Add the geometry and recommendation modules.**
 
 Copy the old `geometry.py` and `recommendations.py` into the target with `apply_patch`. Preserve local equirectangular projection, Shapely validity checks, Decimal area conversion, and the source constraint tie-breaking behavior.
 
