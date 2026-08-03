@@ -8,7 +8,6 @@ from app.domain.solar.assumptions import (
     COST_HIGH_PHP_PER_KWP,
     COST_LOW_PHP_PER_KWP,
     DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH,
-    PERFORMANCE_RATIO,
 )
 from app.domain.solar.resource import (
     SolarResource,
