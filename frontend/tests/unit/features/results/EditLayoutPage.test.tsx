@@ -8,6 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { assessmentFixture as fixture } from "../../../fixtures/assessmentFixture";
+import { roofPolygonFixture } from "../../../fixtures/roofPolygonFixture";
 import { EditLayoutPage } from "../../../../src/features/results/EditLayoutPage";
 import {
   useAssessmentStore,
@@ -36,10 +37,11 @@ afterEach(() => {
 
 describe("EditLayoutPage", () => {
   it("starts the untouched editor from the recommended panel count", () => {
-    useAssessmentStore.getState().setRoofPolygon({
-      coordinates: cebuRoof,
-      areaSquareMeters: 40,
-    });
+    useAssessmentStore
+      .getState()
+      .setRoofPolygon(
+        roofPolygonFixture({ coordinates: cebuRoof, areaSquareMeters: 40 }),
+      );
     useAssessmentStore
       .getState()
       .setResult(fixture as unknown as StoreAssessmentResult);
@@ -63,10 +65,11 @@ describe("EditLayoutPage", () => {
       recommendation: { ...fixture.recommendation, panel_count: 10 },
       financials: { ...fixture.financials, estimated_base_cost_php: 270000 },
     });
-    useAssessmentStore.getState().setRoofPolygon({
-      coordinates: cebuRoof,
-      areaSquareMeters: 40,
-    });
+    useAssessmentStore
+      .getState()
+      .setRoofPolygon(
+        roofPolygonFixture({ coordinates: cebuRoof, areaSquareMeters: 40 }),
+      );
     useAssessmentStore
       .getState()
       .setResult(fixture as unknown as StoreAssessmentResult);
@@ -81,16 +84,16 @@ describe("EditLayoutPage", () => {
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
     expect(
-      (useAssessmentStore.getState().result as unknown as typeof fixture).recommendation
-        .panel_count,
+      (useAssessmentStore.getState().result as unknown as typeof fixture)
+        .recommendation.panel_count,
     ).toBe(8);
 
     await user.click(screen.getByRole("button", { name: /save layout/i }));
 
     await waitFor(() =>
       expect(
-        (useAssessmentStore.getState().result as unknown as typeof fixture).recommendation
-          .panel_count,
+        (useAssessmentStore.getState().result as unknown as typeof fixture)
+          .recommendation.panel_count,
       ).toBe(10),
     );
   });
@@ -100,10 +103,11 @@ describe("EditLayoutPage", () => {
       recommendation: { ...fixture.recommendation, panel_count: 10 },
       financials: { ...fixture.financials, estimated_base_cost_php: 270000 },
     });
-    useAssessmentStore.getState().setRoofPolygon({
-      coordinates: cebuRoof,
-      areaSquareMeters: 40,
-    });
+    useAssessmentStore
+      .getState()
+      .setRoofPolygon(
+        roofPolygonFixture({ coordinates: cebuRoof, areaSquareMeters: 40 }),
+      );
     useAssessmentStore
       .getState()
       .setResult(fixture as unknown as StoreAssessmentResult);
@@ -130,10 +134,11 @@ describe("EditLayoutPage", () => {
 
   it("shows an adjustment error and preserves the stored result", async () => {
     mutateAsync.mockRejectedValue(new Error("Panel count is over budget."));
-    useAssessmentStore.getState().setRoofPolygon({
-      coordinates: cebuRoof,
-      areaSquareMeters: 40,
-    });
+    useAssessmentStore
+      .getState()
+      .setRoofPolygon(
+        roofPolygonFixture({ coordinates: cebuRoof, areaSquareMeters: 40 }),
+      );
     useAssessmentStore
       .getState()
       .setResult(fixture as unknown as StoreAssessmentResult);
@@ -146,12 +151,12 @@ describe("EditLayoutPage", () => {
 
     fireEvent.change(screen.getByRole("slider"), { target: { value: "10" } });
 
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Panel count is over budget.",
+    );
     expect(
-      await screen.findByRole("alert"),
-    ).toHaveTextContent("Panel count is over budget.");
-    expect(
-      (useAssessmentStore.getState().result as unknown as typeof fixture).recommendation
-        .panel_count,
+      (useAssessmentStore.getState().result as unknown as typeof fixture)
+        .recommendation.panel_count,
     ).toBe(8);
 
     useAssessmentStore.getState().setResult({
