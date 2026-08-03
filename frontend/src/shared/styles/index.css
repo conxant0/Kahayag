@@ -1,0 +1,365 @@
+/* Defines the Tailwind entry point, Kahayag V3 design tokens, and global styles.
+ *
+ * Token names and values come from the V3 Brandbook (Figma node 2179:90).
+ * Semantic rule, quoted from the brandbook: yellow acts, cobalt informs, ember interrupts.
+ */
+@import "tailwindcss";
+
+/* Serif for feeling, sans for facts. Newsreader carries headlines, verdicts, and
+ * big numbers; its italic carries human asides. Geist carries everything functional. */
+@import "@fontsource-variable/newsreader/wght.css";
+@import "@fontsource-variable/newsreader/wght-italic.css";
+@import "@fontsource-variable/geist/wght.css";
+
+@theme {
+  /* Color — the whole palette is eight values. Nothing else is brand. */
+  --color-paper: #fcfaf5; /* ground */
+  --color-ink: #1a1917; /* voice */
+  --color-secondary: #5c574d; /* supporting text */
+  --color-tertiary: #948f83; /* labels · captions — swatch value */
+  /* The brandbook's tertiary is 3.09:1 on paper, which is below the 4.5:1 AA
+   * floor for normal-size text (it only clears the 3:1 large-text bar). Labels,
+   * captions, eyebrows and the footer therefore paint with this darkened
+   * sibling, which clears AA on all three surfaces it lands on: paper 5.24:1,
+   * cobalt wash 4.76:1, white cards 5.46:1. --color-tertiary itself is
+   * unchanged and still correct for swatches, rules, and anything non-textual. */
+  --color-tertiary-ink: #6e695e;
+  --color-hairline: #e8e4da; /* separation */
+  --color-sun: #ffc400; /* money · action · light */
+  --color-sun-hover: #edb600; /* CTA pill hover (Figma 2168:55) */
+  --color-cobalt: #2144c7; /* engine · links · data */
+  --color-ember: #b23511; /* errors · irreversibles */
+
+  /* Surfaces derived from the two accent colors, straight off the masters. */
+  --color-cobalt-wash: rgb(33 68 199 / 0.06); /* upload card fill */
+  --color-ember-wash: rgb(178 53 17 / 0.05); /* upload card error fill */
+  --color-cobalt-veil: rgb(33 68 199 / 0.92); /* info pill fill */
+  --color-ink-veil: rgb(26 25 23 / 0.92); /* map overlay pills */
+  --color-info-pill-text: #fff8ee;
+
+  --font-serif: "Newsreader Variable", ui-serif, Georgia, serif;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Flat always — no gradients, no shadows, no glow (brandbook, Motifs). */
+  --radius-pill: 999px;
+  --radius-card: 18px;
+  --radius-map: 16px;
+
+  /* Motion. 300ms fade+rise is the house scroll-reveal. */
+  --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The editorial type scale.
+ *
+ * The mobile frame (2131:3) is a 410px artboard. The desktop frame (2169:27)
+ * is that same column scaled by exactly 1.6 into a 656px measure — every value
+ * below is mobile x 1.6, which is why the relationship is expressed once here
+ * rather than repeated as `lg:` overrides on every heading in every section.
+ */
+:root {
+  --measure: 410px;
+  --gutter: 24px;
+
+  --t-eyebrow: 11px;
+  --t-eyebrow-track: 1.4px;
+  --t-gap-title: 32px;
+  --t-step-title: 30px;
+  --t-step2-title: 34px;
+  --t-body: 15px;
+  --t-list: 15px;
+  --t-payoff: 72px;
+  --t-bill: 54px;
+  --t-quote: 21px;
+  --t-who-title: 28px;
+  --t-who-body: 13px;
+  --t-closing-title: 34px;
+  --t-caption: 12px;
+  --t-footer: 11px;
+  --t-aside: 17px;
+  --t-saved: 14px;
+  --t-micro: 10px;
+  --t-micro-track: 1.2px;
+
+  --map-w: 343.05px;
+  --map-h: 236.91px;
+  --card-pad-x: 20px;
+  --card-pad-y: 18px;
+  --card-radius: 18px;
+  --rule-h: 1px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --measure: 656px;
+    --gutter: 38.4px;
+
+    --t-eyebrow: 17.6px;
+    --t-eyebrow-track: 2.24px;
+    --t-gap-title: 51.2px;
+    --t-step-title: 48px;
+    --t-step2-title: 54.4px;
+    --t-body: 24px;
+    --t-list: 24px;
+    --t-payoff: 115.2px;
+    --t-bill: 86.4px;
+    --t-quote: 33.6px;
+    --t-who-title: 44.8px;
+    --t-who-body: 20.8px;
+    --t-closing-title: 54.4px;
+    --t-caption: 19.2px;
+    --t-footer: 17.6px;
+    --t-aside: 27.2px;
+    --t-saved: 22.4px;
+    --t-micro: 16px;
+    --t-micro-track: 1.92px;
+
+    --map-w: 548.88px;
+    --map-h: 379.06px;
+    --card-pad-x: 32px;
+    --card-pad-y: 28.8px;
+    --card-radius: 28.8px;
+    --rule-h: 1.6px;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Cobalt informs — including where focus currently is. Every interactive
+   * element inherits this; components never remove it, only reposition it. */
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Section scroll-lock.
+   *
+   * `proximity`, deliberately not `mandatory`: it nudges the page to rest on a
+   * section boundary when you stop near one, and otherwise leaves scrolling
+   * alone. Mandatory snapping fights the user inside any section taller than the
+   * viewport — several of these are — and can make a page impossible to read at
+   * a comfortable position.
+   *
+   * Disabled wholesale under reduced motion, where an unrequested scroll
+   * correction is exactly the kind of movement being opted out of.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    /* The document is the scroller, so snap-type belongs on <html>. Routes with
+     * no snap targets are unaffected by it. */
+    html:has(.snap-column) {
+      scroll-snap-type: y proximity;
+    }
+
+    /* Only the sections inside <main> are stops — not <main> itself, which
+     * would snap the whole run as one, and not the hero or footer.
+     *
+     * Fewer stops is the lever that makes this feel gentle: the top and bottom
+     * of the page scroll freely, and the assist only appears between the
+     * sections it is actually helping you move through. */
+    .snap-column > main > section {
+      scroll-snap-align: start;
+      scroll-snap-stop: normal;
+    }
+  }
+
+  /* A hair of air above the heading when a section is snapped to. The sections
+   * already carry their own top padding, so this only needs to keep the rest
+   * position off the exact edge. */
+  .snap-column > main > section {
+    scroll-margin-top: 0.5rem;
+  }
+
+  /* Scroll-reveal: fade + rise, 300ms, staggered by the section. The reveal
+   * class is added by useScrollReveal once the element intersects. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 300ms var(--ease-brand),
+      transform 300ms var(--ease-brand);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Hero entrance.
+   *
+   * The mark runs its own timeline inside kahayag-sunrise.svg: landforms drop in
+   * over ~0.6s, the sun clears the horizon by ~1.7s. The copy below is staggered
+   * to arrive with the light rather than ahead of it, so the wordmark reads as
+   * something the sunrise reveals. `both` holds the from-state during the delay,
+   * which is what stops the text flashing in before its turn. */
+  .hero-rise {
+    animation: hero-rise 700ms var(--ease-brand) both;
+    animation-delay: var(--hero-delay, 0ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rise {
+      animation: none;
+    }
+  }
+
+  /* SunLoader — the cobalt arc orbits the disc once every 1.6s. */
+  .sun-loader-arc {
+    animation: sun-orbit 1600ms linear infinite;
+  }
+
+  /* Step 02 sequence.
+   *
+   * The three animations below run in order: the cobalt progress line sweeps as
+   * the photo is "read", the bill digits type in behind a blinking caret, then
+   * the amber underline draws left to right under the finished number.
+   * Sequencing is driven in JS (useBillSequence) so the steps can also be
+   * skipped wholesale under reduced motion. */
+  .bill-progress-sweep {
+    animation: bill-progress 900ms var(--ease-brand) forwards;
+  }
+
+  .bill-caret {
+    animation: caret-blink 1000ms steps(1, end) infinite;
+  }
+
+  .bill-underline {
+    transform-origin: left center;
+    animation: underline-draw 420ms var(--ease-brand) forwards;
+  }
+
+  /* Step 01 trace demo — the ripple the pointer leaves when it drops a vertex.
+   * The sequence itself is driven in JS (useRoofTrace); this is the one beat
+   * that is pure decoration and so stays in CSS. */
+  .roof-click-ping {
+    animation: roof-click-ping 620ms var(--ease-brand) forwards;
+  }
+
+  /* The caption's "live" dot — a slow cobalt breath, not a blink. */
+  .roof-live-dot {
+    animation: roof-live-dot 2400ms var(--ease-brand) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sun-loader-arc,
+    .bill-caret,
+    .roof-click-ping,
+    .roof-live-dot {
+      animation: none;
+    }
+
+    .roof-click-ping {
+      opacity: 0;
+    }
+
+    /* Hold the finished state rather than replaying the draw. */
+    .bill-progress-sweep,
+    .bill-underline {
+      animation: none;
+      transform: none;
+      width: 100%;
+    }
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sun-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bill-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes underline-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes roof-click-ping {
+  from {
+    opacity: 0.6;
+    scale: 0.4;
+  }
+  to {
+    opacity: 0;
+    scale: 1.9;
+  }
+}
+
+@keyframes roof-live-dot {
+  0%,
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.35;
+    scale: 0.78;
+  }
+}
