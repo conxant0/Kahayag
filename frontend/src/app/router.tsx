@@ -10,6 +10,7 @@ import { ComponentsPage } from "../features/components-demo";
 import { LandingPage } from "../features/landing";
 import { PropertyPage } from "../features/property";
 import { RecommendationPage, WhyPage } from "../features/recommendation";
+import { BriefPage, ReportPage } from "../features/reports";
 import { EditLayoutPage, ResultsPage } from "../features/results";
 
 import { RoofPage } from "../features/roof";
@@ -39,10 +40,7 @@ export const router = createBrowserRouter([
     element: <RecommendationPage />,
   },
   { path: ROUTE_PATHS.why, element: <WhyPage /> },
-  {
-    path: ROUTE_PATHS.brief,
-    element: <PendingScreen name="The project brief" />,
-  },
-  { path: ROUTE_PATHS.report, element: <PendingScreen name="The report" /> },
+  { path: ROUTE_PATHS.brief, element: <BriefPage /> },
+  { path: ROUTE_PATHS.report, element: <ReportPage /> },
   { path: ROUTE_PATHS.components, element: <ComponentsPage /> },
 ]);
