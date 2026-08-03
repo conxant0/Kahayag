@@ -17,9 +17,14 @@ export const DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH = 12;
 const MINIMUM_POLYGON_POINTS = 3;
 
 export type SelectedProperty = {
+  /** The provider's identifier when the pick came from search; null otherwise. */
+  placeId: string | null;
+  name: string;
   address: string;
   latitude: number;
   longitude: number;
+  /** How the pick was made: search, map, manual, demo, or geolocation. */
+  source: string;
 };
 
 export type RoofCoordinate = {
@@ -96,7 +101,16 @@ function parseProperty(value: unknown): SelectedProperty | null {
     return null;
   }
 
-  return { address: value.address, latitude, longitude };
+  return {
+    placeId: typeof value.placeId === "string" ? value.placeId : null,
+    name: typeof value.name === "string" ? value.name : value.address,
+    address: value.address,
+    latitude,
+    longitude,
+    // How it was picked is provenance, not identity — a stored value with no
+    // source is still a usable property, so it falls back rather than failing.
+    source: typeof value.source === "string" ? value.source : "search",
+  };
 }
 
 /**
@@ -199,7 +213,7 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
    * Every input the result was computed from invalidates it on edit. Going back
    * a step, changing an answer, and returning to figures derived from the old
    * one is the same mismatch a reload avoids by not restoring the result at
-   * all — the only difference is that nothing reloaded.
+   * all, the only difference being that nothing reloaded.
    *
    * The setters route through here rather than each clearing `result`
    * themselves, so a fourth input cannot be added that quietly keeps a stale
