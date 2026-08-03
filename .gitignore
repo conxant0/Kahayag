@@ -27,6 +27,7 @@ htmlcov/
 
 # Agent tooling. `.mcp.json` is shared; per-machine overrides are not.
 .claude/settings.local.json
+superpowers/
 
 # Editors and operating systems
 .DS_Store
