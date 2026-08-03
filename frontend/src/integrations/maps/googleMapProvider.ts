@@ -62,8 +62,14 @@ function createController(map: GoogleMap, api: GoogleMapsApi): MapController {
         });
       });
 
-      listeners.push(listener);
-      return () => listener.remove();
+      // Maps is documented as returning a listener here, but does not always,
+      // and a missing one must not become a crash on unmount. Only real
+      // listeners are tracked, and removal is guarded on the way out too.
+      if (listener) {
+        listeners.push(listener);
+      }
+
+      return () => listener?.remove?.();
     },
 
     setCursor(cursor) {
@@ -75,7 +81,7 @@ function createController(map: GoogleMap, api: GoogleMapsApi): MapController {
     },
 
     destroy() {
-      listeners.forEach((listener) => listener.remove());
+      listeners.forEach((listener) => listener?.remove?.());
       listeners.length = 0;
       marker?.setMap(null);
       marker = null;

@@ -12,13 +12,15 @@ import { PropertyPage } from "../features/property";
 import { RecommendationPage, WhyPage } from "../features/recommendation";
 import { EditLayoutPage, ResultsPage } from "../features/results";
 
+import { RoofPage } from "../features/roof";
+
 import { PendingScreen } from "./PendingScreen";
 import { ROUTE_PATHS } from "./routePaths";
 
 export const router = createBrowserRouter([
   { path: ROUTE_PATHS.landing, element: <LandingPage /> },
   { path: ROUTE_PATHS.locate, element: <PropertyPage /> },
-  { path: ROUTE_PATHS.trace, element: <PendingScreen name="Roof tracing" /> },
+  { path: ROUTE_PATHS.trace, element: <RoofPage /> },
   {
     path: ROUTE_PATHS.energy,
     element: <PendingScreen name="Electricity use" />,

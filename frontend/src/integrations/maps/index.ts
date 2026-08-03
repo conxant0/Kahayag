@@ -17,7 +17,11 @@ export type {
 // for Google's. Swapping providers is an edit to this line, not to any screen.
 export { googleMapProvider as mapProvider } from "./googleMapProvider";
 
-export { DEMO_PROPERTY, normalizePropertySelection } from "./googleMapsHelpers";
+export {
+  DEMO_PROPERTY,
+  normalizePropertySelection,
+  propertyPinIcon,
+} from "./googleMapsHelpers";
 export type { PropertyCandidate } from "./googleMapsHelpers";
 
 export { useGoogleMapsLoader as useMapLoader } from "./googleMapsLoader";

@@ -1,7 +1,10 @@
 // Verifies session hydration, validation of stored data, and persistence rules.
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { SelectedProperty } from "../../../src/state/assessmentStore";
+import type {
+  RoofPolygon,
+  SelectedProperty,
+} from "../../../src/state/assessmentStore";
 import {
   ASSESSMENT_SESSION_STORAGE_KEY as KEY,
   DEFAULT_ENERGY_INPUTS,
@@ -18,7 +21,11 @@ const PROPERTY: SelectedProperty = {
   source: "search",
 };
 
-const ROOF = {
+const ROOF: RoofPolygon = {
+  id: "roof-1",
+  propertyId: "place-pajo",
+  perimeterMeters: 28,
+  createdAt: "2026-08-03T00:00:00.000Z",
   coordinates: [
     { latitude: 10.3103, longitude: 123.9494 },
     { latitude: 10.3104, longitude: 123.9494 },
@@ -251,6 +258,24 @@ describe("useAssessmentStore", () => {
     expect(state.energyInputs.monthlyBillPhp).toBe(4800);
     expect(state.selectedProperty).toEqual(PROPERTY);
     expect(storedSession()?.selectedProperty).toEqual(PROPERTY);
+  });
+
+  it("drops a roof trace when a different property is chosen", () => {
+    useAssessmentStore.getState().setPropertySelection(PROPERTY);
+    useAssessmentStore.getState().setRoofPolygon(ROOF);
+
+    useAssessmentStore.getState().setPropertySelection({
+      ...PROPERTY,
+      placeId: null,
+      address: "Somewhere else, Cebu",
+      latitude: 10.4,
+      source: "map",
+    });
+
+    // The outline belonged to the previous roof. Keeping it would leave a
+    // shape floating over a building nobody drew it on.
+    expect(useAssessmentStore.getState().roofPolygon).toBeNull();
+    expect(storedSession()?.roofPolygon).toBeNull();
   });
 
   it("clears memory and removes the stored key on reset", () => {

@@ -63,8 +63,13 @@ export type RoofCoordinate = {
 };
 
 export type RoofPolygon = {
+  id: string;
+  /** Ties the trace to the property it was drawn on, so a new pick clears it. */
+  propertyId: string | null;
   coordinates: RoofCoordinate[];
   areaSquareMeters: number;
+  perimeterMeters: number;
+  createdAt: string;
 };
 
 export type EnergyInputs = {
@@ -176,7 +181,17 @@ function parseRoofPolygon(value: unknown): RoofPolygon | null {
     return null;
   }
 
-  return { coordinates, areaSquareMeters };
+  return {
+    // Identity and provenance are recoverable; geometry is not. A stored trace
+    // missing them is still a usable trace, so these fall back rather than
+    // discarding a shape the user drew.
+    id: typeof value.id === "string" ? value.id : "",
+    propertyId: typeof value.propertyId === "string" ? value.propertyId : null,
+    coordinates,
+    areaSquareMeters,
+    perimeterMeters: finiteNumber(value.perimeterMeters) ?? 0,
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : "",
+  };
 }
 
 /**
@@ -266,8 +281,18 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
 
     setResult: (result) => set({ result }),
 
+    /**
+     * Choosing a property also drops any roof drawn on the previous one.
+     *
+     * A trace is a shape on one specific roof. Carrying it to a different
+     * address leaves an outline floating over a building nobody drew it on,
+     * and every figure downstream would be computed from it. Cleared here
+     * rather than in the tracing screen, because the screen can only clear
+     * what it is showing, and this has to hold whichever route changed the
+     * property.
+     */
     setPropertySelection: (selectedProperty) =>
-      commitInput({ selectedProperty }),
+      commitInput({ selectedProperty, roofPolygon: null }),
 
     setRoofPolygon: (roofPolygon) => commitInput({ roofPolygon }),
 
