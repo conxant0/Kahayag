@@ -49,6 +49,31 @@ def test_determine_panel_count_returns_one_for_budget_shortfall() -> None:
     assert determine_panel_count(10, 0, 8, 30_000, PANEL) == (1, "budget")
 
 
+@pytest.mark.parametrize(
+    ("max_by_roof", "max_by_budget", "max_by_demand", "expected_constraint"),
+    [
+        (10, 4, 4, "budget"),
+        (4, None, 4, "demand"),
+        (4, 4, 4, "budget"),
+    ],
+)
+def test_determine_panel_count_breaks_ties_in_budget_demand_roof_order(
+    max_by_roof: int,
+    max_by_budget: int | None,
+    max_by_demand: int,
+    expected_constraint: str,
+) -> None:
+    _, limiting_constraint = determine_panel_count(
+        max_by_roof,
+        max_by_budget,
+        max_by_demand,
+        100_000 if max_by_budget is not None else None,
+        PANEL,
+    )
+
+    assert limiting_constraint == expected_constraint
+
+
 @pytest.mark.parametrize("max_by_roof,max_by_demand", [(0, 5), (5, 0)])
 def test_determine_panel_count_rejects_infeasible_system(
     max_by_roof: int,
