@@ -1,11 +1,15 @@
 # Defines location-specific solar resource inputs for generation calculations.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from app.domain.solar.assumptions import PEAK_SUN_HOURS_PER_DAY, PERFORMANCE_RATIO
-from app.domain.shading.analysis import ShadingAnalysis
+
+if TYPE_CHECKING:
+    from app.domain.shading.analysis import ShadingAnalysis
 
 SolarResourceSource = Literal["google_solar_api", "nationwide_fallback"]
 
