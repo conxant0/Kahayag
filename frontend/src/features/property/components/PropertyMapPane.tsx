@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { getMapTypeId, propertyPinIcon } from "../../../integrations/maps";
 import type { GoogleMapsStatus } from "../../../integrations/maps";
-import { PinIcon } from "../../../shared/components/ui";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 import { cn } from "../../../shared/lib/cn";
@@ -52,24 +51,32 @@ export function PropertyMapPane({
   const prefersReducedMotion = usePrefersReducedMotion();
 
   /**
-   * Replays Maps' drop animation so a placed pin is seen landing.
+   * Puts the pin down, dropping it in so the landing is seen.
    *
-   * Without it the marker simply exists at the new spot, and on a busy
-   * satellite photo that is easy to miss entirely. Maps only plays an
-   * animation on the transition into it, so it is cleared first to make the
-   * same one run again.
+   * The marker is rebuilt on every placement rather than moved. Maps runs a
+   * marker's animation as it is added to the map, so setting one on a marker
+   * that is already there is unreliable: it played on some placements and not
+   * others. Building a fresh marker with the animation already set is the only
+   * version that runs every time, and one marker is cheap to replace.
    *
-   * Skipped under reduced motion: the pin still moves, it just does not fall.
+   * Reduced motion gets the same pin without the fall.
    */
-  const dropPin = useCallback(
-    (marker: GoogleMarker) => {
-      const drop = window.google?.maps?.Animation?.DROP;
-      if (prefersReducedMotion || drop === undefined) {
+  const placeMarker = useCallback(
+    (map: GoogleMap, center: GoogleLatLngLiteral, title?: string) => {
+      if (!window.google?.maps?.Marker) {
         return;
       }
 
-      marker.setAnimation(null);
-      marker.setAnimation(drop);
+      markerRef.current?.setMap(null);
+      markerRef.current = new window.google.maps.Marker({
+        map,
+        position: center,
+        icon: propertyPinIcon(window.google?.maps),
+        title,
+        animation: prefersReducedMotion
+          ? undefined
+          : window.google?.maps?.Animation?.DROP,
+      });
     },
     [prefersReducedMotion],
   );
@@ -82,7 +89,6 @@ export function PropertyMapPane({
     const { latitude, longitude } = selectedProperty;
     const center = { lat: latitude, lng: longitude };
     const mapTypeId = getMapTypeId(window.google?.maps);
-    const icon = propertyPinIcon(window.google?.maps);
 
     if (!mapInstanceRef.current) {
       if (!window.google?.maps?.Map || !mapRef.current) {
@@ -97,41 +103,17 @@ export function PropertyMapPane({
         mapTypeControl: false,
         fullscreenControl: false,
       });
-
-      markerRef.current = new window.google.maps.Marker({
-        map: mapInstanceRef.current,
-        position: center,
-        icon,
-        title: selectedProperty.address,
-      });
-      dropPin(markerRef.current);
-
-      if (window.google?.maps?.event) {
-        window.google.maps.event.trigger(mapInstanceRef.current, "resize");
-      }
-      return;
+    } else {
+      mapInstanceRef.current.setCenter(center);
+      mapInstanceRef.current.setMapTypeId(mapTypeId);
     }
 
-    mapInstanceRef.current.setCenter(center);
-    mapInstanceRef.current.setMapTypeId(mapTypeId);
-
-    if (!markerRef.current && window.google?.maps?.Marker) {
-      markerRef.current = new window.google.maps.Marker({
-        map: mapInstanceRef.current,
-        position: center,
-        icon,
-      });
-      dropPin(markerRef.current);
-    } else if (markerRef.current) {
-      markerRef.current.setPosition(center);
-      markerRef.current.setMap(mapInstanceRef.current);
-      dropPin(markerRef.current);
-    }
+    placeMarker(mapInstanceRef.current, center, selectedProperty.address);
 
     if (window.google?.maps?.event) {
       window.google.maps.event.trigger(mapInstanceRef.current, "resize");
     }
-  }, [selectedProperty, googleStatus, dropPin]);
+  }, [selectedProperty, googleStatus, placeMarker]);
 
   useEffect(() => {
     const container = mapRef.current;
@@ -268,17 +250,6 @@ export function PropertyMapPane({
     mapInstanceRef.current.setOptions({ draggableCursor: "crosshair" });
   }, [googleStatus, selectedProperty]);
 
-  const mapIsLive = googleStatus === "ready" && Boolean(selectedProperty);
-
-  /** Names the gesture this device actually has, and what it will do. */
-  const hint = isTouch
-    ? selectedProperty
-      ? "Press and hold to move the pin"
-      : "Press and hold the map to set your pin"
-    : selectedProperty
-      ? "Click the map to move the pin"
-      : "Click the map to set your pin";
-
   return (
     <div ref={frameRef} className="absolute inset-0">
       <div
@@ -286,7 +257,7 @@ export function PropertyMapPane({
         aria-label="Selected property satellite map"
         className={cn(
           "absolute inset-0 min-h-56",
-          mapIsLive && "cursor-crosshair",
+          selectedProperty && "cursor-crosshair",
         )}
       >
         {!selectedProperty && (
@@ -296,23 +267,6 @@ export function PropertyMapPane({
           </div>
         )}
       </div>
-
-      {mapIsLive && (
-        <>
-          {/* The standing invitation. With no mode to enter there is no button
-           * carrying this, so the map says it itself.
-           *
-           * Pinned to the top rather than the foot: on a phone the pane runs
-           * past the bottom of the screen, and a hint below the fold is a hint
-           * nobody reads. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
-            <p className="flex items-center gap-2 rounded-pill bg-ink-veil px-4 py-2 font-sans text-[13px] font-semibold text-paper backdrop-blur-sm">
-              <PinIcon size={14} />
-              {hint}
-            </p>
-          </div>
-        </>
-      )}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { FlowLayout } from "../../shared/components/layout/FlowLayout";
 import { MapSurface } from "../../shared/components/ui";
 import { ROUTE_PATHS } from "../../app/routePaths";
+import { LocationPermissionDialog } from "./components/LocationPermissionDialog";
 import { PropertyAddressSearch } from "./components/PropertyAddressSearch";
 import { PropertyMapPane } from "./components/PropertyMapPane";
+import { PropertySelectionSummary } from "./components/PropertySelectionSummary";
 import { usePropertyAddressSearch } from "./hooks/usePropertyAddressSearch";
 
 /**
@@ -23,9 +25,9 @@ export function PropertyPage() {
       nextHref={ROUTE_PATHS.trace}
       nextLabel="Next: Trace your roof"
       nextDisabled={!search.selectedProperty}
-      paneClassName="px-4 py-3 lg:px-0 lg:py-0"
+      mobilePaneBehind
       pane={
-        <MapSurface className="relative min-h-[52svh] lg:min-h-0">
+        <MapSurface className="relative min-h-0 rounded-none border-0 lg:rounded-none lg:border">
           <PropertyMapPane
             selectedProperty={search.selectedProperty}
             googleStatus={search.googleStatus}
@@ -34,6 +36,14 @@ export function PropertyPage() {
         </MapSurface>
       }
       lead={<PropertyAddressSearch {...search} />}
-    />
+    >
+      <PropertySelectionSummary {...search} />
+
+      <LocationPermissionDialog
+        open={search.isLocationPromptOpen}
+        onAllow={search.allowLocation}
+        onDismiss={search.dismissLocationPrompt}
+      />
+    </FlowLayout>
   );
 }

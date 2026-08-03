@@ -11,6 +11,7 @@ import {
   normalizePropertySelection,
   useGoogleMapsLoader,
 } from "../../../integrations/maps";
+import { readJson, writeJson } from "../../../integrations/storage";
 import { useAssessmentStore } from "../../../state/assessmentStore";
 import type { SelectedProperty } from "../../../state/assessmentStore";
 import {
@@ -26,6 +27,16 @@ export type SearchState = "idle" | "loading" | "ready" | "no-results" | "error";
  * request per character and then watching the answers arrive out of order.
  */
 const SEARCH_DEBOUNCE_MS = 450;
+
+/**
+ * Remembers that the location question has been put once already.
+ *
+ * The step is the first thing after Get started, so the prompt opens on
+ * arrival rather than waiting to be found. Someone who said no should not be
+ * asked again every time they come back to change their address, and the
+ * answer only needs to outlive the visit, so it rides the session.
+ */
+const LOCATION_ASKED_KEY = "kahayag-location-prompt-asked";
 
 export function usePropertyAddressSearch() {
   const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -53,6 +64,13 @@ export function usePropertyAddressSearch() {
   const [manualLongitude, setManualLongitude] = useState("");
   const [manualCoordinateMessage, setManualCoordinateMessage] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [isLocationPromptOpen, setIsLocationPromptOpen] = useState(
+    // Nothing to locate if a property is already chosen, which is what coming
+    // back to this step to edit an address looks like.
+    () => !storedProperty && readJson(LOCATION_ASKED_KEY) !== true,
+  );
+
+  const markLocationAsked = () => writeJson(LOCATION_ASKED_KEY, true);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
 
   const trimmedQuery = query.trim();
@@ -239,6 +257,29 @@ export function usePropertyAddressSearch() {
     );
   };
 
+  /**
+   * Opens the explainer rather than the browser prompt.
+   *
+   * The browser only asks once and gives no reason of its own, so a dismissed
+   * prompt permanently closes this route off. Asking first means the real
+   * prompt only appears for someone who has already agreed to it.
+   */
+  /**
+   * Straight to the browser. The explainer opened on arrival, so pressing this
+   * afterwards is already the answer to it and asking again would be a wall
+   * between someone and the thing they just asked for.
+   */
+  const dismissLocationPrompt = () => {
+    markLocationAsked();
+    setIsLocationPromptOpen(false);
+  };
+
+  const allowLocation = () => {
+    markLocationAsked();
+    setIsLocationPromptOpen(false);
+    void requestCurrentLocation();
+  };
+
   const requestCurrentLocation = async () => {
     if (!navigator.geolocation) {
       setLocationMessage(
@@ -304,6 +345,7 @@ export function usePropertyAddressSearch() {
     manualLongitude,
     manualCoordinateMessage,
     isLocating,
+    isLocationPromptOpen,
     locationMessage,
     statusMessage,
     setManualLatitude,
@@ -314,5 +356,7 @@ export function usePropertyAddressSearch() {
     handleManualCoordinateSelection,
     handleMapSelect,
     requestCurrentLocation,
+    dismissLocationPrompt,
+    allowLocation,
   };
 }

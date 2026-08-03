@@ -105,6 +105,8 @@ interface GoogleMapsApi {
     position: GoogleLatLngLiteral;
     icon?: GoogleMarkerIcon | string;
     title?: string;
+    /** Set at construction; Maps runs it as the marker is added to the map. */
+    animation?: number;
   }) => GoogleMarker;
   Animation?: { DROP?: number; BOUNCE?: number };
   Size?: new (width: number, height: number) => GoogleSize;

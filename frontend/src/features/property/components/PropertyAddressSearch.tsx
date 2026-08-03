@@ -1,26 +1,15 @@
-import { Button, PinIcon } from "../../../shared/components/ui";
+import { PinIcon } from "../../../shared/components/ui";
 import type { usePropertyAddressSearch } from "../hooks/usePropertyAddressSearch";
 
 type PropertyAddressSearchProps = ReturnType<typeof usePropertyAddressSearch>;
 
 export function PropertyAddressSearch({
-  googleStatus,
   query,
   suggestions,
-  selectedProperty,
-  manualLatitude,
-  manualLongitude,
-  manualCoordinateMessage,
-  isLocating,
   locationMessage,
   statusMessage,
-  setManualLatitude,
-  setManualLongitude,
   handleQueryChange,
   handleSuggestionSelect,
-  handleUseDemoProperty,
-  handleManualCoordinateSelection,
-  requestCurrentLocation,
 }: PropertyAddressSearchProps) {
   // A map that will not load is a note, not a failure: search still works and
   // the whole screen still completes. Only a broken search reads as an error.
@@ -29,16 +18,6 @@ export function PropertyAddressSearch({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="secondary"
-        fullWidth
-        disabled={isLocating}
-        onClick={requestCurrentLocation}
-      >
-        {isLocating ? "Finding your location…" : "Use my current location"}
-      </Button>
-
       {locationMessage && (
         <p
           className={`font-sans text-sm ${
@@ -109,57 +88,6 @@ export function PropertyAddressSearch({
               </span>
             </button>
           ))}
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" onClick={handleUseDemoProperty}>
-          Use demo property
-        </Button>
-      </div>
-
-      {googleStatus !== "ready" && (
-        <div className="grid gap-2 rounded-lg border border-hairline bg-white p-4">
-          <p className="font-sans text-sm font-semibold text-ink">
-            Manual coordinate fallback
-          </p>
-          <input
-            value={manualLatitude}
-            onChange={(event) => setManualLatitude(event.target.value)}
-            placeholder="Latitude"
-            className="h-12 w-full rounded-pill border border-hairline bg-white px-4 font-sans text-sm text-ink"
-          />
-          <input
-            value={manualLongitude}
-            onChange={(event) => setManualLongitude(event.target.value)}
-            placeholder="Longitude"
-            className="h-12 w-full rounded-pill border border-hairline bg-white px-4 font-sans text-sm text-ink"
-          />
-          <button
-            type="button"
-            onClick={handleManualCoordinateSelection}
-            className="self-start font-sans text-sm font-semibold text-cobalt transition-colors duration-150 hover:underline"
-          >
-            Use entered coordinates
-          </button>
-          {manualCoordinateMessage && (
-            <p className="font-sans text-sm text-ember">
-              {manualCoordinateMessage}
-            </p>
-          )}
-        </div>
-      )}
-
-      {selectedProperty && (
-        <div className="font-sans text-sm text-secondary">
-          <p className="font-semibold text-ink">
-            {selectedProperty.name || selectedProperty.address}
-          </p>
-          {selectedProperty.name && <p>{selectedProperty.address}</p>}
-          <p className="mt-1">
-            {selectedProperty.latitude.toFixed(6)},{" "}
-            {selectedProperty.longitude.toFixed(6)}
-          </p>
         </div>
       )}
     </>
