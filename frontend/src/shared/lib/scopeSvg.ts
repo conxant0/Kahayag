@@ -77,12 +77,6 @@ export function scopeSvg(markup: string, uid: string): string {
  * not strip ambient detail.
  *
  * Call it *after* `scopeSvg`, so the selectors are already instance-scoped.
- *
- * Assumes one `@media(prefers-reduced-motion:reduce)` block: it reads the first
- * and stops. Both marks are authored with a single `<style>` holding a single
- * such block, so splitting the still rules across several would need this to
- * scan for all of them. See the injection site in `KahayagSunrise` for the
- * matching assumption about where the returned rules are appended.
  */
 export function stillEntranceCss(scopedMarkup: string): string {
   const open = scopedMarkup.indexOf("@media(prefers-reduced-motion:reduce){");
