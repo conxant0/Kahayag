@@ -10,6 +10,12 @@ import { decorativeSvg, scopeSvg } from "../../lib/scopeSvg";
  *
  * SVG markup is injected once on mount so parent re-renders (status text,
  * progress ticks) do not restart the CSS animation timeline.
+ *
+ * `role="status"` with a visually hidden label, matching `SunLoader`. The
+ * wrapper must not be `aria-hidden`: that hides its own subtree, so the label
+ * goes with it and the loader announces nothing. `decorativeSvg` already puts
+ * `aria-hidden` on the injected SVG, which is the part that carries no meaning
+ * to anyone who cannot see it.
  */
 export const KahayagLoader = memo(function KahayagLoader({
   size = 140,
@@ -39,9 +45,10 @@ export const KahayagLoader = memo(function KahayagLoader({
 
   return (
     <span
+      role="status"
+      aria-live="polite"
       className={cn("inline-block shrink-0", className)}
       style={{ width: size, height: size }}
-      aria-hidden="true"
     >
       <span
         ref={artRef}
