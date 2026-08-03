@@ -48,7 +48,7 @@ interface GoogleMap {
   addListener(
     eventName: string,
     handler: (event: GoogleMapMouseEvent) => void,
-  ): GoogleMapsEventListener;
+  ): GoogleMapsEventListener | undefined;
 }
 
 interface GoogleSize {
@@ -62,11 +62,23 @@ interface GooglePoint {
 }
 
 /** A marker drawn from our own artwork rather than the stock red teardrop. */
-interface GoogleMarkerIcon {
+interface GoogleImageMarkerIcon {
   url: string;
   scaledSize?: GoogleSize;
   anchor?: GooglePoint;
 }
+
+/** A marker drawn from a vector path, used for the trace's vertex handles. */
+interface GoogleSymbolMarkerIcon {
+  path: number | string;
+  scale?: number;
+  fillColor?: string;
+  fillOpacity?: number;
+  strokeColor?: string;
+  strokeWeight?: number;
+}
+
+type GoogleMarkerIcon = GoogleImageMarkerIcon | GoogleSymbolMarkerIcon;
 
 interface GoogleMarker {
   setPosition(latLng: GoogleLatLngLiteral): void;
@@ -98,6 +110,37 @@ interface GooglePlace {
   fetchFields?(options: { fields: string[] }): Promise<void>;
 }
 
+/** The editable vertex list behind a polygon. */
+interface GoogleMVCArray {
+  getArray(): GoogleLatLng[];
+  push(latLng: GoogleLatLngInstance): void;
+  clear(): void;
+  addListener(eventName: string, handler: () => void): GoogleMapsEventListener;
+}
+
+/** `new google.maps.LatLng(...)`, distinct from the accessor-only interface. */
+type GoogleLatLngInstance = GoogleLatLng;
+
+interface GooglePolygonOptions {
+  map: GoogleMap | null;
+  strokeColor?: string;
+  strokeOpacity?: number;
+  strokeWeight?: number;
+  fillColor?: string;
+  fillOpacity?: number;
+  editable?: boolean;
+  clickable?: boolean;
+  zIndex?: number;
+}
+
+interface GooglePolygon {
+  getPath(): GoogleMVCArray;
+  setOptions(options: Partial<GooglePolygonOptions>): void;
+  setMap(map: GoogleMap | null): void;
+  setEditable(editable: boolean): void;
+  setVisible(visible: boolean): void;
+}
+
 interface GoogleMapsApi {
   /** Async bootstrap: the libraries arrive after the script itself does. */
   importLibrary?: (name: string) => Promise<unknown>;
@@ -109,8 +152,13 @@ interface GoogleMapsApi {
     title?: string;
     /** Set at construction; Maps runs it as the marker is added to the map. */
     animation?: number;
+    clickable?: boolean;
+    zIndex?: number;
   }) => GoogleMarker;
   Animation?: { DROP?: number; BOUNCE?: number };
+  Polygon: new (options: GooglePolygonOptions) => GooglePolygon;
+  LatLng: new (latitude: number, longitude: number) => GoogleLatLngInstance;
+  SymbolPath: { CIRCLE: number };
   Size?: new (width: number, height: number) => GoogleSize;
   Point?: new (x: number, y: number) => GooglePoint;
   Geocoder: new () => GoogleGeocoder;
