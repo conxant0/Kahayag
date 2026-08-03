@@ -18,6 +18,9 @@ export type { HairlineRowSize } from "./HairlineList";
 export { InfoPill } from "./InfoPill";
 export type { InfoPillTone } from "./InfoPill";
 
+export { KahayagLoader } from "./KahayagLoader";
+export { KahayagSunrise } from "./KahayagSunrise";
+
 export { MapSurface } from "./MapSurface";
 export { Reveal } from "./Reveal";
 export { Slider } from "./Slider";
