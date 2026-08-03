@@ -29,4 +29,4 @@ export { SunLoader } from "./SunLoader";
 export { UploadCard } from "./UploadCard";
 export type { UploadCardVariant } from "./UploadCard";
 
-export { CameraIcon } from "./icons";
+export { CameraIcon, PinIcon } from "./icons";

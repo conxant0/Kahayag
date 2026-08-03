@@ -4,5 +4,6 @@ export const ENDPOINTS = {
   assessments: "/assessments",
   panelCountAdjustment: "/assessments/panel-count-adjustment",
   propertySearch: "/properties/search",
+  approximateLocation: "/geolocation/approximate",
   reportsPdf: "/reports/pdf",
 } as const;

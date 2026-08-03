@@ -35,6 +35,7 @@ export function FlowLayout({
   paneClassName,
   railClassName,
   titleClassName,
+  mobilePaneBehind = false,
 }: {
   step: string;
   title: ReactNode;
@@ -58,9 +59,19 @@ export function FlowLayout({
   /** Rail width and rhythm, for the screens that need a wider column. */
   railClassName?: string;
   titleClassName?: string;
+  /**
+   * On mobile, fill the screen with the pane and float the rail over it.
+   *
+   * For steps where the pane *is* the task. Stacking copy above a map costs a
+   * scroll before the map is even visible, and then shows a slot of it; here
+   * the map is the whole area from the first frame and the controls sit on
+   * top. Desktop is unaffected either way, since it already shows both at once.
+   */
+  mobilePaneBehind?: boolean;
 }) {
   const railColumn = cn("flex flex-col gap-5 px-6 lg:px-0", railClassName);
   const blocked = nextDisabled || nextLoading;
+  const behind = mobilePaneBehind;
 
   return (
     <main
@@ -70,11 +81,26 @@ export function FlowLayout({
         "lg:grid lg:grid-cols-[26.25rem_1fr] lg:grid-rows-[auto_auto_1fr_auto] lg:pt-14 lg:pb-12",
       )}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:contents">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto lg:contents",
+          // The pane is taken out of the flow below, so this becomes the frame
+          // it fills and the rail stacks on top of it.
+          behind && "relative overflow-hidden",
+        )}
+      >
         <div
           className={cn(
             railColumn,
             "pt-10 lg:col-start-1 lg:row-start-1 lg:pt-0 lg:pr-10 lg:pl-12",
+            // Floating over a satellite photo, so the block sits on its own
+            // paper and lets clicks through the gaps between its controls. A
+            // solid edge rather than a fade: the map starts where the band
+            // stops, which is easier to read than a slow wash over rooftops.
+            behind &&
+              "pointer-events-none relative z-10 gap-2.5 border-b border-hairline bg-paper pt-4 pb-3 [&>*]:pointer-events-auto",
+            behind &&
+              "lg:pointer-events-auto lg:z-auto lg:gap-5 lg:border-b-0 lg:bg-transparent lg:pt-0 lg:pb-0",
           )}
         >
           {backHref && backLabel ? (
@@ -91,6 +117,10 @@ export function FlowLayout({
           <h1
             className={cn(
               "w-full font-serif text-[36px] leading-tight font-medium text-balance text-ink lg:text-[46px]",
+              // Smaller where it shares the screen with the pane rather than
+              // sitting above it, so the map keeps the room.
+              behind &&
+                "text-[22px] leading-snug lg:text-[46px] lg:leading-tight",
               titleClassName,
             )}
           >
@@ -104,6 +134,10 @@ export function FlowLayout({
           className={cn(
             "flex min-h-56 flex-1 px-6 py-5",
             "lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:min-h-0 lg:px-0 lg:py-0",
+            // Fills the frame behind the rail. Listed before `paneClassName` so
+            // a screen can still adjust its own padding on the wide layout.
+            behind &&
+              "absolute inset-0 z-0 min-h-0 p-0 lg:static lg:z-auto lg:min-h-0",
             paneClassName,
           )}
         >
@@ -116,6 +150,8 @@ export function FlowLayout({
             // The grid sets no row gap, so this block buys its own air under the
             // heading on desktop and collapses entirely when it has no content.
             "pb-2 empty:hidden lg:col-start-1 lg:row-start-2 lg:pt-8 lg:pr-10 lg:pb-0 lg:pl-12",
+            behind &&
+              "pointer-events-none relative z-10 mt-auto pb-4 lg:pointer-events-auto lg:mt-0 lg:pb-0 [&>*]:pointer-events-auto",
           )}
         >
           {children}

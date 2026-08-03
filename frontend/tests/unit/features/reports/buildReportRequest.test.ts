@@ -40,13 +40,17 @@ describe("buildReportRequest", () => {
           ],
         },
       }),
-    ).toThrow("Complete the assessment and roof trace before downloading the report.");
+    ).toThrow(
+      "Complete the assessment and roof trace before downloading the report.",
+    );
   });
 
   it("rejects when there is no result", () => {
     expect(() =>
       buildReportRequest({ result: null, roofPolygon: SQUARE_ROOF }),
-    ).toThrow("Complete the assessment and roof trace before downloading the report.");
+    ).toThrow(
+      "Complete the assessment and roof trace before downloading the report.",
+    );
   });
 
   it("rejects when the roof is too small to fit the recommended panel count", () => {
@@ -60,7 +64,10 @@ describe("buildReportRequest", () => {
     };
 
     expect(() =>
-      buildReportRequest({ result: MOCK_ASSESSMENT_RESPONSE, roofPolygon: tinyRoof }),
+      buildReportRequest({
+        result: MOCK_ASSESSMENT_RESPONSE,
+        roofPolygon: tinyRoof,
+      }),
     ).toThrow("Could not fit the selected panel count inside the roof trace.");
   });
 });

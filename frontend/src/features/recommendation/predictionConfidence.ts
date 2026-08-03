@@ -39,7 +39,8 @@ function scoreRoofGeometry(
   roof: AssessmentResult["roof"] | undefined,
 ): { score: number; source: string } {
   const hasTrace =
-    Array.isArray(roofPolygon?.coordinates) && roofPolygon.coordinates.length >= 3;
+    Array.isArray(roofPolygon?.coordinates) &&
+    roofPolygon.coordinates.length >= 3;
 
   if (hasTrace) {
     return {
@@ -82,9 +83,12 @@ function scoreSolarIrradiance(
   };
 }
 
-function scoreShading(
-  shading: AssessmentResult["shading"],
-): { score: number; source: string; confidence: string; high: boolean } {
+function scoreShading(shading: AssessmentResult["shading"]): {
+  score: number;
+  source: string;
+  confidence: string;
+  high: boolean;
+} {
   if (!shading) {
     return {
       score: 70,
@@ -229,7 +233,8 @@ export function buildPredictionConfidence({
 
   const utilityHint =
     Math.abs(
-      Number(result.inputs?.electricity_rate_php_per_kwh) - DEFAULT_ELECTRICITY_RATE,
+      Number(result.inputs?.electricity_rate_php_per_kwh) -
+        DEFAULT_ELECTRICITY_RATE,
     ) < 0.01
       ? "VECO rates"
       : "your electricity rate";
