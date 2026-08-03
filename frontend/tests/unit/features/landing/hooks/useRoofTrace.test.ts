@@ -1,13 +1,13 @@
 // Verifies the Step 01 trace places its corners, closes, and loops again.
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   TRACE_ROOF,
   useRoofTrace,
 } from "../../../../../src/features/landing/hooks/useRoofTrace";
 
-import { restoreMotionPreference, setReducedMotion } from "./motionPreference";
+import { installTimedHookHarness, setReducedMotion } from "./timedHookHarness";
 
 // Mirrors the hook's beat table. Each leg waits its travel time plus a dwell,
 // except the last, which holds on the answer before clearing.
@@ -26,15 +26,7 @@ const MEASURED_AT = BEAT_MS.slice(0, MEASURE_BEAT).reduce(
 const CLEARS_AT = MEASURED_AT + BEAT_MS[MEASURE_BEAT] + HOLD_MS;
 const RESTARTS_AT = CLEARS_AT + CLEAR_MS;
 
-beforeEach(() => {
-  setReducedMotion(false);
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  restoreMotionPreference();
-});
+installTimedHookHarness();
 
 describe("useRoofTrace", () => {
   it("shows nothing until the illustration is on screen", () => {

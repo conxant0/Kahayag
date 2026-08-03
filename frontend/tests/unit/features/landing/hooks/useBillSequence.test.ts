@@ -1,10 +1,10 @@
 // Verifies the Step 02 bill sequence advances on time and settles when asked.
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useBillSequence } from "../../../../../src/features/landing/hooks/useBillSequence";
 
-import { restoreMotionPreference, setReducedMotion } from "./motionPreference";
+import { installTimedHookHarness, setReducedMotion } from "./timedHookHarness";
 
 // Mirrors the hook's own constants. Hard-coded on purpose: the point of these
 // tests is to notice when a beat moves.
@@ -15,15 +15,7 @@ const TYPING_DONE_MS = SWEEP_MS + TYPE_STEP_MS * FULL_VALUE.length;
 const UNDERLINE_AT_MS = TYPING_DONE_MS + 120;
 const DONE_AT_MS = UNDERLINE_AT_MS + 420;
 
-beforeEach(() => {
-  setReducedMotion(false);
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  restoreMotionPreference();
-});
+installTimedHookHarness();
 
 describe("useBillSequence", () => {
   it("stays idle until the block is in view", () => {
