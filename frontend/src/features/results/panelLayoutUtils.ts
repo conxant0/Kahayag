@@ -238,7 +238,7 @@ function layoutAxisAlignedPanels({
 }
 
 export interface LayoutPanel {
-  corners: GeoPoint[];
+  corners: [GeoPoint, GeoPoint, GeoPoint, GeoPoint];
 }
 
 // ponytail: flux-aware panel scoring (the source's optional `flux` parameter,
@@ -292,9 +292,10 @@ export function layoutPanelsInPolygon({
     }
   }
 
-  return bestPanels.map((panel) => ({
-    corners: panel.corners.map((corner) =>
+  return bestPanels.map((panel) => {
+    const unprojected = panel.corners.map((corner) =>
       unprojectPoint(rotatePointAround(seed, corner, roofAngle), avgLat),
-    ),
-  }));
+    ) as [GeoPoint, GeoPoint, GeoPoint, GeoPoint];
+    return { corners: unprojected };
+  });
 }

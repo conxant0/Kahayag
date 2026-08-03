@@ -7,8 +7,6 @@ import pytest
 
 from app.features.assessment.schemas import CompletedAssessment
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
-
 
 @pytest.fixture
 def completed_assessment_data() -> dict[str, object]:
