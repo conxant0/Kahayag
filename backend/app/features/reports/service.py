@@ -149,19 +149,34 @@ def _rounded_php(value: Decimal) -> int:
     return int(value.quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
+def _effective_rate_php_per_kwh(report: ValidatedReportInput) -> Decimal:
+    """Back out the per-kWh rate implied by year-1 savings against the
+    self-consumption cap, since no battery/net-metering split is modeled
+    here and self-consumed energy is simply min(generation, consumption)."""
+    annual_consumption_kwh = report.inputs.monthly_consumption_kwh * 12
+    self_consumed_kwh = min(
+        report.recommendation.annual_generation_kwh, annual_consumption_kwh
+    )
+    if self_consumed_kwh == 0:
+        return Decimal(0)
+    return Decimal(report.financials.annual_savings_php) / self_consumed_kwh
+
+
 def _scenario_rows(
     report: ValidatedReportInput,
     *,
     generation_ratio: Decimal = Decimal(1),
     installed_cost_ratio: Decimal = Decimal(1),
 ) -> tuple[ProjectionRow, ...]:
+    annual_consumption_kwh = report.inputs.monthly_consumption_kwh * 12
+    rate = _effective_rate_php_per_kwh(report)
     generation = report.recommendation.annual_generation_kwh * generation_ratio
-    savings = Decimal(report.financials.annual_savings_php) * generation_ratio
     cumulative = -Decimal(report.financials.estimated_base_cost_php) * installed_cost_ratio
     rows = []
 
     for year in range(1, _ANALYSIS_YEARS + 1):
-        annual_savings = _rounded_php(savings)
+        self_consumed_kwh = min(generation, annual_consumption_kwh)
+        annual_savings = _rounded_php(self_consumed_kwh * rate)
         cumulative += annual_savings
         rows.append(
             ProjectionRow(
@@ -172,7 +187,6 @@ def _scenario_rows(
             )
         )
         generation *= Decimal(1) - _ANNUAL_DEGRADATION
-        savings *= Decimal(1) - _ANNUAL_DEGRADATION
 
     return tuple(rows)
 
