@@ -57,6 +57,12 @@ export function KahayagSunrise({
 
     // Re-use the mark's own still-state rules rather than guessing which layers
     // move; they are appended so they win on order.
+    //
+    // This assumes the mark has exactly one `<style>` block, which both current
+    // marks do. `replace` with a string pattern only substitutes the first
+    // match, so a mark authored with several blocks would have the still rules
+    // appended to the end of the first one, and any animation declared in a
+    // later block would then out-order them and keep moving.
     const still = stillEntranceCss(scoped);
     return still ? scoped.replace("</style>", `${still}</style>`) : scoped;
   }, [uid, settled]);
