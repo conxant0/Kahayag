@@ -119,18 +119,21 @@ def _fallback_explanation(values: dict[str, object]) -> ResolvedReportExplanatio
     )
 
 
-# Unreachable from any route today (the router uses resolve_narrative only).
-# Unlike resolve_narrative, this does NOT reject digits in supplied text — a
-# future caller wiring this to AIReportProvider.explain() must apply
-# resolve_narrative's digit-rejection guard first, or an AI-produced number
-# could reach output in breach of "the domain computes; AI explains".
 def resolve_explanation(
     report: ValidatedReportInput,
     explanation: ReportExplanation | None,
 ) -> ResolvedReportExplanation:
     values = _placeholder_values(report)
     if explanation is not None:
-        resolved = _resolve_templates(explanation, values)
+        templates = (
+            explanation.summary,
+            explanation.recommendation_reason,
+            *explanation.next_steps,
+        )
+        has_digit = any(
+            any(character.isdigit() for character in text) for text in templates
+        )
+        resolved = None if has_digit else _resolve_templates(explanation, values)
         if resolved is not None:
             return ResolvedReportExplanation(
                 summary=resolved[0],
