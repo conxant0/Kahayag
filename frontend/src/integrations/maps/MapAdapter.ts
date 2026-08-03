@@ -32,6 +32,8 @@ export type MarkerOptions = {
  */
 export type MapController = {
   setCentre(position: LatLng): void;
+  /** Recentres and rescales in one step, for moving between overviews. */
+  setView(position: LatLng, zoom: number): void;
   /** Places or moves the single property marker. */
   showMarker(options: MarkerOptions): void;
   /** Fires for a click on the map. Providers do not report one after a drag. */

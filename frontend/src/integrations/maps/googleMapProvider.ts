@@ -28,6 +28,12 @@ function createController(map: GoogleMap, api: GoogleMapsApi): MapController {
       map.setMapTypeId(getMapTypeId(api));
     },
 
+    setView(position, zoom) {
+      map.setCenter(toGoogle(position));
+      map.setZoom(zoom);
+      map.setMapTypeId(getMapTypeId(api));
+    },
+
     /**
      * Rebuilt rather than moved, because Maps runs a marker's animation as it
      * is added to the map. Re-arming one already on the map played on some

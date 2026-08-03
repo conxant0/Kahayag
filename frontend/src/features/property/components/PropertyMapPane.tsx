@@ -6,6 +6,10 @@ import type {
   MapController,
   MapStatus,
 } from "../../../integrations/maps";
+import {
+  SERVICE_AREA_CENTRE,
+  SERVICE_AREA_ZOOM,
+} from "../../../shared/config/serviceArea";
 import { useMediaQuery } from "../../../shared/hooks/useMediaQuery";
 import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 import { cn } from "../../../shared/lib/cn";
@@ -56,6 +60,9 @@ export function PropertyMapPane({
 
   // Latest handler, read by the click subscription so it does not resubscribe
   // on every render just to see a new closure.
+  /** True once a pick has pulled the map in from the country view. */
+  const hasClosedInRef = useRef(false);
+
   const onMapSelectRef = useRef(onMapSelect);
   useEffect(() => {
     onMapSelectRef.current = onMapSelect;
@@ -66,11 +73,7 @@ export function PropertyMapPane({
   const longitude = position?.longitude;
 
   useEffect(() => {
-    if (
-      mapStatus !== "ready" ||
-      latitude === undefined ||
-      longitude === undefined
-    ) {
+    if (mapStatus !== "ready") {
       return;
     }
 
@@ -79,18 +82,30 @@ export function PropertyMapPane({
       return;
     }
 
-    const centre = { latitude, longitude };
+    const hasPick = latitude !== undefined && longitude !== undefined;
+    const centre = hasPick ? { latitude, longitude } : SERVICE_AREA_CENTRE;
 
+    /**
+     * The map is built as soon as it can be, not once something has been
+     * picked.
+     *
+     * Waiting for a selection meant there was no map to click until one of the
+     * other routes had already produced one, which quietly demoted clicking
+     * from a way of choosing a property to a way of correcting one. It opens
+     * on the whole service area instead, so the first thing available is the
+     * one thing a map is for.
+     */
     if (!controllerRef.current) {
       controllerRef.current = mapProvider.createMap(container, {
         centre,
-        zoom: ROOF_ZOOM,
+        zoom: hasPick ? ROOF_ZOOM : SERVICE_AREA_ZOOM,
       });
 
       if (!controllerRef.current) {
         return;
       }
 
+      hasClosedInRef.current = hasPick;
       controllerRef.current.setCursor("crosshair");
       controllerRef.current.onClick((clicked) => {
         // A press that travelled is a pan, and on touch one that was not held
@@ -102,15 +117,24 @@ export function PropertyMapPane({
         heldLongEnoughRef.current = false;
         onMapSelectRef.current(clicked);
       });
-    } else {
+    } else if (hasPick && !hasClosedInRef.current) {
+      // The first pick closes in from the country view. Later ones only
+      // recentre, so a zoom the user set themselves is not undone every time
+      // they move the pin.
+      hasClosedInRef.current = true;
+      controllerRef.current.setView(centre, ROOF_ZOOM);
+    } else if (hasPick) {
       controllerRef.current.setCentre(centre);
     }
 
-    controllerRef.current.showMarker({
-      position: centre,
-      title: selectedProperty?.address,
-      animate: !prefersReducedMotion,
-    });
+    if (hasPick) {
+      controllerRef.current.showMarker({
+        position: centre,
+        title: selectedProperty?.address,
+        animate: !prefersReducedMotion,
+      });
+    }
+
     controllerRef.current.refresh();
   }, [
     latitude,
@@ -233,13 +257,13 @@ export function PropertyMapPane({
         aria-label="Selected property satellite map"
         className={cn(
           "absolute inset-0 min-h-56",
-          selectedProperty && "cursor-crosshair",
+          mapStatus === "ready" && "cursor-crosshair",
         )}
       >
-        {!selectedProperty && (
-          <div className="flex size-full items-center justify-center p-6 font-sans text-sm text-secondary">
-            Allow location access or search an address to view your roof on the
-            satellite map.
+        {mapStatus !== "ready" && (
+          <div className="flex size-full items-center justify-center p-6 text-center font-sans text-sm text-secondary">
+            The map is unavailable. Search an address or enter coordinates to
+            carry on.
           </div>
         )}
       </div>

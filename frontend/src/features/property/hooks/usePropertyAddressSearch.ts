@@ -23,11 +23,12 @@ import {
   getGeolocationErrorMessage,
   resolveCurrentPosition,
 } from "./getCurrentLocation";
+import type { PositionSource } from "./getCurrentLocation";
 
 export type SearchState = "idle" | "loading" | "ready" | "no-results" | "error";
 
 /**
- * Nominatim asks for roughly one request per second per client, so keystrokes
+ * The geocoder behind the backend is rate limited, so keystrokes
  * are collected rather than sent. This also stops a fast typist queueing a
  * request per character and then watching the answers arrive out of order.
  */
@@ -205,7 +206,7 @@ export function usePropertyAddressSearch() {
    * A search result already carries its coordinates, so picking one needs no
    * second round trip and cannot half-fail the way a details lookup could.
    *
-   * A coarse result is still committed, with a note. Nominatim answers a vague
+   * A coarse result is still committed, with a note. A geocoder answers a vague
    * query with a municipality or a province, which points at a centroid rather
    * than a roof; saying so is more useful than refusing the pick, since the
    * map is right there to correct it.
@@ -282,7 +283,7 @@ export function usePropertyAddressSearch() {
   const applyCurrentLocation = (
     latitude: number,
     longitude: number,
-    source = "browser",
+    source: PositionSource = "browser",
   ) => {
     // Labelled by coordinate rather than by a reverse lookup. The backend has
     // no reverse endpoint, and reaching past it to a geocoder is exactly the

@@ -59,6 +59,20 @@ export const SERVICE_AREA_BOXES = Object.freeze([
   }),
 ]);
 
+/**
+ * Where the map opens before anything has been picked.
+ *
+ * Roughly the centre of the archipelago, so the whole service area is in view
+ * and the first thing someone can do is click the part of it they live in.
+ */
+export const SERVICE_AREA_CENTRE = Object.freeze({
+  latitude: 12.6,
+  longitude: 122.4,
+});
+
+/** Zoom that fits the country, for that first view. */
+export const SERVICE_AREA_ZOOM = 5;
+
 /** The country code the geocoder is scoped to, so search cannot stray. */
 export const SERVICE_AREA_COUNTRY_CODE = "ph";
 

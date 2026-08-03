@@ -7,13 +7,21 @@ const GEOLOCATION_ATTEMPTS: PositionOptions[] = [
   { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
 ];
 
+/**
+ * Where a position came from.
+ *
+ * Closed, because the screen words an approximate pin differently to one the
+ * device reported, and a free string makes that easy to get wrong.
+ */
+export type PositionSource = "browser" | "google-ip" | "ip-approximate";
+
 export type ResolvedPosition = {
   coords: {
     latitude: number;
     longitude: number;
     accuracy: number | null;
   };
-  source: string;
+  source: PositionSource;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -82,7 +90,7 @@ export async function resolveCurrentPosition(): Promise<ResolvedPosition> {
         longitude: approximate.longitude,
         accuracy: approximate.accuracy ?? null,
       },
-      source: approximate.source ?? "ip-approximate",
+      source: "ip-approximate",
     };
   } catch (error) {
     lastError = error;

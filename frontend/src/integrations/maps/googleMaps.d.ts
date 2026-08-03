@@ -99,6 +99,8 @@ interface GooglePlace {
 }
 
 interface GoogleMapsApi {
+  /** Async bootstrap: the libraries arrive after the script itself does. */
+  importLibrary?: (name: string) => Promise<unknown>;
   Map: new (container: HTMLElement, options: GoogleMapOptions) => GoogleMap;
   Marker: new (options: {
     map: GoogleMap;
