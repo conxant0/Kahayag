@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from io import BytesIO
+from xml.sax.saxutils import escape as _escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -120,7 +121,7 @@ def _table(rows: list[list[str]], *, header: bool = True) -> Table:
     )
     cells = [
         [
-            Paragraph(str(value), header_style if header and row_index == 0 else cell_style)
+            Paragraph(_escape(str(value)), header_style if header and row_index == 0 else cell_style)
             for value in row
         ]
         for row_index, row in enumerate(rows)
@@ -380,11 +381,11 @@ def render_report_pdf(
             Spacer(1, 16 * mm),
             Paragraph("KAHAYAG SOLAR BRIEF", styles["subheading"]),
             Paragraph("A practical starting point for your solar project.", styles["title"]),
-            Paragraph(report.property.address, styles["body"]),
+            Paragraph(_escape(report.property.address), styles["body"]),
             Paragraph(f"Assessment date: {report.property.assessment_date.isoformat()} | Report ID: {report_id}", styles["small"]),
             Spacer(1, 8 * mm),
             _notice("PRELIMINARY ASSESSMENT - INSTALLER VERIFICATION REQUIRED", styles),
-            Paragraph(narrative.executive_summary, styles["body"]),
+            Paragraph(_escape(narrative.executive_summary), styles["body"]),
             _metric_strip(
                 [
                     (
@@ -429,7 +430,7 @@ def render_report_pdf(
         (
             "Roof, solar, and shading findings",
             [
-                Paragraph(narrative.technical_explanation, styles["body"]),
+                Paragraph(_escape(narrative.technical_explanation), styles["body"]),
                 _table(
                     [
                         ["Measure", "Value"],
@@ -476,7 +477,7 @@ def render_report_pdf(
         (
             "Cost and payback",
             [
-                Paragraph(narrative.financial_explanation, styles["body"]),
+                Paragraph(_escape(narrative.financial_explanation), styles["body"]),
                 _table(
                     [
                         ["Scenario", "Planning value"],
@@ -508,7 +509,7 @@ def render_report_pdf(
         ),
         (
             "Contractor observations and priorities",
-            [Paragraph(observation, styles["body"]) for observation in narrative.contractor_observations],
+            [Paragraph(_escape(observation), styles["body"]) for observation in narrative.contractor_observations],
         ),
         (
             "Site-survey checklist",
