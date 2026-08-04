@@ -464,7 +464,7 @@ export interface ProjectBrief extends MapPreview {
 }
 
 interface EnergyInputs {
-  electricityRatePhpPerKwh?: number;
+  electricityRatePhpPerKwh?: number | null;
 }
 
 export function buildProjectBrief({

@@ -120,7 +120,7 @@ function scoreShading(shading: AssessmentResult["shading"]): {
 }
 
 interface EnergyInputs {
-  electricityRatePhpPerKwh?: number;
+  electricityRatePhpPerKwh?: number | null;
 }
 
 function scoreLocalGrid(

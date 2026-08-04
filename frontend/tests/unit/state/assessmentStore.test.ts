@@ -158,24 +158,26 @@ describe("readStoredSession", () => {
     expect(readStoredSession().roofPolygon).toBeNull();
   });
 
-  it("falls back to the default rate and clears non-positive money fields", () => {
+  it("clears non-positive money fields rather than carrying them forward", () => {
     seed({ energyInputs: { monthlyBillPhp: 0, budgetPhp: -5 } });
 
     expect(readStoredSession().energyInputs).toEqual({
       monthlyBillPhp: null,
-      electricityRatePhpPerKwh: 12,
+      electricityRatePhpPerKwh: null,
       budgetPhp: null,
     });
   });
 });
 
 describe("useAssessmentStore", () => {
-  it("starts with no bill and no budget so neither defaults silently", () => {
+  it("starts with nothing answered so no field defaults silently", () => {
     const { energyInputs } = useAssessmentStore.getState();
 
     expect(energyInputs.monthlyBillPhp).toBeNull();
     expect(energyInputs.budgetPhp).toBeNull();
-    expect(energyInputs.electricityRatePhpPerKwh).toBe(12);
+    // Not 12: an unanswered tariff has to reach the backend as unanswered, so
+    // the result can disclose that the default was applied.
+    expect(energyInputs.electricityRatePhpPerKwh).toBeNull();
   });
 
   it("persists a property selection", () => {
@@ -193,7 +195,7 @@ describe("useAssessmentStore", () => {
 
     expect(useAssessmentStore.getState().energyInputs).toEqual({
       monthlyBillPhp: 4800,
-      electricityRatePhpPerKwh: 12,
+      electricityRatePhpPerKwh: null,
       budgetPhp: 250000,
     });
   });
