@@ -90,6 +90,59 @@ export type EnergyInputs = {
   budgetPhp: number | null;
 };
 
+// The plan answers are closed sets for the same reason `PropertySource` is:
+// screens and proposal copy branch on them, and a free string makes the
+// branch that was never written silently render nothing.
+export type PrimaryGoal =
+  | "reduce-bill"
+  | "stay-in-budget"
+  | "backup-outages"
+  | "maximize-production";
+
+export type UsagePattern = "daytime" | "nighttime" | "balanced";
+
+export type FutureLoad = "aircon" | "ev" | "water-pump" | "appliances";
+
+export type RoofMaterial = "metal" | "concrete" | "tile" | "shingle" | "unsure";
+
+export type PropertyKind = "house" | "commercial" | "other";
+
+export type InstallTimeline =
+  | "three-months"
+  | "six-months"
+  | "one-year"
+  | "exploring";
+
+/**
+ * What the homeowner wants from the system, kept beside — not inside — the
+ * numbers the assessment is computed from.
+ *
+ * Nothing here feeds a calculation yet: these answers shape the proposal's
+ * framing, so editing one must not throw a computed result away the way
+ * editing the bill does. Every field is null until answered, which is how an
+ * answer nobody gave stays distinguishable from any answer somebody did.
+ */
+export type AssessmentPlans = {
+  primaryGoal: PrimaryGoal | null;
+  usagePattern: UsagePattern | null;
+  /** Null is "not answered"; an empty array is an explicit "none planned". */
+  futureLoads: FutureLoad[] | null;
+  roofMaterial: RoofMaterial | null;
+  propertyKind: PropertyKind | null;
+  ownsProperty: boolean | null;
+  timeline: InstallTimeline | null;
+};
+
+/**
+ * Where a proposal could reach the homeowner. Demo-only: kept on this device
+ * with the session, never sent anywhere.
+ */
+export type ContactDetails = {
+  fullName: string;
+  email: string;
+  mobile: string;
+};
+
 /**
  * The assessment response, held opaquely.
  *
@@ -106,11 +159,29 @@ export const DEFAULT_ENERGY_INPUTS: EnergyInputs = Object.freeze({
   budgetPhp: null,
 });
 
+export const DEFAULT_ASSESSMENT_PLANS: AssessmentPlans = Object.freeze({
+  primaryGoal: null,
+  usagePattern: null,
+  futureLoads: null,
+  roofMaterial: null,
+  propertyKind: null,
+  ownsProperty: null,
+  timeline: null,
+});
+
+export const DEFAULT_CONTACT_DETAILS: ContactDetails = Object.freeze({
+  fullName: "",
+  email: "",
+  mobile: "",
+});
+
 /** The slice that survives a reload. `result` is deliberately not in it. */
 export type PersistedSession = {
   selectedProperty: SelectedProperty | null;
   roofPolygon: RoofPolygon | null;
   energyInputs: EnergyInputs;
+  plans: AssessmentPlans;
+  contactDetails: ContactDetails;
 };
 
 export type AssessmentState = PersistedSession & {
@@ -119,6 +190,8 @@ export type AssessmentState = PersistedSession & {
   setPropertySelection: (property: SelectedProperty | null) => void;
   setRoofPolygon: (polygon: RoofPolygon | null) => void;
   setEnergyInputs: (changes: Partial<EnergyInputs>) => void;
+  setPlans: (changes: Partial<AssessmentPlans>) => void;
+  setContactDetails: (changes: Partial<ContactDetails>) => void;
   reset: () => void;
 };
 
@@ -222,6 +295,89 @@ function parseEnergyInputs(value: unknown): EnergyInputs {
   };
 }
 
+/** A stored answer outside its closed set reads as "not answered". */
+function memberOrNull<T extends string>(
+  values: readonly T[],
+  value: unknown,
+): T | null {
+  return values.includes(value as T) ? (value as T) : null;
+}
+
+const PRIMARY_GOALS: readonly PrimaryGoal[] = [
+  "reduce-bill",
+  "stay-in-budget",
+  "backup-outages",
+  "maximize-production",
+];
+const USAGE_PATTERNS: readonly UsagePattern[] = [
+  "daytime",
+  "nighttime",
+  "balanced",
+];
+const FUTURE_LOADS: readonly FutureLoad[] = [
+  "aircon",
+  "ev",
+  "water-pump",
+  "appliances",
+];
+const ROOF_MATERIALS: readonly RoofMaterial[] = [
+  "metal",
+  "concrete",
+  "tile",
+  "shingle",
+  "unsure",
+];
+const PROPERTY_KINDS: readonly PropertyKind[] = [
+  "house",
+  "commercial",
+  "other",
+];
+const INSTALL_TIMELINES: readonly InstallTimeline[] = [
+  "three-months",
+  "six-months",
+  "one-year",
+  "exploring",
+];
+
+/**
+ * Like the energy inputs, always a shape to render; each answer stands or
+ * falls on its own. The future-loads list keeps its two kinds of nothing: an
+ * absent list is "not answered", an empty one is an explicit "none planned".
+ */
+function parsePlans(value: unknown): AssessmentPlans {
+  if (!isRecord(value)) {
+    return { ...DEFAULT_ASSESSMENT_PLANS };
+  }
+
+  return {
+    primaryGoal: memberOrNull(PRIMARY_GOALS, value.primaryGoal),
+    usagePattern: memberOrNull(USAGE_PATTERNS, value.usagePattern),
+    futureLoads: Array.isArray(value.futureLoads)
+      ? value.futureLoads.filter(
+          (entry): entry is FutureLoad =>
+            memberOrNull(FUTURE_LOADS, entry) !== null,
+        )
+      : null,
+    roofMaterial: memberOrNull(ROOF_MATERIALS, value.roofMaterial),
+    propertyKind: memberOrNull(PROPERTY_KINDS, value.propertyKind),
+    ownsProperty:
+      typeof value.ownsProperty === "boolean" ? value.ownsProperty : null,
+    timeline: memberOrNull(INSTALL_TIMELINES, value.timeline),
+  };
+}
+
+function parseContactDetails(value: unknown): ContactDetails {
+  if (!isRecord(value)) {
+    return { ...DEFAULT_CONTACT_DETAILS };
+  }
+
+  return {
+    fullName: typeof value.fullName === "string" ? value.fullName : "",
+    email: typeof value.email === "string" ? value.email : "",
+    mobile: typeof value.mobile === "string" ? value.mobile : "",
+  };
+}
+
 /**
  * Rebuilds the session from storage, field by field.
  *
@@ -236,6 +392,8 @@ export function readStoredSession(): PersistedSession {
       selectedProperty: null,
       roofPolygon: null,
       energyInputs: { ...DEFAULT_ENERGY_INPUTS },
+      plans: { ...DEFAULT_ASSESSMENT_PLANS },
+      contactDetails: { ...DEFAULT_CONTACT_DETAILS },
     };
   }
 
@@ -243,6 +401,8 @@ export function readStoredSession(): PersistedSession {
     selectedProperty: parseProperty(stored.selectedProperty),
     roofPolygon: parseRoofPolygon(stored.roofPolygon),
     energyInputs: parseEnergyInputs(stored.energyInputs),
+    plans: parsePlans(stored.plans),
+    contactDetails: parseContactDetails(stored.contactDetails),
   };
 }
 
@@ -254,11 +414,14 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
    * added and one call site forgets to pass it.
    */
   const persist = () => {
-    const { selectedProperty, roofPolygon, energyInputs } = get();
+    const { selectedProperty, roofPolygon, energyInputs, plans, contactDetails } =
+      get();
     writeJson(ASSESSMENT_SESSION_STORAGE_KEY, {
       selectedProperty,
       roofPolygon,
       energyInputs,
+      plans,
+      contactDetails,
     });
   };
 
@@ -309,6 +472,23 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
     setEnergyInputs: (changes) =>
       commitInput({ energyInputs: { ...get().energyInputs, ...changes } }),
 
+    /**
+     * Deliberately not routed through `commitInput`: no calculation reads
+     * these answers, so editing one must not discard a result computed from
+     * numbers that have not changed. The clearest case is contact details,
+     * which are typed on the report screen — where throwing the result away
+     * would take the report with it.
+     */
+    setPlans: (changes) => {
+      set({ plans: { ...get().plans, ...changes } });
+      persist();
+    },
+
+    setContactDetails: (changes) => {
+      set({ contactDetails: { ...get().contactDetails, ...changes } });
+      persist();
+    },
+
     reset: () => {
       useDesignStore.getState().clearDesign();
       set({
@@ -316,6 +496,8 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
         selectedProperty: null,
         roofPolygon: null,
         energyInputs: { ...DEFAULT_ENERGY_INPUTS },
+        plans: { ...DEFAULT_ASSESSMENT_PLANS },
+        contactDetails: { ...DEFAULT_CONTACT_DETAILS },
       });
       removeJson(ASSESSMENT_SESSION_STORAGE_KEY);
     },

@@ -41,11 +41,15 @@ export function AssessmentPage() {
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
   const setEnergyInputs = useAssessmentStore((state) => state.setEnergyInputs);
+  const plans = useAssessmentStore((state) => state.plans);
+  const contactDetails = useAssessmentStore((state) => state.contactDetails);
 
   const redirect = resolveRedirectForStep("energy", {
     selectedProperty,
     roofPolygon,
     energyInputs,
+    plans,
+    contactDetails,
   });
 
   const billDigits =
@@ -93,12 +97,12 @@ export function AssessmentPage() {
 
   return (
     <FlowLayout
-      step="Step 3 of 4"
+      step="Step 3 of 5"
       title="What do you pay monthly?"
       backHref={ROUTE_PATHS.trace}
       backLabel="Back to roof trace"
-      nextHref={ROUTE_PATHS.loading}
-      nextLabel="See my results"
+      nextHref={ROUTE_PATHS.plans}
+      nextLabel="Next: Your plans"
       nextDisabled={!hasAmount}
       paneClassName="flex items-center justify-center"
       pane={

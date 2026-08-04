@@ -47,7 +47,7 @@ export function RoofPage() {
 
   return (
     <FlowLayout
-      step="Step 2 of 4"
+      step="Step 2 of 5"
       title="Trace your roof."
       backHref={ROUTE_PATHS.locate}
       backLabel="Back to location"
