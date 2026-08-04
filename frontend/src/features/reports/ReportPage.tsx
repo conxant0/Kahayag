@@ -5,17 +5,18 @@ import { ROUTE_PATHS } from "../../app/routePaths";
 import { ContentScreen } from "../../shared/components/layout";
 import {
   Button,
+  ButtonLink,
   CtaArrow,
   KahayagSunrise,
   Rule,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
-import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { getActiveBuild } from "../design/designViewModel";
+import { readAssessmentResult } from "../assessment/formatAssessmentResult";
+import { ContactDetailsCard } from "./components/ContactDetailsCard";
 import { buildReportPreview } from "./projectBrief";
 import { buildReportRequest } from "./buildReportRequest";
-import { ContactDetailsCard } from "./components/ContactDetailsCard";
 import { useDownloadReport } from "./hooks/useDownloadReport";
 
 /**
@@ -38,8 +39,6 @@ export function ReportPage() {
   const reset = useAssessmentStore((state) => state.reset);
   const result = readAssessmentResult(rawResult);
 
-  // The chosen design rides along so the PDF can print it with its
-  // quotation; without one the report simply omits that section.
   const designSession = useDesignStore((state) => state.designSession);
   const activeBuild = getActiveBuild(designSession);
 
@@ -65,7 +64,11 @@ export function ReportPage() {
     setDownloadError(null);
     try {
       await downloadReport(
-        buildReportRequest({ result, roofPolygon, designBuild: activeBuild }),
+        buildReportRequest({
+          result,
+          roofPolygon,
+          designBuild: activeBuild ?? null,
+        }),
       );
     } catch (error) {
       setDownloadError(
@@ -76,15 +79,6 @@ export function ReportPage() {
     }
   };
 
-  const startAnotherAssessment = () => {
-    setIsStartingOver(true);
-    reset();
-  };
-
-  // Ordered above the guard deliberately. Clearing the session empties
-  // `result`, and the guard below reads that as an assessment that was never
-  // run — so an imperative navigate would be overruled on the same render and
-  // land on /energy instead of the start.
   if (isStartingOver) {
     return <Navigate to={ROUTE_PATHS.landing} replace />;
   }
@@ -122,16 +116,27 @@ export function ReportPage() {
               : "The report draws your panel layout, so it needs your roof trace."}
           </p>
 
-          {/* The end of the journey, and the only place a second assessment can
-              begin: the session holds one property at a time, so starting over
-              means clearing it rather than navigating back into it. */}
-          <button
-            type="button"
-            onClick={startAnotherAssessment}
-            className="w-full text-center font-sans text-[15px] font-semibold text-cobalt hover:underline"
+          {/* The journey continues to the permit check; the report is no longer
+              the final step. */}
+          <ButtonLink
+            to={ROUTE_PATHS.permits}
+            fullWidth
+            className="lg:h-16 lg:text-[18px]"
+          >
+            Check permit requirements
+            <CtaArrow />
+          </ButtonLink>
+
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => {
+              setIsStartingOver(true);
+              reset();
+            }}
           >
             Start another assessment
-          </button>
+          </Button>
 
           {/* Ember interrupts — the one place on this screen that does. */}
           {downloadError ? (
@@ -179,7 +184,10 @@ export function ReportPage() {
         </ul>
       </article>
 
-      <ContactDetailsCard contact={contactDetails} onChange={setContactDetails} />
+      <ContactDetailsCard
+        contact={contactDetails}
+        onChange={setContactDetails}
+      />
 
       <div className="hidden min-h-0 flex-1 lg:block" />
     </ContentScreen>

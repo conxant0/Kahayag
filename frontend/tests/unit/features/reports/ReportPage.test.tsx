@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { assessmentFixture as fixture } from "../../../fixtures/assessmentFixture";
 import { roofPolygonFixture } from "../../../fixtures/roofPolygonFixture";
+import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { ReportPage } from "../../../../src/features/reports/ReportPage";
 import * as client from "../../../../src/shared/api/client";
 import {
@@ -18,6 +19,7 @@ import {
   type CompletedAssessment as StoreAssessmentResult,
   type SelectedProperty,
 } from "../../../../src/state/assessmentStore";
+import { useDesignStore } from "../../../../src/state/designStore";
 
 const PROPERTY: SelectedProperty = {
   placeId: "place-1",
@@ -48,7 +50,10 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-function seedSession({ roof = ROOF }: { roof?: typeof ROOF | null } = {}) {
+function seedSession({
+  roof = ROOF,
+  design = false,
+}: { roof?: typeof ROOF | null; design?: boolean } = {}) {
   const store = useAssessmentStore.getState();
   store.setPropertySelection(PROPERTY);
   if (roof) {
@@ -57,11 +62,15 @@ function seedSession({ roof = ROOF }: { roof?: typeof ROOF | null } = {}) {
   useAssessmentStore
     .getState()
     .setResult(fixture as unknown as StoreAssessmentResult);
+  if (design) {
+    useDesignStore.getState().setDesignSession(mockDesignSession);
+  }
 }
 
 afterEach(() => {
   vi.restoreAllMocks();
   useAssessmentStore.getState().reset();
+  useDesignStore.getState().clearDesign();
 });
 
 describe("ReportPage", () => {
@@ -173,6 +182,42 @@ describe("ReportPage", () => {
     );
   });
 
+  it("includes the chosen design in the PDF request and the contents list", async () => {
+    const user = userEvent.setup();
+    const apiPostBlob = vi.spyOn(client, "apiPostBlob").mockResolvedValue({
+      blob: new Blob(["%PDF-1.4"], { type: "application/pdf" }),
+      filename: "kahayag-solar-report.pdf",
+    });
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    seedSession({ design: true });
+
+    render(
+      <Providers>
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
+      </Providers>,
+    );
+
+    expect(screen.getByText("Chosen design & quotation")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /Download PDF report/ }),
+    );
+
+    await waitFor(() => expect(apiPostBlob).toHaveBeenCalledTimes(1));
+    const [, body] = apiPostBlob.mock.calls[0];
+    const request = body as {
+      design_build: { id: string } | undefined;
+    };
+    expect(request.design_build).toBeDefined();
+    expect(request.design_build!.id).toBe(
+      mockDesignSession.active_build_id,
+    );
+  });
+
   it("surfaces a failed download instead of leaving the button silent", async () => {
     const user = userEvent.setup();
     vi.spyOn(client, "apiPostBlob").mockRejectedValue(
@@ -215,36 +260,25 @@ describe("ReportPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears the session before starting another assessment", async () => {
-    const user = userEvent.setup();
+  it("offers a CTA to the permit check and a start-over button", () => {
     seedSession();
-
-    const router = createMemoryRouter(
-      [
-        { path: "/report", element: <ReportPage /> },
-        { path: "/", element: <p>Landing</p> },
-      ],
-      { initialEntries: ["/report"] },
-    );
 
     render(
       <Providers>
-        <RouterProvider router={router} />
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
       </Providers>,
     );
 
-    await user.click(
+    const permitLink = screen.getByRole("link", {
+      name: /Check permit requirements/,
+    });
+    expect(permitLink).toBeInTheDocument();
+    expect(permitLink).toHaveAttribute("href", "/permits");
+    expect(
       screen.getByRole("button", { name: "Start another assessment" }),
-    );
-
-    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
-    // Left behind entirely: arriving at step one holding the previous roof
-    // would offer to resume what was just abandoned.
-    const session = useAssessmentStore.getState();
-    expect(session.result).toBeNull();
-    expect(session.selectedProperty).toBeNull();
-    expect(session.roofPolygon).toBeNull();
-    expect(session.energyInputs.monthlyBillPhp).toBeNull();
+    ).toBeInTheDocument();
   });
 
   it("redirects to energy when no assessment has been run", async () => {

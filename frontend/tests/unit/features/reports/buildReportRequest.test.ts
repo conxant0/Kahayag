@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { buildReportRequest } from "../../../../src/features/reports/buildReportRequest";
+import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { getActiveBuild } from "../../../../src/features/design/designViewModel";
 import { MOCK_ASSESSMENT_RESPONSE } from "./mockAssessmentResponse";
 
 const SQUARE_ROOF = {
@@ -69,5 +71,16 @@ describe("buildReportRequest", () => {
         roofPolygon: tinyRoof,
       }),
     ).toThrow("Could not fit the selected panel count inside the roof trace.");
+  });
+
+  it("includes the chosen design build when provided", () => {
+    const activeBuild = getActiveBuild(mockDesignSession);
+    const request = buildReportRequest({
+      result: MOCK_ASSESSMENT_RESPONSE,
+      roofPolygon: SQUARE_ROOF,
+      designBuild: activeBuild,
+    });
+
+    expect(request.design_build).toBe(activeBuild);
   });
 });

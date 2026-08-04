@@ -16,6 +16,7 @@ import { BriefPage, ReportPage } from "../features/reports";
 import { EditLayoutPage, ResultsPage } from "../features/results";
 import { ComparePage } from "../features/compare";
 import { DesignPage } from "../features/design";
+import { PermitsPage, PermitsPreviewPage } from "../features/permits";
 import { QuotationPage } from "../features/quotation";
 import { RoofPage } from "../features/roof";
 
@@ -32,10 +33,12 @@ export const router = createBrowserRouter([
   { path: ROUTE_PATHS.design, element: <DesignPage /> },
   { path: ROUTE_PATHS.compare, element: <ComparePage /> },
   { path: ROUTE_PATHS.quotation, element: <QuotationPage /> },
+  { path: ROUTE_PATHS.permits, element: <PermitsPage /> },
   { path: ROUTE_PATHS.editLayout, element: <EditLayoutPage /> },
   { path: ROUTE_PATHS.invest, element: <RecommendationPage /> },
   { path: ROUTE_PATHS.why, element: <WhyPage /> },
   { path: ROUTE_PATHS.brief, element: <BriefPage /> },
   { path: ROUTE_PATHS.report, element: <ReportPage /> },
   { path: ROUTE_PATHS.components, element: <ComponentsPage /> },
+  { path: ROUTE_PATHS.permitsPreview, element: <PermitsPreviewPage /> },
 ]);

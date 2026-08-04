@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "../../lib/cn";
 
-export type EyebrowTone = "tertiary" | "cobalt";
+export type EyebrowTone = "tertiary" | "cobalt" | "ember";
 export type EyebrowSize = "ui" | "section";
 
 const toneClasses: Record<EyebrowTone, string> = {
@@ -11,6 +11,8 @@ const toneClasses: Record<EyebrowTone, string> = {
   tertiary: "text-tertiary-ink",
   // Cobalt informs — reserved for a label reporting something the engine found.
   cobalt: "text-cobalt",
+  // Ember interrupts — reserved for a label over something that blocks the flow.
+  ember: "text-ember",
 };
 
 /**
