@@ -19,4 +19,7 @@ export const ROUTE_PATHS = {
   report: "/report",
   editLayout: "/results/layout",
   components: "/components",
+  // Standalone preview for the permits prototype (T3a) — driven by a mock
+  // fixture, not linked from the demo loop above.
+  permitsPreview: "/permits-preview",
 } as const;
