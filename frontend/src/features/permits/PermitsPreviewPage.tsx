@@ -140,7 +140,7 @@ export function PermitsPreviewPage() {
             <PacketStatusCard assessment={assessment} />
           </div>
 
-          <aside className="flex flex-col gap-4">
+          <aside className="flex flex-col gap-4 xl:sticky xl:top-6 xl:h-[calc(100svh-3rem)]">
             <PermitChatSidebar
               applicant={applicant}
               onApplicantChange={setApplicant}
