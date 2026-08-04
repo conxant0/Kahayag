@@ -53,6 +53,13 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "uploaded",
       expires: false,
       unverified: false,
+      issuing_agency: "Registry of Deeds, Cebu City",
+      steps: [
+        "Request a certified true copy online through the LRA eSerbisyo portal (eserbisyo.lra.gov.ph) — delivered to you, no office visit needed.",
+        "Have the registered owner's name, title (TCT) number, and lot number on hand.",
+        "Allow 5–7 working days for a provincial request like Cebu — and up to two weeks if the title needs manual validation.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "tax_declaration",
@@ -60,6 +67,12 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "missing",
       expires: false,
       unverified: false,
+      issuing_agency: "City Assessor's Office, Cebu City",
+      steps: [
+        "Go to the City Assessor's Office at Cebu City Hall and request a certified true copy of the lot's tax declaration.",
+        "Have the owner's name, tax declaration number, and lot number on hand — the copy must carry them exactly as registered.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "tax_clearance",
@@ -67,6 +80,13 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "needs_review",
       expires: true,
       unverified: false,
+      issuing_agency: "City Treasurer's Office, Cebu City",
+      steps: [
+        "Go to the City Treasurer's Office at Cebu City Hall and request a real property tax clearance for the lot.",
+        "Real property tax must be paid up for the current year — the clearance reflects that payment status.",
+        "Your cedula comes from the same office, so one visit can cover both.",
+      ],
+      prerequisites: ["tax_declaration"],
     },
     {
       document_id: "barangay_clearance",
@@ -74,6 +94,12 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "uploaded",
       expires: true,
       unverified: false,
+      issuing_agency: "Barangay Hall (property's barangay)",
+      steps: [
+        "Go to the barangay hall of the barangay that covers the property and request a barangay clearance for construction.",
+        "Address and office hours vary per barangay — check with yours before heading out.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "cedula",
@@ -81,6 +107,12 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "uploaded",
       expires: true,
       unverified: true,
+      issuing_agency: "City Treasurer's Office, Cebu City",
+      steps: [
+        "Request a Community Tax Certificate (cedula) at the City Treasurer's Office, Cebu City Hall — the same office that issues the tax clearance, so one visit covers both.",
+        "Check the date before leaving the counter: it must be issued for the current year.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "notarized_authorization",
@@ -88,6 +120,12 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       status: "missing",
       expires: false,
       unverified: false,
+      issuing_agency: "Any commissioned notary public",
+      steps: [
+        "Have the registered owner write and sign a Consent and Authority naming who is authorized to file for this property.",
+        "Bring it to any commissioned notary public for notarization — this can happen at any point, in any order.",
+      ],
+      prerequisites: [],
     },
   ],
   findings: [
@@ -166,6 +204,12 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
       status: "uploaded",
       expires: false,
       unverified: false,
+      issuing_agency: "Registry of Deeds, Cebu City",
+      steps: [
+        "Request a certified true copy online through the LRA eSerbisyo portal (eserbisyo.lra.gov.ph) — delivered to you, no office visit needed.",
+        "Have the registered owner's name, title (TCT) number, and lot number on hand.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "tax_declaration",
@@ -173,6 +217,12 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
       status: "uploaded",
       expires: false,
       unverified: false,
+      issuing_agency: "City Assessor's Office, Cebu City",
+      steps: [
+        "Go to the City Assessor's Office at Cebu City Hall and request a certified true copy of the lot's tax declaration.",
+        "Have the owner's name, tax declaration number, and lot number on hand — the copy must carry them exactly as registered.",
+      ],
+      prerequisites: [],
     },
     {
       document_id: "barangay_clearance",
@@ -180,6 +230,12 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
       status: "uploaded",
       expires: true,
       unverified: false,
+      issuing_agency: "Barangay Hall (property's barangay)",
+      steps: [
+        "Go to the barangay hall of the barangay that covers the property and request a barangay clearance for construction.",
+        "Address and office hours vary per barangay — check with yours before heading out.",
+      ],
+      prerequisites: [],
     },
   ],
   findings: [
