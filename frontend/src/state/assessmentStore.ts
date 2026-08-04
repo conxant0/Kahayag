@@ -2,6 +2,7 @@
 import { create } from "zustand";
 
 import { readJson, removeJson, writeJson } from "../integrations/storage";
+import { useDesignStore } from "./designStore";
 
 /**
  * One key holds the whole session. The pieces are written and read together —
@@ -274,6 +275,7 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
    * result alive.
    */
   const commitInput = (changes: Partial<PersistedSession>) => {
+    useDesignStore.getState().clearDesign();
     set({ ...changes, result: null });
     persist();
   };
@@ -308,6 +310,7 @@ export const useAssessmentStore = create<AssessmentState>()((set, get) => {
       commitInput({ energyInputs: { ...get().energyInputs, ...changes } }),
 
     reset: () => {
+      useDesignStore.getState().clearDesign();
       set({
         result: null,
         selectedProperty: null,
