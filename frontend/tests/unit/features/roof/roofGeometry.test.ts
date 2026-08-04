@@ -2,48 +2,47 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DEFAULT_OUTLINE_SIDE_METERS,
-  MIN_VALID_ROOF_AREA_SQUARE_METERS,
   calculateRoofMetrics,
-  createDefaultRoofOutline,
   isSelfIntersecting,
   validateRoofPolygon,
 } from "../../../../src/features/roof/roofUtils";
 
 const CENTRE = { latitude: 10.3157, longitude: 123.8854 };
+const EARTH_RADIUS_METERS = 6_371_000;
 
-/** A square of `side` metres about the centre, built the same way the app does. */
-const square = (side: number) => createDefaultRoofOutline(CENTRE, side);
+/** A square of `side` metres about the centre, like four clicks would place. */
+const square = (side: number) => {
+  const latitudeDelta = (side / 2 / EARTH_RADIUS_METERS) * (180 / Math.PI);
+  const longitudeDelta =
+    latitudeDelta / Math.cos((CENTRE.latitude * Math.PI) / 180);
 
-describe("createDefaultRoofOutline", () => {
-  it("produces four corners around the point it is given", () => {
-    const outline = createDefaultRoofOutline(CENTRE);
+  return [
+    {
+      latitude: CENTRE.latitude + latitudeDelta,
+      longitude: CENTRE.longitude - longitudeDelta,
+    },
+    {
+      latitude: CENTRE.latitude + latitudeDelta,
+      longitude: CENTRE.longitude + longitudeDelta,
+    },
+    {
+      latitude: CENTRE.latitude - latitudeDelta,
+      longitude: CENTRE.longitude + longitudeDelta,
+    },
+    {
+      latitude: CENTRE.latitude - latitudeDelta,
+      longitude: CENTRE.longitude - longitudeDelta,
+    },
+  ];
+};
 
-    expect(outline).toHaveLength(4);
-    const latitudes = outline.map((point) => point.latitude);
-    const longitudes = outline.map((point) => point.longitude);
-    expect(Math.min(...latitudes)).toBeLessThan(CENTRE.latitude);
-    expect(Math.max(...latitudes)).toBeGreaterThan(CENTRE.latitude);
-    expect(Math.min(...longitudes)).toBeLessThan(CENTRE.longitude);
-    expect(Math.max(...longitudes)).toBeGreaterThan(CENTRE.longitude);
-  });
-
-  it("measures close to the side length it was asked for", () => {
+describe("calculateRoofMetrics", () => {
+  it("measures close to the side length it was given", () => {
     const { areaSquareMeters } = calculateRoofMetrics(square(20));
 
     // Within a percent: the projection is flat-earth, over 20 metres.
     expect(areaSquareMeters).toBeGreaterThan(400 * 0.99);
     expect(areaSquareMeters).toBeLessThan(400 * 1.01);
-  });
-
-  it("starts above the minimum, so tracing opens on a usable shape", () => {
-    // Otherwise the first thing on screen is an error about the shape the app
-    // just drew for you.
-    const { areaSquareMeters } = calculateRoofMetrics(
-      square(DEFAULT_OUTLINE_SIDE_METERS),
-    );
-
-    expect(areaSquareMeters).toBeGreaterThan(MIN_VALID_ROOF_AREA_SQUARE_METERS);
   });
 });
 

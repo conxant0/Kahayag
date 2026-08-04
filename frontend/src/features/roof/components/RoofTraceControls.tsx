@@ -11,7 +11,6 @@ type Props = {
   startRoofTracing: () => void;
   finishRoofTracing: () => void;
   resetRoofTracing: () => void;
-  redrawRoofTracing: () => void;
 };
 
 /**
@@ -32,10 +31,8 @@ export function RoofTraceControls({
   startRoofTracing,
   finishRoofTracing,
   resetRoofTracing,
-  redrawRoofTracing,
 }: Props) {
   const area = roofMetrics.areaSquareMeters;
-  const hasSecondaryRow = stage.canRedraw || stage.canClear;
 
   return (
     <div
@@ -116,29 +113,19 @@ export function RoofTraceControls({
         </Button>
       )}
 
-      {hasSecondaryRow && (
-        <div className="flex gap-2">
-          {stage.canRedraw && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={redrawRoofTracing}
-              className="flex-1 justify-center"
-            >
-              Start over
-            </Button>
-          )}
-          {stage.canClear && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={resetRoofTracing}
-              className="flex-1 justify-center hover:border-ember/40 hover:text-ember"
-            >
-              Clear
-            </Button>
-          )}
-        </div>
+      {/* Clear is the one way back to an empty map: with corners clicked into
+          place rather than dragged from a seed, redrawing and clearing had
+          become the same act, and two buttons for one act is a choice with no
+          difference to choose on. */}
+      {stage.canClear && (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={resetRoofTracing}
+          className="justify-center hover:border-ember/40 hover:text-ember"
+        >
+          Clear
+        </Button>
       )}
     </div>
   );

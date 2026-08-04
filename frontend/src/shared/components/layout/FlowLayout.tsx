@@ -78,7 +78,7 @@ export function FlowLayout({
       id="main"
       className={cn(
         "flex h-svh flex-col bg-paper",
-        "lg:grid lg:grid-cols-[26.25rem_1fr] lg:grid-rows-[auto_auto_1fr_auto] lg:pt-14 lg:pb-12",
+        "lg:grid lg:grid-cols-[26.25rem_1fr] lg:grid-rows-[auto_1fr_auto] lg:pt-14 lg:pb-12",
       )}
     >
       <div
@@ -133,7 +133,7 @@ export function FlowLayout({
         <div
           className={cn(
             "flex min-h-56 flex-1 px-6 py-5",
-            "lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:min-h-0 lg:px-0 lg:py-0",
+            "lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:min-h-0 lg:px-0 lg:py-0",
             // Fills the frame behind the rail. Listed before `paneClassName` so
             // a screen can still adjust its own padding on the wide layout.
             behind &&
@@ -149,7 +149,7 @@ export function FlowLayout({
             railColumn,
             // The grid sets no row gap, so this block buys its own air under the
             // heading on desktop and collapses entirely when it has no content.
-            "pb-2 empty:hidden lg:col-start-1 lg:row-start-2 lg:pt-8 lg:pr-10 lg:pb-0 lg:pl-12",
+            "pb-2 empty:hidden lg:col-start-1 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:pt-8 lg:pr-10 lg:pb-0 lg:pl-12",
             behind &&
               "pointer-events-none relative z-10 mt-auto pb-4 lg:pointer-events-auto lg:mt-0 lg:pb-0 [&>*]:pointer-events-auto",
           )}
@@ -158,13 +158,10 @@ export function FlowLayout({
         </div>
       </div>
 
-      {/* Pushes the action bar to the foot of the rail on desktop only. */}
-      <div className="hidden lg:col-start-1 lg:row-start-3 lg:block" />
-
       <div
         className={cn(
           "flex shrink-0 flex-col gap-3 border-t border-hairline bg-paper px-6 pt-4 pb-6",
-          "lg:col-start-1 lg:row-start-4 lg:border-t-0 lg:pt-0 lg:pr-10 lg:pb-0 lg:pl-12",
+          "lg:col-start-1 lg:row-start-3 lg:border-t-0 lg:pt-0 lg:pr-10 lg:pb-0 lg:pl-12",
         )}
       >
         {beforeCta}

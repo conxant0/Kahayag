@@ -225,12 +225,13 @@ function computeSizingForPanelClass(
 
   if (recommendation.panel_category_id === panelCategoryId) {
     const annualGenerationKwh = Number(recommendation.annual_generation_kwh);
-    const annualConsumptionKwh = Number(inputs.monthly_consumption_kwh) * 12;
+    const annualConsumptionKwh =
+      Number(result.estimated_monthly_consumption_kwh) * 12;
     const billableGenerationKwh = Math.min(
       annualGenerationKwh,
       annualConsumptionKwh,
     );
-    const rate = Number(inputs.electricity_rate_php_per_kwh);
+    const rate = Number(result.resolved_tariff_php_per_kwh);
     const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
     const systemCapacityKwp = Number(recommendation.system_capacity_kwp);
 
@@ -249,7 +250,7 @@ function computeSizingForPanelClass(
 
   const usableAreaM2 = Number(result.roof.usable_area_m2);
   const annualYieldPerKwpKwh = resolveAnnualYieldPerKwpKwh(assumptions);
-  const monthlyConsumptionKwh = Number(inputs.monthly_consumption_kwh);
+  const monthlyConsumptionKwh = Number(result.estimated_monthly_consumption_kwh);
   const annualConsumptionKwh = monthlyConsumptionKwh * 12;
   const consumptionLimitedSystemSizeKwp =
     annualConsumptionKwh / annualYieldPerKwpKwh;
@@ -282,7 +283,7 @@ function computeSizingForPanelClass(
     annualGenerationKwh,
     annualConsumptionKwh,
   );
-  const rate = Number(inputs.electricity_rate_php_per_kwh);
+  const rate = Number(result.resolved_tariff_php_per_kwh);
   const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
   const estimatedBaseCostPhp = Math.floor(

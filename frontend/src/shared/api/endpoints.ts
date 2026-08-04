@@ -8,7 +8,6 @@ export const ENDPOINTS = {
   panelCountAdjustment: "/assessments/panel-count-adjustment",
   investmentProjection: "/assessments/investment-projection",
   propertySearch: "/properties/search",
-  roofOutline: "/properties/roof-outline",
   approximateLocation: "/geolocation/approximate",
   reportsPdf: "/reports/pdf",
   designsBootstrap: "/designs/bootstrap",

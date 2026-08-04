@@ -3,6 +3,8 @@
 // Screens compose from these. Do not re-implement a pill, chip, or row inline —
 // if a screen needs a variant that does not exist, add it here so every screen
 // gets it.
+export { Accordion, AccordionItem } from "./Accordion";
+
 export { Button, ButtonLink, CtaArrow } from "./Button";
 export type { ButtonLinkProps, ButtonProps, ButtonVariant } from "./Button";
 

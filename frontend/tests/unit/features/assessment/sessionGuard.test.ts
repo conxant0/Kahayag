@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { resolveRedirectForStep } from "../../../../src/features/assessment/sessionGuard";
 import { roofPolygonFixture } from "../../../fixtures/roofPolygonFixture";
 import {
+  DEFAULT_ASSESSMENT_PLANS,
+  DEFAULT_CONTACT_DETAILS,
   DEFAULT_ENERGY_INPUTS,
   type PersistedSession,
   type SelectedProperty,
@@ -32,13 +34,39 @@ function session(overrides: Partial<PersistedSession> = {}): PersistedSession {
     selectedProperty: PROPERTY,
     roofPolygon: ROOF,
     energyInputs: { ...DEFAULT_ENERGY_INPUTS, monthlyBillPhp: 4800 },
+    plans: {
+      ...DEFAULT_ASSESSMENT_PLANS,
+      primaryGoal: "reduce-bill",
+      usagePattern: "daytime",
+    },
+    contactDetails: { ...DEFAULT_CONTACT_DETAILS },
     ...overrides,
   };
 }
 
 describe("resolveRedirectForStep", () => {
-  it("lets a complete session stay on either step", () => {
+  it("lets a complete session stay on any step", () => {
     expect(resolveRedirectForStep("energy", session())).toBeNull();
+    expect(resolveRedirectForStep("plans", session())).toBeNull();
+    expect(resolveRedirectForStep("loading", session())).toBeNull();
+  });
+
+  it("keeps /plans open for the session it is about to collect answers from", () => {
+    const unanswered = session({ plans: { ...DEFAULT_ASSESSMENT_PLANS } });
+
+    expect(resolveRedirectForStep("plans", unanswered)).toBeNull();
+  });
+
+  it("sends /loading back to the plans step until both required answers exist", () => {
+    // Only the goal and the usage pattern gate the flow; every optional
+    // answer left blank must not hold it.
+    const unanswered = session({ plans: { ...DEFAULT_ASSESSMENT_PLANS } });
+    const goalOnly = session({
+      plans: { ...DEFAULT_ASSESSMENT_PLANS, primaryGoal: "backup-outages" },
+    });
+
+    expect(resolveRedirectForStep("loading", unanswered)).toBe("/plans");
+    expect(resolveRedirectForStep("loading", goalOnly)).toBe("/plans");
     expect(resolveRedirectForStep("loading", session())).toBeNull();
   });
 
