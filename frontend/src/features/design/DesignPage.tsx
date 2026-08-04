@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { DesignFlowStepper, DesignStepTabs } from "../../shared/components/layout";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
+import { buildPlansPayload } from "../assessment/buildPlansPayload";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
 import { DesignAppliedModal } from "./DesignAppliedModal";
@@ -16,6 +17,7 @@ import { useBootstrapDesign } from "./useDesignActions";
 export function DesignPage() {
   const rawResult = useAssessmentStore((state) => state.result);
   const selectedProperty = useAssessmentStore((state) => state.selectedProperty);
+  const plans = useAssessmentStore((state) => state.plans);
   const designSession = useDesignStore((state) => state.designSession);
   const quoteAuditResults = useDesignStore((state) => state.quoteAuditResults);
   const applyDesign = useDesignStore((state) => state.applyDesign);
@@ -44,12 +46,14 @@ export function DesignPage() {
         selectedProperty?.placeId ??
         selectedProperty?.address ??
         "session-property",
+      plans: buildPlansPayload(plans),
     });
   }, [
     bootstrap.isError,
     bootstrap.isPending,
     bootstrap.mutate,
     designSession,
+    plans,
     rawResult,
     result,
     selectedProperty?.address,
@@ -86,6 +90,20 @@ export function DesignPage() {
           saveDisabled={actionsDisabled}
           onApply={handleApply}
         />
+
+        {activeBuild &&
+        Math.abs(
+          activeBuild.system_kwp - Number(result.recommendation.system_capacity_kwp),
+        ) >= 0.05 ? (
+          <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-8">
+            <p className="rounded-[14px] border border-hairline bg-[#fffdf5] px-4 py-3 font-sans text-[13px] leading-5 text-secondary">
+              Starting from your {result.recommendation.panel_count}-panel preliminary
+              estimate ({Number(result.recommendation.system_capacity_kwp).toFixed(1)}{" "}
+              kWp). Selected catalog equipment sizes the system at{" "}
+              {activeBuild.system_kwp.toFixed(1)} kWp.
+            </p>
+          </div>
+        ) : null}
 
         <div className="mx-auto grid min-h-0 w-full max-w-[1440px] flex-1 grid-cols-1 lg:grid-cols-[18.5rem_1fr]">
           <aside className="flex min-h-0 flex-col overflow-hidden border-b border-hairline px-5 py-5 lg:border-r lg:border-b-0 lg:px-5">

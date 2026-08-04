@@ -2,7 +2,8 @@
 
 import json
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request
+from starlette.datastructures import UploadFile
 
 from app.core.config import Settings, get_settings
 from app.features.design.agent import explain_design_session, run_design_agent_turn
@@ -14,26 +15,34 @@ from app.features.design.schemas import (
     BootstrapDesignRequest,
     CatalogOptionSchema,
     CatalogOptionsRequest,
+    CreateUserBuildRequest,
     DesignSessionSchema,
     ExplainDesignRequest,
     ExplainDesignResponse,
     GenerateQuotationRequest,
+    ManageBuildRequest,
     MutateDesignRequest,
     OptimiseDesignRequest,
     QuotationDocumentSchema,
     QuoteAuditResponseSchema,
     RejectionReasonSchema,
+    UpdateUserBuildComponentRequest,
 )
 from app.features.design.service import (
     NoValidDesignError,
     bootstrap_design_session,
+    create_user_build_session,
+    delete_build_session,
+    duplicate_build_session,
     generate_quotation,
     get_rejections_for_solve,
     mutate_design_session,
     optimise_design_session,
+    update_user_build_component_session,
 )
 from app.integrations.ai import get_design_agent_client, get_quote_auditor_client
 from app.integrations.quote_parsing import get_quote_image_transcriber
+from app.integrations.quote_parsing.document_reader import MAX_QUOTE_UPLOAD_BYTES
 
 router = APIRouter(prefix="/designs", tags=["designs"])
 
@@ -60,6 +69,53 @@ def optimise_design(request: OptimiseDesignRequest) -> DesignSessionSchema:
 def mutate_design(request: MutateDesignRequest) -> DesignSessionSchema:
     try:
         return mutate_design_session(request)
+    except NoValidDesignError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/builds", response_model=DesignSessionSchema)
+def create_user_build(request: CreateUserBuildRequest) -> DesignSessionSchema:
+    try:
+        return create_user_build_session(request)
+    except NoValidDesignError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/builds/{build_id}/components", response_model=DesignSessionSchema)
+def update_user_build_component(
+    build_id: str,
+    request: UpdateUserBuildComponentRequest,
+) -> DesignSessionSchema:
+    if request.build_id != build_id:
+        raise HTTPException(status_code=400, detail="build_id path/body mismatch.")
+    try:
+        return update_user_build_component_session(request)
+    except NoValidDesignError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/builds/{build_id}/duplicate", response_model=DesignSessionSchema)
+def duplicate_build(
+    build_id: str,
+    request: ManageBuildRequest,
+) -> DesignSessionSchema:
+    if request.build_id != build_id:
+        raise HTTPException(status_code=400, detail="build_id path/body mismatch.")
+    try:
+        return duplicate_build_session(request)
+    except NoValidDesignError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/builds/{build_id}/delete", response_model=DesignSessionSchema)
+def delete_build(
+    build_id: str,
+    request: ManageBuildRequest,
+) -> DesignSessionSchema:
+    if request.build_id != build_id:
+        raise HTTPException(status_code=400, detail="build_id path/body mismatch.")
+    try:
+        return delete_build_session(request)
     except NoValidDesignError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -117,23 +173,31 @@ def explain_design(
 
 @router.post("/quote-audit", response_model=QuoteAuditResponseSchema)
 async def audit_quote(
-    session: str = Form(...),
-    file: UploadFile = File(...),  # noqa: B008
+    request: Request,
     settings: Settings = DependsSettings,
 ) -> QuoteAuditResponseSchema:
+    form = await request.form(max_part_size=MAX_QUOTE_UPLOAD_BYTES)
+    session_raw = form.get("session")
+    upload = form.get("file")
+
+    if not isinstance(session_raw, str):
+        raise HTTPException(status_code=400, detail="Invalid session payload.")
     try:
-        session_payload = DesignSessionSchema.model_validate(json.loads(session))
+        session_payload = DesignSessionSchema.model_validate(json.loads(session_raw))
     except (json.JSONDecodeError, ValueError) as error:
         raise HTTPException(status_code=400, detail="Invalid session payload.") from error
 
-    content = await file.read()
+    if not isinstance(upload, UploadFile):
+        raise HTTPException(status_code=400, detail="Uploaded file is required.")
+
+    content = await upload.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
         quote_client = get_quote_auditor_client(settings)
         return audit_uploaded_quote(
-            filename=file.filename or "upload.txt",
+            filename=upload.filename or "upload.txt",
             content=content,
             session=session_payload,
             client=quote_client,

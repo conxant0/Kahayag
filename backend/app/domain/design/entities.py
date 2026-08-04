@@ -37,6 +37,7 @@ class SolverConstraints:
     locked_inverter_id: str | None = None
     locked_battery_id: str | None = None
     panel_count_delta: int | None = None
+    seed_panel_count: int | None = None
     annual_consumption_kwh: float = 0.0
     resolved_tariff_php_per_kwh: float = 12.0
     annual_yield_per_kwp_kwh: float = 1400.0
@@ -136,6 +137,7 @@ class DesignSession:
     last_solve: SolveResult | None
     applied: bool
     agent_audit: tuple[AgentAuditEntry, ...] = ()
+    homeowner_plans: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)

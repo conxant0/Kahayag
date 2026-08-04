@@ -13,6 +13,10 @@ const sampleQuote = {
   findings: [{ category: "pricing", severity: "warning" as const, message: "Above benchmark" }],
   summary: "The uploaded quote runs above the Kahayag benchmark.",
   diagram_components: mockDesignSession.builds[0]!.components.slice(0, 4),
+  pros: [],
+  cons: ["Above benchmark"],
+  questions_for_installer: ["Which line items drive the price above a typical catalog build?"],
+  verdict: "caution" as const,
 };
 
 describe("quote compare view model", () => {
@@ -20,10 +24,12 @@ describe("quote compare view model", () => {
     const [view] = compareQuotes([sampleQuote]);
 
     expect(view?.label).toBe("installer.pdf");
-    expect(view?.overviewSpecs.some((row) => row.label === "Panels")).toBe(true);
+    expect(view?.overviewSpecs.some((row) => row.label === "Solar panels")).toBe(true);
     expect(view?.technicalRows.some((row) => row.label === "System size")).toBe(true);
-    expect(view?.technicalRows.some((row) => row.label === "Kahayag benchmark")).toBe(true);
-    expect(view?.benchmarkDeltaLabel).toContain("above benchmark");
+    expect(view?.technicalRows.some((row) => row.label === "Expected for your roof")).toBe(true);
+    expect(view?.benchmarkDeltaLabel).toContain("higher than expected");
+    expect(view?.verdictLabel).toBe("Worth a closer look");
+    expect(view?.questionsForInstaller.length).toBeGreaterThan(0);
   });
 
   it("creates one card view per uploaded quote", () => {

@@ -92,6 +92,30 @@ def test_quote_audit_parses_table_style_grand_total(
     assert any(item["slot"] == "inverter" for item in body["diagram_components"])
 
 
+def test_quote_audit_accepts_uploads_larger_than_default_multipart_limit(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+
+    # Starlette's default multipart part limit is 1 MB; quote uploads allow 10 MB.
+    oversized_image = b"\x00" * (1024 * 1024 + 512)
+
+    response = client.post(
+        "/api/v1/designs/quote-audit",
+        data={"session": __import__("json").dumps(bootstrap)},
+        files={"file": ("installer-quote.webp", oversized_image, "image/webp")},
+    )
+
+    assert "Part exceeded maximum size" not in response.text
+    assert response.status_code in {200, 422}
+
+
 def test_mutate_reruns_solver_with_panel_delta(
     completed_assessment_data: dict[str, object],
 ) -> None:

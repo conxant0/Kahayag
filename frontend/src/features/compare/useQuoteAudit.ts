@@ -11,6 +11,15 @@ export type QuoteAuditBatchResult = {
   failures: string[];
 };
 
+const MAX_QUOTE_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+function validateQuoteFileSize(file: File): string | null {
+  if (file.size > MAX_QUOTE_UPLOAD_BYTES) {
+    return `${file.name}: File is too large. Maximum size is 10 MB.`;
+  }
+  return null;
+}
+
 async function auditQuoteFile(
   file: File,
   session: NonNullable<ReturnType<typeof useDesignStore.getState>["designSession"]>,
@@ -38,6 +47,11 @@ export function useQuoteAudit() {
       const failures: string[] = [];
 
       for (const file of files) {
+        const sizeError = validateQuoteFileSize(file);
+        if (sizeError) {
+          failures.push(sizeError);
+          continue;
+        }
         try {
           const result = await auditQuoteFile(file, designSession);
           results.push(result);

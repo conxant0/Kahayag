@@ -2,9 +2,40 @@ import { useState } from "react";
 
 import type { DesignComponent } from "../../shared/api/types";
 import { cn } from "../../shared/lib/cn";
+import { peso } from "../../shared/lib/currency";
 import { CanvasSlotIcon, SLOT_ACCENT } from "./canvasSlotIcons";
-import { canvasSlotHeader } from "./designViewModel";
+import { canvasSlotHeader, canvasSlotHeaderForComponent, isAggregatedBosComponent } from "./designViewModel";
 import { ComponentProductImage } from "./ComponentProductImage";
+
+function isFromQuote(component: DesignComponent): boolean {
+  return component.badges.some((badge) => badge.toUpperCase().includes("QUOTE"));
+}
+
+function displayModel(component: DesignComponent): string {
+  const model = component.model.trim();
+  if (model && model !== "—") {
+    return model;
+  }
+  const summary = component.summary.trim();
+  return summary || model || "—";
+}
+
+function priceLabel(component: DesignComponent): { total: string; detail: string | null } | null {
+  if (component.line_total_php <= 0) {
+    return null;
+  }
+  const roundedQty = Math.round(component.qty);
+  const computedTotal = component.unit_price_php * component.qty;
+  const showBreakdown =
+    component.qty > 1 &&
+    component.unit_price_php > 0 &&
+    Math.abs(computedTotal - component.line_total_php) < 1;
+
+  return {
+    total: peso(component.line_total_php),
+    detail: showBreakdown ? `${peso(component.unit_price_php)} × ${roundedQty}` : null,
+  };
+}
 
 function formatStatLabel(key: string): string {
   return key.replace(/_/g, " ").toUpperCase();
@@ -71,7 +102,17 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
 }
 
 function quantityLabel(component: DesignComponent): string {
-  if (component.slot === "protection") {
+  if (component.slot === "protection" || isAggregatedBosComponent(component)) {
+    if (isAggregatedBosComponent(component)) {
+      return component.model;
+    }
+    if (isFromQuote(component) && component.qty > 0) {
+      const count =
+        component.qty % 1 === 0
+          ? String(Math.round(component.qty))
+          : component.qty.toFixed(2);
+      return `${count} ${component.unit}`;
+    }
     return "Included";
   }
   if (component.slot === "battery" && component.qty === 0) {
@@ -81,27 +122,80 @@ function quantityLabel(component: DesignComponent): string {
     return "Pending";
   }
   const count = Math.round(component.qty);
+  if (component.slot === "inverter" && count > 1) {
+    const ratedKw =
+      typeof component.specs.rated_ac_kw === "number"
+        ? component.specs.rated_ac_kw
+        : typeof component.specs.rated_ac_output_w === "number"
+          ? component.specs.rated_ac_output_w / 1000
+          : null;
+    if (ratedKw !== null && ratedKw < 1) {
+      return `${count} microinverters`;
+    }
+  }
   if (component.slot === "panel" || component.slot === "inverter") {
     return `${count} ${count === 1 ? "unit" : "units"}`;
   }
   return `${count} ${component.unit}`;
 }
 
-function EmptyBatteryCard({ onAdd }: { onAdd?: () => void }) {
-  const accent = SLOT_ACCENT.battery;
-  return (
-    <button
-      type="button"
-      onClick={onAdd}
-      className="flex w-[15.5rem] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#cfc9bb] bg-white/70 px-4 py-8 text-center shadow-[0_2px_8px_rgba(26,23,18,0.03)] transition-colors hover:border-cobalt/40 hover:bg-white"
-    >
-      <div className={cn("flex size-10 items-center justify-center rounded-[10px]", accent.bg)}>
-        <CanvasSlotIcon slot="battery" size={20} />
+function EmptySlotCard({
+  slot,
+  onAdd,
+  className,
+  compact = false,
+}: {
+  slot: DesignComponent["slot"];
+  onAdd?: () => void;
+  className?: string;
+  compact?: boolean;
+}) {
+  const accent = SLOT_ACCENT[slot];
+  const emptyLabel =
+    slot === "panel"
+      ? "Add panels"
+      : slot === "inverter"
+        ? "Add inverter"
+        : "— Not included";
+  const sharedClassName = cn(
+    "flex w-[15.5rem] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#cfc9bb] bg-white/70 text-center shadow-[0_2px_8px_rgba(26,23,18,0.03)]",
+    compact ? "px-2 py-4" : "px-4 py-8",
+    onAdd ? "transition-colors hover:border-cobalt/40 hover:bg-white" : "",
+    className,
+  );
+
+  const body = (
+    <>
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-[10px]",
+          compact ? "size-7" : "size-10",
+          accent.bg,
+        )}
+      >
+        <CanvasSlotIcon slot={slot} size={compact ? 16 : 20} />
       </div>
-      <p className="mt-2 font-sans text-sm font-semibold text-secondary">— Not included</p>
-      <p className="font-sans text-[10px] font-semibold tracking-[0.8px] text-tertiary uppercase">
-        Energy store
+      <p
+        className={cn(
+          "mt-2 font-sans font-semibold text-secondary",
+          compact ? "text-[10px]" : "text-sm",
+        )}
+      >
+        {emptyLabel}
       </p>
+      <p className="font-sans text-[8px] font-semibold tracking-[0.6px] text-tertiary uppercase">
+        {canvasSlotHeader(slot)}
+      </p>
+    </>
+  );
+
+  if (!onAdd) {
+    return <div className={sharedClassName}>{body}</div>;
+  }
+
+  return (
+    <button type="button" onClick={onAdd} className={sharedClassName}>
+      {body}
     </button>
   );
 }
@@ -112,16 +206,23 @@ export function CanvasComponentCard({
   onSwap,
   className,
   showProductImage = false,
+  compact = false,
 }: {
   component: DesignComponent;
   highlighted?: boolean;
   onSwap?: () => void;
   className?: string;
   showProductImage?: boolean;
+  compact?: boolean;
 }) {
   const [showDetails, setShowDetails] = useState(false);
   const stats = statEntries(component);
-  const isEmptyBattery = component.qty === 0 && component.slot === "battery";
+  const price = priceLabel(component);
+  const isEmptySlot =
+    component.qty <= 0 &&
+    (component.slot === "panel" ||
+      component.slot === "inverter" ||
+      component.slot === "battery");
   const autoSuggested = component.badges.some((badge) =>
     badge.toLowerCase().includes("auto"),
   );
@@ -133,8 +234,47 @@ export function CanvasComponentCard({
       component.slot === "inverter" ||
       component.slot === "battery");
 
-  if (isEmptyBattery) {
-    return <EmptyBatteryCard onAdd={onSwap} />;
+  if (isEmptySlot) {
+    return (
+      <EmptySlotCard
+        slot={component.slot}
+        onAdd={onSwap}
+        className={className}
+        compact={compact}
+      />
+    );
+  }
+
+  if (compact) {
+    return (
+      <article
+        className={cn(
+          "flex w-[7.25rem] min-w-0 flex-col overflow-hidden rounded-[12px] border bg-white shadow-[0_2px_8px_rgba(26,23,18,0.04)]",
+          showHighlight ? "border-sun border-[1.5px]" : "border-hairline",
+          className,
+        )}
+      >
+        <div className="flex flex-col gap-1.5 p-2">
+          <div className="flex items-center gap-1">
+            <div className={cn("flex size-5 shrink-0 items-center justify-center rounded-[6px]", accent.bg)}>
+              <CanvasSlotIcon slot={component.slot} size={12} />
+            </div>
+            <p className="min-w-0 truncate font-sans text-[7px] font-semibold tracking-[0.4px] text-tertiary uppercase">
+              {canvasSlotHeaderForComponent(component)}
+            </p>
+          </div>
+          <p className="font-sans text-[7px] font-semibold tracking-[0.4px] text-tertiary uppercase">
+            {quantityLabel(component)}
+          </p>
+          <div className="min-w-0">
+            <p className="truncate font-sans text-[10px] font-semibold text-cobalt">{component.brand}</p>
+            <p className="line-clamp-2 font-sans text-[11px] leading-tight font-bold text-ink">
+              {displayModel(component)}
+            </p>
+          </div>
+        </div>
+      </article>
+    );
   }
 
   return (
@@ -158,7 +298,7 @@ export function CanvasComponentCard({
               <CanvasSlotIcon slot={component.slot} size={16} />
             </div>
             <p className="font-sans text-[9px] font-semibold tracking-[0.8px] text-tertiary uppercase">
-              {canvasSlotHeader(component.slot)}
+              {canvasSlotHeaderForComponent(component)}
             </p>
           </div>
           <p className="font-sans text-[9px] font-semibold tracking-[0.8px] text-tertiary uppercase">
@@ -166,14 +306,25 @@ export function CanvasComponentCard({
           </p>
         </div>
 
-        <div>
-          <p className="font-sans text-[12px] font-semibold text-cobalt">{component.brand}</p>
-          <p className="font-sans text-[14px] leading-tight font-bold text-ink">{component.model}</p>
+        <div className={cn("flex gap-2.5", showProductImage ? "items-start" : "")}>
+          {showProductImage ? (
+            <ComponentProductImage component={component} size="thumb" />
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <p className="font-sans text-[12px] font-semibold text-cobalt">{component.brand}</p>
+            <p className="font-sans text-[14px] leading-tight font-bold text-ink">
+              {displayModel(component)}
+            </p>
+            {price ? (
+              <div className="mt-1.5">
+                <p className="font-sans text-[15px] font-bold text-ink">{price.total}</p>
+                {price.detail ? (
+                  <p className="font-sans text-[10px] text-secondary">{price.detail}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
-
-        {showProductImage ? (
-          <ComponentProductImage component={component} size="lg" />
-        ) : null}
 
         {stats.length > 0 ? (
           <div className="grid grid-cols-2 gap-1.5">
@@ -197,7 +348,7 @@ export function CanvasComponentCard({
           </p>
         ) : null}
 
-        {component.slot === "protection" ? (
+        {component.slot === "protection" || isAggregatedBosComponent(component) ? (
           <div className="flex flex-wrap gap-1">
             <span className="rounded-pill bg-[#f2eee4] px-2 py-0.5 font-sans text-[9px] font-semibold text-secondary">
               PEC 2024

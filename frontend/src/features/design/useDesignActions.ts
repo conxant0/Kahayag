@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { apiPost } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
-import type { DesignSession, MutateDesignPayload, SolverGoal, CatalogPickerSlot, CatalogOption } from "../../shared/api/types";
+import type { DesignSession, MutateDesignPayload, SolverGoal, CatalogPickerSlot, CatalogOption, UpdateUserBuildComponentPayload } from "../../shared/api/types";
 import { useDesignStore } from "../../state/designStore";
 
 export type AgentDesignPayload = {
@@ -16,14 +16,22 @@ export type AgentDesignResponse = {
   reply: string;
   requires_confirmation: boolean;
   planned_actions: Array<{ name: string; arguments: Record<string, unknown> }>;
+  reasoning_steps?: Array<{
+    kind: "thinking" | "tool_call" | "tool_result" | "error";
+    label: string;
+    detail?: string | null;
+  }>;
 };
 
 export function useBootstrapDesign() {
   const setDesignSession = useDesignStore((state) => state.setDesignSession);
 
   return useMutation({
-    mutationFn: (payload: { assessment: Record<string, unknown>; property_ref: string }) =>
-      apiPost<DesignSession>(ENDPOINTS.designsBootstrap, payload),
+    mutationFn: (payload: {
+      assessment: Record<string, unknown>;
+      property_ref: string;
+      plans?: Record<string, unknown>;
+    }) => apiPost<DesignSession>(ENDPOINTS.designsBootstrap, payload),
     onSuccess: (session) => setDesignSession(session),
   });
 }
@@ -98,6 +106,82 @@ export function useMutateDesign() {
         session: designSession,
         ...patch,
       });
+    },
+    onSuccess: (session) => setDesignSession(session),
+  });
+}
+
+export function useCreateUserBuild() {
+  const designSession = useDesignStore((state) => state.designSession);
+  const setDesignSession = useDesignStore((state) => state.setDesignSession);
+
+  return useMutation({
+    mutationFn: () => {
+      if (!designSession) {
+        throw new Error("Design session is not ready.");
+      }
+      return apiPost<DesignSession>(ENDPOINTS.designsBuilds, {
+        session: designSession,
+      });
+    },
+    onSuccess: (session) => setDesignSession(session),
+  });
+}
+
+export function useDuplicateDesignBuild() {
+  const designSession = useDesignStore((state) => state.designSession);
+  const setDesignSession = useDesignStore((state) => state.setDesignSession);
+
+  return useMutation({
+    mutationFn: (buildId: string) => {
+      if (!designSession) {
+        throw new Error("Design session is not ready.");
+      }
+      return apiPost<DesignSession>(ENDPOINTS.designsBuildDuplicate(buildId), {
+        session: designSession,
+        build_id: buildId,
+      });
+    },
+    onSuccess: (session) => setDesignSession(session),
+  });
+}
+
+export function useDeleteDesignBuild() {
+  const designSession = useDesignStore((state) => state.designSession);
+  const setDesignSession = useDesignStore((state) => state.setDesignSession);
+
+  return useMutation({
+    mutationFn: (buildId: string) => {
+      if (!designSession) {
+        throw new Error("Design session is not ready.");
+      }
+      return apiPost<DesignSession>(ENDPOINTS.designsBuildDelete(buildId), {
+        session: designSession,
+        build_id: buildId,
+      });
+    },
+    onSuccess: (session) => setDesignSession(session),
+  });
+}
+
+export function useUpdateUserBuildComponent() {
+  const designSession = useDesignStore((state) => state.designSession);
+  const setDesignSession = useDesignStore((state) => state.setDesignSession);
+
+  return useMutation({
+    mutationFn: (payload: Omit<UpdateUserBuildComponentPayload, "session">) => {
+      if (!designSession) {
+        throw new Error("Design session is not ready.");
+      }
+      return apiPost<DesignSession>(
+        ENDPOINTS.designsBuildComponent(payload.build_id),
+        {
+          session: designSession,
+          build_id: payload.build_id,
+          slot: payload.slot,
+          catalog_id: payload.catalog_id,
+        },
+      );
     },
     onSuccess: (session) => setDesignSession(session),
   });

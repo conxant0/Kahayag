@@ -7,6 +7,7 @@ import { Eyebrow, SegmentedToggle } from "../../shared/components/ui";
 import { useDesignStore } from "../../state/designStore";
 import { BuildCompareCard } from "./BuildCompareCard";
 import { BuildSideBySideCompare } from "./BuildSideBySideCompare";
+import { CompareCardSlot, CompareCardsGrid } from "./CompareCardsGrid";
 import { CompareCustomCard } from "./CompareCustomCard";
 import { QuoteAuditorCard } from "./QuoteAuditorCard";
 import {
@@ -59,13 +60,13 @@ export function ComparePage() {
     setRightColumnId(right);
   }, [columnIds]);
 
-  const selectedColumns = useMemo(
+  const [leftColumn, rightColumn] = useMemo(
     () => resolveComparePair(columns, leftColumnId, rightColumnId),
     [columns, leftColumnId, rightColumnId],
   );
   const matrixRows = useMemo(
-    () => comparisonMatrix(selectedColumns),
-    [selectedColumns],
+    () => (leftColumn ? comparisonMatrix(leftColumn, rightColumn) : []),
+    [leftColumn, rightColumn],
   );
 
   if (!designSession) {
@@ -117,56 +118,41 @@ export function ComparePage() {
           />
         </div>
 
-        {layout === "matrix" ? (
-          selectedColumns.length >= 2 ? (
-            <BuildSideBySideCompare
-              allColumns={columns}
-              selectedColumns={selectedColumns}
-              rows={matrixRows}
-              leftId={leftColumnId}
-              rightId={rightColumnId}
-              onLeftChange={setLeftColumnId}
-              onRightChange={setRightColumnId}
-              onSelectBuild={handleSelect}
-              onSelectQuote={handleSelectQuote}
-            />
-          ) : buildViews[0] ? (
-            <section aria-label="Build options" className="max-w-xl">
-              <BuildCompareCard view={buildViews[0]} onSelect={handleSelect} />
-            </section>
-          ) : null
-        ) : (
-          <section
-            aria-label="Build options"
-            className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4 xl:items-stretch"
-          >
+        {layout === "matrix" && leftColumn ? (
+          <BuildSideBySideCompare
+            allColumns={columns}
+            leftColumn={leftColumn}
+            rightColumn={rightColumn}
+            rows={matrixRows}
+            leftId={leftColumnId}
+            rightId={rightColumnId}
+            onLeftChange={setLeftColumnId}
+            onRightChange={setRightColumnId}
+            onSelectBuild={handleSelect}
+            onSelectQuote={handleSelectQuote}
+          />
+        ) : layout === "cards" ? (
+          <CompareCardsGrid>
             {buildViews.map((view) => (
-              <BuildCompareCard
-                key={view.build.id}
-                view={view}
-                onSelect={handleSelect}
-              />
+              <CompareCardSlot key={view.build.id}>
+                <BuildCompareCard view={view} onSelect={handleSelect} />
+              </CompareCardSlot>
             ))}
             {quoteViews.map((view) => (
-              <QuoteCompareCard
-                key={`${view.result.filename}:${view.index}`}
-                view={view}
-                onSelectQuote={handleSelectQuote}
-              />
+              <CompareCardSlot key={`${view.result.filename}:${view.index}`}>
+                <QuoteCompareCard
+                  view={view}
+                  onSelectQuote={handleSelectQuote}
+                />
+              </CompareCardSlot>
             ))}
-            <QuoteAuditorCard />
-            <CompareCustomCard />
-          </section>
-        )}
-
-        {layout === "matrix" ? (
-          <section
-            aria-label="Additional compare tools"
-            className="grid grid-cols-1 gap-5 md:grid-cols-2"
-          >
-            <QuoteAuditorCard />
-            <CompareCustomCard />
-          </section>
+            <CompareCardSlot>
+              <QuoteAuditorCard />
+            </CompareCardSlot>
+            <CompareCardSlot>
+              <CompareCustomCard />
+            </CompareCardSlot>
+          </CompareCardsGrid>
         ) : null}
       </main>
     </div>

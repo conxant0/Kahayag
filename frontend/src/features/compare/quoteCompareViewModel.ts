@@ -21,6 +21,12 @@ export type CompareQuoteView = {
   technicalRows: CompareSpecRow[];
   insight: string;
   hasDiagram: boolean;
+  verdictLabel: string;
+  verdictTone: "positive" | "caution" | "review";
+  pros: string[];
+  cons: string[];
+  questionsForInstaller: string[];
+  auditFindings: QuoteAuditResponse["findings"];
 };
 
 function componentLine(
@@ -37,24 +43,26 @@ function overviewSpecs(result: QuoteAuditResponse): CompareSpecRow[] {
 
   return [
     {
-      label: "Panels",
+      label: "Solar panels",
       value:
         typeof result.extracted_panel_count === "number"
-          ? `${result.extracted_panel_count} panels`
+          ? `${result.extracted_panel_count} panels on your roof`
           : panel
             ? `${panel.qty} × ${panel.model}`
-            : "—",
+            : "Not listed clearly",
     },
     {
-      label: "Power inverter",
-      value: inverter ? `${inverter.brand} · ${inverter.model}` : "—",
+      label: "Inverter",
+      value: inverter
+        ? `${inverter.brand} ${inverter.model}`
+        : "Not listed clearly",
     },
     {
-      label: "Battery storage",
+      label: "Battery backup",
       value:
         battery && battery.qty > 0
           ? `${battery.brand} ${battery.model}`
-          : "None included",
+          : "None — grid power only",
     },
   ];
 }
@@ -72,7 +80,7 @@ function technicalRows(result: QuoteAuditResponse): CompareSpecRow[] {
     typeof result.extracted_total_php === "number" &&
     typeof result.extracted_system_kwp === "number" &&
     result.extracted_system_kwp > 0
-      ? `₱${(result.extracted_total_php / (result.extracted_system_kwp * 1000)).toFixed(0)}/W`
+      ? `₱${(result.extracted_total_php / (result.extracted_system_kwp * 1000)).toFixed(0)} per watt`
       : "—";
 
   return [
@@ -80,7 +88,7 @@ function technicalRows(result: QuoteAuditResponse): CompareSpecRow[] {
       label: "System size",
       value:
         typeof result.extracted_system_kwp === "number"
-          ? `${result.extracted_system_kwp.toFixed(2)} kWp`
+          ? `${result.extracted_system_kwp.toFixed(1)} kW`
           : "—",
     },
     {
@@ -91,7 +99,7 @@ function technicalRows(result: QuoteAuditResponse): CompareSpecRow[] {
           : "—",
     },
     {
-      label: "Panels",
+      label: "Solar panels",
       value: panel ? `${panel.brand} ${panel.model}` : "—",
     },
     {
@@ -103,17 +111,17 @@ function technicalRows(result: QuoteAuditResponse): CompareSpecRow[] {
       value:
         battery && battery.qty > 0
           ? `${battery.brand} ${battery.model}`
-          : "None (grid-tie)",
+          : "None",
     },
     {
-      label: "Total cost",
+      label: "Quoted price",
       value:
         typeof result.extracted_total_php === "number"
           ? peso(result.extracted_total_php)
           : "—",
     },
     {
-      label: "Cost per watt",
+      label: "Price per watt",
       value: costPerWatt,
     },
     {
@@ -121,12 +129,12 @@ function technicalRows(result: QuoteAuditResponse): CompareSpecRow[] {
       value: partsTotal > 0 ? peso(partsTotal) : "—",
     },
     {
-      label: "Kahayag benchmark",
+      label: "Expected for your roof",
       value: peso(result.benchmark_total_php),
     },
     {
-      label: "Audit findings",
-      value: `${result.findings.length} item${result.findings.length === 1 ? "" : "s"}`,
+      label: "Review notes",
+      value: `${result.findings.length} point${result.findings.length === 1 ? "" : "s"} checked`,
     },
   ];
 }
@@ -140,7 +148,7 @@ function benchmarkComparison(result: QuoteAuditResponse): {
 
   if (typeof extracted !== "number" || benchmark <= 0) {
     return {
-      deltaLabel: "Could not compare to Kahayag benchmark",
+      deltaLabel: "We couldn't compare this price to our estimate",
       ratioPct: 100,
     };
   }
@@ -149,10 +157,10 @@ function benchmarkComparison(result: QuoteAuditResponse): {
   const pct = (delta / benchmark) * 100;
   const direction =
     delta === 0
-      ? "Matches Kahayag benchmark"
+      ? "About the same as we'd expect for your roof"
       : delta > 0
-        ? `${peso(delta)} above benchmark (${pct.toFixed(1)}%)`
-        : `${peso(Math.abs(delta))} below benchmark (${Math.abs(pct).toFixed(1)}%)`;
+        ? `${peso(delta)} higher than expected (${pct.toFixed(1)}%)`
+        : `${peso(Math.abs(delta))} lower than expected (${Math.abs(pct).toFixed(1)}%)`;
 
   return {
     deltaLabel: direction,
@@ -160,9 +168,23 @@ function benchmarkComparison(result: QuoteAuditResponse): {
   };
 }
 
+function verdictPresentation(
+  verdict: QuoteAuditResponse["verdict"],
+): { label: string; tone: CompareQuoteView["verdictTone"] } {
+  switch (verdict) {
+    case "favorable":
+      return { label: "Looks like a fair deal", tone: "positive" };
+    case "caution":
+      return { label: "Worth a closer look", tone: "caution" };
+    default:
+      return { label: "Review carefully before signing", tone: "review" };
+  }
+}
+
 export function compareQuotes(results: QuoteAuditResponse[]): CompareQuoteView[] {
   return results.map((result, index) => {
     const comparison = benchmarkComparison(result);
+    const verdict = verdictPresentation(result.verdict ?? "needs_review");
 
     return {
       result,
@@ -171,8 +193,8 @@ export function compareQuotes(results: QuoteAuditResponse[]): CompareQuoteView[]
       trait: "Uploaded quote",
       capacityLabel:
         typeof result.extracted_system_kwp === "number"
-          ? `${result.extracted_system_kwp.toFixed(1)} kWp`
-          : "Size unknown",
+          ? `${result.extracted_system_kwp.toFixed(1)} kW system`
+          : "Size unclear",
       quotedTotalLabel:
         typeof result.extracted_total_php === "number"
           ? peso(result.extracted_total_php)
@@ -183,6 +205,12 @@ export function compareQuotes(results: QuoteAuditResponse[]): CompareQuoteView[]
       technicalRows: technicalRows(result),
       insight: result.summary,
       hasDiagram: result.diagram_components.length > 0,
+      verdictLabel: verdict.label,
+      verdictTone: verdict.tone,
+      pros: result.pros ?? [],
+      cons: result.cons ?? [],
+      questionsForInstaller: result.questions_for_installer ?? [],
+      auditFindings: result.findings,
     };
   });
 }

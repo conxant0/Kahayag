@@ -30,7 +30,10 @@ export function ComponentProductImage({
           className,
         )}
       >
-        <CanvasSlotIcon slot={component.slot} size={size === "sm" ? 18 : size === "lg" ? 36 : 28} />
+        <CanvasSlotIcon
+          slot={component.slot}
+          size={size === "sm" ? 18 : size === "thumb" ? 24 : size === "lg" ? 36 : 28}
+        />
       </div>
     );
   }

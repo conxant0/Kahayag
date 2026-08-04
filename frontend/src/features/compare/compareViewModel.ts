@@ -44,8 +44,9 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
     session.builds.find((build) => build.source === "ai_suggested") ??
     [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
   const customBuilds = session.builds.filter((build) => build.source === "custom");
+  const userBuilds = session.builds.filter((build) => build.source === "user");
 
-  const ordered = [suggested, ...customBuilds].filter(
+  const ordered = [suggested, ...customBuilds, ...userBuilds].filter(
     (build, index, builds): build is DesignBuild =>
       build !== undefined && builds.indexOf(build) === index,
   );
@@ -56,7 +57,8 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
       build,
       isSuggested,
       trait: primaryTrait(build, isSuggested),
-      capacityLabel: `${build.system_kwp.toFixed(1)} kWp`,
+      capacityLabel:
+        build.system_kwp > 0 ? `${build.system_kwp.toFixed(1)} kWp` : "Not sized yet",
       monthlySavingsLabel: peso(build.monthly_savings_php),
       paybackLabel: build.payback_years
         ? `${build.payback_years.toFixed(1)} years`

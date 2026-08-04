@@ -1,5 +1,6 @@
 # Defines the thin design agent tool dispatch loop and audit logging.
 
+import json
 import re
 import uuid
 
@@ -24,6 +25,7 @@ from app.features.design.schemas import (
     MutateDesignRequest,
     OptimiseDesignRequest,
     PlannedActionSchema,
+    ReasoningStepSchema,
     SolverGoal,
 )
 from app.features.design.service import (
@@ -32,15 +34,72 @@ from app.features.design.service import (
     mutate_design_session,
     optimise_design_session,
 )
-from app.integrations.ai.design_agent import DesignAgentClient, PlannedToolCall
+from app.integrations.ai.design_agent import (
+    DesignAgentClient,
+    DisabledDesignAgentClient,
+    PlannedToolCall,
+)
+from app.integrations.ai.design_tools import MAX_TOOL_ITERATIONS
+
+_REMOVE_VERBS = ("remove", "drop", "delete", "take out", "get rid of", "without", "no ")
+
+
+def _validate_change_request(text: str) -> str | None:
+    lowered = text.lower()
+    if "inverter" in lowered and any(verb in lowered for verb in _REMOVE_VERBS):
+        return (
+            "I can't remove the inverter — every grid-tied system needs one to convert "
+            "solar DC into usable AC power. I can swap it for another model or help you "
+            "find a cheaper compatible option."
+        )
+    if (
+        "panel" in lowered
+        and any(verb in lowered for verb in _REMOVE_VERBS)
+        and any(token in lowered for token in ("all", "every", "completely", "entire"))
+    ):
+        return (
+            "I can't remove all of your panels — the system needs at least one to "
+            "generate power. I can reduce the panel count if you'd like a smaller array."
+        )
+    return None
+
+
+def _patch_applies_change(patch: dict[str, object]) -> bool:
+    meaningful_keys = {
+        "goal",
+        "budget_php",
+        "require_battery",
+        "min_battery_kwh",
+        "locked_panel_id",
+        "locked_inverter_id",
+        "locked_battery_id",
+        "panel_count_delta",
+        "seed_panel_count",
+        "swap_slot",
+        "prefer_cheaper",
+    }
+    return any(key in patch for key in meaningful_keys)
+
+
+def _equipment_signature(build: DesignBuildSchema) -> tuple[tuple[str, str | None], ...]:
+    slots: list[tuple[str, str | None]] = []
+    for slot in ("panel", "inverter", "battery"):
+        slots.append((slot, _component_catalog_id_from_build(build, slot)))
+    slots.append(("panel_count", str(build.panel_count)))
+    slots.append(("battery_kwh", str(build.battery_kwh)))
+    return tuple(slots)
 
 
 def _parse_change_request(change_request: str) -> dict[str, object]:
     lowered = change_request.lower()
     patch: dict[str, object] = {}
-    if any(token in lowered for token in ("battery", "storage", "backup")):
-        patch["require_battery"] = True
-        patch["min_battery_kwh"] = _achievable_battery_kwh(5.0)
+    if any(token in lowered for token in ("battery", "storage", "backup", "blackout", "brownout", "energy store")):
+        if any(token in lowered for token in _REMOVE_VERBS + ("without", "no battery", "no storage")):
+            patch["require_battery"] = False
+            patch["min_battery_kwh"] = None
+        else:
+            patch["require_battery"] = True
+            patch["min_battery_kwh"] = _achievable_battery_kwh(5.0)
     panel_delta_match = re.search(
         r"(?:add|remove|fewer|less|extra)\s+(?:(\d+|one|two|three|four|five)\s+)?(?:more\s+)?panels?",
         lowered,
@@ -49,21 +108,137 @@ def _parse_change_request(change_request: str) -> dict[str, object]:
         raw_count = panel_delta_match.group(1)
         word_counts = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
         count = int(raw_count) if raw_count and raw_count.isdigit() else word_counts.get(raw_count or "one", 1)
-        patch["panel_count_delta"] = count if "remove" not in panel_delta_match.group(0) and "fewer" not in panel_delta_match.group(0) and "less" not in panel_delta_match.group(0) else -count
-    elif any(token in lowered for token in ("more panel", "add panel", "extra panel")):
+        is_remove = any(
+            token in panel_delta_match.group(0)
+            for token in ("remove", "fewer", "less")
+        )
+        patch["panel_count_delta"] = -count if is_remove else count
+    elif any(token in lowered for token in ("more panel", "add panel", "extra panel", "increase panel")):
         patch["panel_count_delta"] = 1
-    elif any(token in lowered for token in ("fewer panel", "less panel", "remove panel")):
+    elif any(token in lowered for token in ("fewer panel", "less panel", "remove panel", "decrease panel")):
         patch["panel_count_delta"] = -1
-    if any(token in lowered for token in ("budget", "cheaper", "afford")):
+    if any(token in lowered for token in ("budget", "cheaper", "afford", "cheapest")):
         patch["goal"] = "budget"
-    if any(token in lowered for token in ("independence", "self-sufficient")):
+    if any(token in lowered for token in ("independence", "self-sufficient", "off-grid", "off grid")):
         patch["goal"] = "independence"
+    if any(token in lowered for token in ("backup", "blackout", "brownout", "outage")):
+        patch["goal"] = "backup"
+        patch["require_battery"] = True
+        patch["min_battery_kwh"] = _achievable_battery_kwh(5.0)
+    budget_match = re.search(
+        r"(?:budget|under|below|\bmax\b|maximum|cap(?:ped)? at|within|set budget to)\s*(?:₱|php|peso[s]?)?\s*([\d,]+(?:\.\d+)?)\s*(?:k|000)?",
+        lowered,
+    )
+    if budget_match:
+        raw = budget_match.group(1).replace(",", "")
+        if raw:
+            amount = float(raw)
+            if amount < 1000:
+                amount *= 1000
+            patch["budget_php"] = amount
     panel_match = re.search(r"panel[_\s-]?(\d{3})", lowered)
     if panel_match:
         patch["locked_panel_id"] = f"panel_{panel_match.group(1)}"
+    else:
+        model_match = re.search(
+            r"\b(?:use|switch to|swap to|try)\s+([a-z]{2,}\d{2,}[a-z0-9./+-]*)\b",
+            lowered,
+        )
+        if model_match:
+            from app.domain.design.catalog import load_catalog
+
+            token = model_match.group(1).lower().replace(" ", "")
+            for panel in load_catalog().panels.values():
+                haystack = f"{panel.brand} {panel.model} {panel.id}".lower().replace(" ", "")
+                if token in haystack:
+                    patch["locked_panel_id"] = panel.id
+                    break
     inverter_match = re.search(r"inv[_\s-]?(\d{3})", lowered)
     if inverter_match:
         patch["locked_inverter_id"] = f"inv_{inverter_match.group(1)}"
+    return patch
+
+
+def _detect_swap_slot(change_request: str) -> str | None:
+    lowered = change_request.lower()
+    swap_verbs = ("swap", "switch", "change", "replace", "upgrade", "downgrade", "use", "try")
+    wants_cheaper = _wants_cheaper_option(change_request)
+    wants_alternate = any(
+        token in lowered for token in ("different", "another", "other", "else")
+    )
+
+    if "inverter" in lowered and (
+        any(verb in lowered for verb in swap_verbs) or wants_cheaper or wants_alternate
+    ):
+        return "inverter"
+    if "panel" in lowered and (
+        any(verb in lowered for verb in swap_verbs) or wants_cheaper or wants_alternate
+    ):
+        return "panel"
+    if (
+        any(token in lowered for token in ("batter", "storage", "energy store"))
+        and (
+            any(verb in lowered for verb in swap_verbs)
+            or wants_cheaper
+            or wants_alternate
+        )
+    ):
+        return "battery"
+    return None
+
+
+def _wants_cheaper_option(change_request: str) -> bool:
+    lowered = change_request.lower()
+    return any(
+        token in lowered
+        for token in ("cheaper", "cheapest", "afford", "budget", "less expensive", "lower cost")
+    )
+
+
+def _component_catalog_id_from_build(build: DesignBuildSchema, slot: str) -> str | None:
+    for component in build.components:
+        if component.slot == slot and component.catalog_id:
+            return component.catalog_id
+    return None
+
+
+def _enrich_swap_patch(
+    patch: dict[str, object],
+    *,
+    session: DesignSessionSchema,
+    change_request: str,
+) -> dict[str, object]:
+    swap_slot = _detect_swap_slot(change_request)
+    if swap_slot is None:
+        return patch
+
+    active = next(
+        (build for build in session.builds if build.id == session.active_build_id),
+        None,
+    )
+    if active is None:
+        return patch
+
+    panel_id = _component_catalog_id_from_build(active, "panel")
+    inverter_id = _component_catalog_id_from_build(active, "inverter")
+    battery_id = _component_catalog_id_from_build(active, "battery")
+
+    if active.panel_count > 0:
+        patch["seed_panel_count"] = active.panel_count
+
+    if swap_slot != "panel" and panel_id:
+        patch["locked_panel_id"] = panel_id
+    if swap_slot != "inverter" and inverter_id:
+        patch["locked_inverter_id"] = inverter_id
+    if swap_slot != "battery" and battery_id:
+        patch["locked_battery_id"] = battery_id
+    elif swap_slot != "battery" and battery_id is None and "require_battery" not in patch:
+        patch["require_battery"] = False
+
+    patch["swap_slot"] = swap_slot
+    if _wants_cheaper_option(change_request):
+        patch["prefer_cheaper"] = True
+        patch.setdefault("goal", "budget")
     return patch
 
 
@@ -97,6 +272,7 @@ def _session_summary(session: DesignSessionSchema) -> dict[str, object]:
         "active_build_id": session.active_build_id,
         "active_build": active.model_dump() if active else None,
         "build_count": len(session.builds),
+        "homeowner_plans": session.homeowner_plans,
         "last_solve_id": session.last_solve.solve_id if session.last_solve else None,
         "valid_combo_count": len(session.last_solve.valid) if session.last_solve else 0,
         "rejection_count": len(session.last_solve.rejections)
@@ -134,6 +310,7 @@ def _execute_tool(
     call: PlannedToolCall,
     *,
     session: DesignSessionSchema,
+    user_text: str = "",
 ) -> tuple[dict[str, object], DesignSessionSchema | None]:
     if call.name == "query_catalog":
         category = str(call.arguments.get("category", "panels"))
@@ -206,18 +383,86 @@ def _execute_tool(
         }, None
 
     if call.name == "update_build":
-        patch = _parse_change_request(str(call.arguments.get("change_request", "")))
+        change_request = str(call.arguments.get("change_request", ""))
+        intent_text = user_text or change_request
+        blocked = _validate_change_request(intent_text)
+        if blocked is not None:
+            return {"error": blocked}, None
+
+        patch = _parse_change_request(change_request)
+        patch = _enrich_swap_patch(
+            patch,
+            session=session,
+            change_request=intent_text,
+        )
+        if not _patch_applies_change(patch):
+            return {
+                "error": (
+                    "I'm not sure what you'd like me to change. Try asking to swap the "
+                    "inverter or panels, add or remove battery storage, add panels, or "
+                    "optimise for budget."
+                ),
+            }, None
+
+        active_before = next(
+            (build for build in session.builds if build.id == session.active_build_id),
+            None,
+        )
         mutate_request = MutateDesignRequest(session=session, **patch)  # type: ignore[arg-type]
         updated = mutate_design_session(mutate_request)
         active = next(
             (build for build in updated.builds if build.id == updated.active_build_id),
             None,
         )
-        return {
+        if (
+            active_before is not None
+            and active is not None
+            and _equipment_signature(active_before) == _equipment_signature(active)
+        ):
+            return {
+                "error": (
+                    "That wouldn't change your current design. If you meant something "
+                    "else, try being more specific — e.g. swap the inverter or remove "
+                    "battery storage."
+                ),
+            }, None
+
+        result: dict[str, object] = {
             "active_build_id": updated.active_build_id,
             "system_kwp": active.system_kwp if active else None,
             "total_investment_php": active.total_investment_php if active else None,
-        }, updated
+            "swap_slot": patch.get("swap_slot"),
+            "user_text": intent_text,
+        }
+        if active_before is not None and active is not None:
+            result["previous_panel_count"] = active_before.panel_count
+            result["panel_count"] = active.panel_count
+            result["previous_battery_kwh"] = active_before.battery_kwh
+            result["battery_kwh"] = active.battery_kwh
+            if patch.get("swap_slot"):
+                slot = str(patch["swap_slot"])
+                before_id = _component_catalog_id_from_build(active_before, slot)
+                after_component = next(
+                    (component for component in active.components if component.slot == slot),
+                    None,
+                )
+                before_component = next(
+                    (
+                        component
+                        for component in active_before.components
+                        if component.slot == slot
+                    ),
+                    None,
+                )
+                if after_component is not None:
+                    result["component_changed"] = after_component.catalog_id != before_id
+                    result["previous_model"] = (
+                        before_component.model if before_component is not None else None
+                    )
+                    result["new_model"] = after_component.model
+                    result["previous_catalog_id"] = before_id
+                    result["new_catalog_id"] = after_component.catalog_id
+        return result, updated
 
     if call.name == "generate_quotation":
         build_id = str(call.arguments.get("build_id", session.active_build_id))
@@ -322,18 +567,143 @@ def _describe_planned_tools(
     return f"{reply} Apply when you're ready.", tuple(actions)
 
 
+def _reasoning_label_for_call(call: PlannedToolCall) -> ReasoningStepSchema:
+    if call.name == "run_solver":
+        goal = call.arguments.get("goal", "auto")
+        return ReasoningStepSchema(
+            kind="tool_call",
+            label=f'Running solver ({goal} goal)',
+        )
+    if call.name == "update_build":
+        change = call.arguments.get("change_request", "design update")
+        return ReasoningStepSchema(
+            kind="tool_call",
+            label="Applying design update",
+            detail=str(change),
+        )
+    if call.name == "generate_quotation":
+        return ReasoningStepSchema(kind="tool_call", label="Generating quotation")
+    if call.name == "query_catalog":
+        category = call.arguments.get("category", "components")
+        return ReasoningStepSchema(
+            kind="tool_call",
+            label=f"Looking up {category} in catalog",
+        )
+    if call.name == "get_rejection_reasons":
+        return ReasoningStepSchema(kind="tool_call", label="Checking rejection reasons")
+    if call.name == "compare_vendors":
+        return ReasoningStepSchema(kind="tool_call", label="Comparing catalog price tiers")
+    return ReasoningStepSchema(
+        kind="tool_call",
+        label=f"Running {call.name.replace('_', ' ')}",
+    )
+
+
+def _reasoning_label_for_result(
+    call: PlannedToolCall,
+    result: dict[str, object],
+) -> ReasoningStepSchema:
+    if "error" in result:
+        return ReasoningStepSchema(
+            kind="error",
+            label="Step failed",
+            detail=str(result["error"]),
+        )
+    if call.name == "run_solver":
+        valid_count = result.get("valid_count", 0)
+        if valid_count == 0:
+            return ReasoningStepSchema(
+                kind="tool_result",
+                label="No valid combinations found",
+                detail="Checking rejection reasons may help",
+            )
+        return ReasoningStepSchema(
+            kind="tool_result",
+            label=f"Found {valid_count} valid combination(s)",
+        )
+    if call.name == "get_rejection_reasons":
+        rejections = result.get("rejections")
+        count = len(rejections) if isinstance(rejections, list) else 0
+        detail = None
+        if count and isinstance(rejections, list):
+            first = rejections[0]
+            if isinstance(first, dict) and first.get("message"):
+                detail = str(first["message"])
+        return ReasoningStepSchema(
+            kind="tool_result",
+            label=f"{count} rejection(s) logged",
+            detail=detail,
+        )
+    if call.name == "update_build":
+        if "error" in result:
+            return ReasoningStepSchema(
+                kind="error",
+                label="Could not apply that change",
+                detail=str(result["error"]),
+            )
+        kwp = result.get("system_kwp")
+        investment = result.get("total_investment_php")
+        if kwp is not None and investment is not None:
+            return ReasoningStepSchema(
+                kind="tool_result",
+                label=f"Updated to {kwp} kWp",
+                detail=f"₱{float(investment):,.0f} total investment",
+            )
+        return ReasoningStepSchema(kind="tool_result", label="Design updated")
+    if call.name == "generate_quotation":
+        total = result.get("total_php")
+        if total is not None:
+            return ReasoningStepSchema(
+                kind="tool_result",
+                label=f"Quotation total ₱{float(total):,.0f}",
+            )
+        return ReasoningStepSchema(kind="tool_result", label="Quotation generated")
+    if call.name == "query_catalog":
+        items = result.get("items")
+        count = len(items) if isinstance(items, list) else 0
+        return ReasoningStepSchema(
+            kind="tool_result",
+            label=f"Found {count} catalog item(s)",
+        )
+    return ReasoningStepSchema(kind="tool_result", label="Step complete")
+
+
+def _append_tool_results_to_messages(
+    messages: list[dict[str, object]],
+    *,
+    assistant_message: dict[str, object] | None,
+    tool_calls: tuple[PlannedToolCall, ...],
+    results: list[dict[str, object]],
+) -> None:
+    if assistant_message is not None:
+        messages.append(assistant_message)
+    tool_call_ids = assistant_message.get("tool_calls") if assistant_message else None
+    for index, (call, result) in enumerate(zip(tool_calls, results, strict=True)):
+        tool_call_id = None
+        if isinstance(tool_call_ids, list) and index < len(tool_call_ids):
+            tool_call_id = tool_call_ids[index].get("id")
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call_id or f"call-{index}",
+                "content": json.dumps({"tool": call.name, "result": result}, default=str),
+            },
+        )
+
+
 def run_design_agent_turn(
     request: AgentDesignRequest,
     *,
     client: DesignAgentClient,
 ) -> AgentDesignResponse:
     session = request.session
-    planned = client.plan_tool_calls(
-        user_text=request.user_text,
-        session_summary=_session_summary(session),
-    )
+    session_summary = _session_summary(session)
 
     if request.dry_run:
+        planned = client.plan_tool_calls(
+            user_text=request.user_text,
+            session_summary=session_summary,
+        )
         reply, planned_actions = _describe_planned_tools(
             planned,
             user_text=request.user_text,
@@ -346,32 +716,107 @@ def run_design_agent_turn(
             planned_actions=planned_actions,
         )
 
+    messages = client.build_agent_messages(
+        user_text=request.user_text,
+        session_summary=session_summary,
+    )
     tool_audit: list[dict[str, object]] = []
+    reasoning_steps: list[ReasoningStepSchema] = []
     solve_ids: list[str] = []
     updated_session = session
+    final_reply: str | None = None
 
-    for call in planned:
-        normalized = _normalize_tool_call(
-            call,
-            session=updated_session,
+    reasoning_steps.append(
+        ReasoningStepSchema(kind="thinking", label="Understanding your request"),
+    )
+
+    for _ in range(MAX_TOOL_ITERATIONS):
+        step = client.agent_step(messages)
+        if step.final_reply and not step.tool_calls:
+            final_reply = step.final_reply
+            reasoning_steps.append(
+                ReasoningStepSchema(kind="thinking", label="Summarising results"),
+            )
+            break
+        if not step.tool_calls:
+            break
+
+        batch_calls: list[PlannedToolCall] = []
+        batch_results: list[dict[str, object]] = []
+
+        for call in step.tool_calls:
+            normalized = _normalize_tool_call(
+                call,
+                session=updated_session,
+                user_text=request.user_text,
+            )
+            reasoning_steps.append(_reasoning_label_for_call(normalized))
+            try:
+                result, maybe_session = _execute_tool(
+                    normalized,
+                    session=updated_session,
+                    user_text=request.user_text,
+                )
+            except NoValidDesignError as error:
+                result = {"error": str(error)}
+                maybe_session = None
+            tool_audit.append(
+                {
+                    "name": normalized.name,
+                    "arguments": normalized.arguments,
+                    "result": result,
+                },
+            )
+            reasoning_steps.append(_reasoning_label_for_result(normalized, result))
+            batch_calls.append(normalized)
+            batch_results.append(result)
+            if maybe_session is not None:
+                updated_session = maybe_session
+                if maybe_session.last_solve is not None:
+                    solve_ids.append(maybe_session.last_solve.solve_id)
+
+        _append_tool_results_to_messages(
+            messages,
+            assistant_message=step.assistant_message,
+            tool_calls=tuple(batch_calls),
+            results=batch_results,
+        )
+
+    if not tool_audit and final_reply is None:
+        reasoning_steps.append(
+            ReasoningStepSchema(kind="thinking", label="Using rule-based planner"),
+        )
+        for call in DisabledDesignAgentClient().plan_tool_calls(
             user_text=request.user_text,
-        )
-        try:
-            result, maybe_session = _execute_tool(normalized, session=updated_session)
-        except NoValidDesignError as error:
-            result = {"error": str(error)}
-            maybe_session = None
-        tool_audit.append(
-            {
-                "name": normalized.name,
-                "arguments": normalized.arguments,
-                "result": result,
-            },
-        )
-        if maybe_session is not None:
-            updated_session = maybe_session
-            if maybe_session.last_solve is not None:
-                solve_ids.append(maybe_session.last_solve.solve_id)
+            session_summary=session_summary,
+        ):
+            normalized = _normalize_tool_call(
+                call,
+                session=updated_session,
+                user_text=request.user_text,
+            )
+            reasoning_steps.append(_reasoning_label_for_call(normalized))
+            try:
+                result, maybe_session = _execute_tool(
+                    normalized,
+                    session=updated_session,
+                    user_text=request.user_text,
+                )
+            except NoValidDesignError as error:
+                result = {"error": str(error)}
+                maybe_session = None
+            tool_audit.append(
+                {
+                    "name": normalized.name,
+                    "arguments": normalized.arguments,
+                    "result": result,
+                },
+            )
+            reasoning_steps.append(_reasoning_label_for_result(normalized, result))
+            if maybe_session is not None:
+                updated_session = maybe_session
+                if maybe_session.last_solve is not None:
+                    solve_ids.append(maybe_session.last_solve.solve_id)
 
     tool_errors = [
         str(entry["result"]["error"])
@@ -387,13 +832,15 @@ def run_design_agent_turn(
         ),
         None,
     )
-    reply = client.generate_turn_reply(
-        user_text=request.user_text,
-        tool_audit=tool_audit,
-        active_build=active_build.model_dump() if active_build else None,
-    )
-    if tool_errors:
-        reply = f"{reply} {' '.join(tool_errors)}"
+
+    if final_reply is None:
+        final_reply = client.generate_turn_reply(
+            user_text=request.user_text,
+            tool_audit=tool_audit,
+            active_build=active_build.model_dump() if active_build else None,
+        )
+    if tool_errors and not final_reply.startswith("I couldn't complete that request"):
+        final_reply = f"{final_reply} {' '.join(tool_errors)}"
 
     audited = _append_audit(
         updated_session,
@@ -401,7 +848,11 @@ def run_design_agent_turn(
         tool_audit=tool_audit,
         solve_ids=solve_ids,
     )
-    return AgentDesignResponse(session=audited, reply=reply)
+    return AgentDesignResponse(
+        session=audited,
+        reply=final_reply,
+        reasoning_steps=tuple(reasoning_steps),
+    )
 
 
 def _panel_alternatives_for_explain(
@@ -460,6 +911,7 @@ def explain_design_session(
     active_panel_id = _active_panel_id(active)
     snapshot = {
         "active_build": active.model_dump() if active else None,
+        "homeowner_plans": request.session.homeowner_plans,
         "last_solve": request.session.last_solve.model_dump()
         if request.session.last_solve
         else None,

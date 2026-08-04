@@ -8,7 +8,8 @@ import type {
   QuoteAuditResponse,
 } from "../../shared/api/types";
 import { parseQuoteAuditId, quoteAuditId } from "../compare/quoteAuditIds";
-import { SegmentedToggle } from "../../shared/components/ui";
+import { useDesignStore } from "../../state/designStore";
+import { Button, SegmentedToggle } from "../../shared/components/ui";
 import {
   CANVAS_VIEW_OPTIONS,
   canvasBomGroups,
@@ -21,13 +22,25 @@ import {
 } from "./designViewModel";
 import { AddComponentCard, CanvasComponentCard } from "./CanvasComponentCard";
 import { ComponentPickerModal } from "./ComponentPickerModal";
+import { DeleteBuildModal } from "./DeleteBuildModal";
 import { DiagramSourcePicker } from "./DiagramSourcePicker";
 import { FullBomDiagram } from "./FullBomDiagram";
-import { useMutateDesign } from "./useDesignActions";
+import {
+  useCreateUserBuild,
+  useDeleteDesignBuild,
+  useDuplicateDesignBuild,
+  useMutateDesign,
+  useUpdateUserBuildComponent,
+} from "./useDesignActions";
 
 type PickerState = {
   slot: CatalogPickerSlot;
   mode: "swap" | "add";
+};
+
+type DeleteTarget = {
+  id: string;
+  label: string;
 };
 
 function ZoomControls({
@@ -190,7 +203,13 @@ export function SystemCanvas({
   const [zoom, setZoom] = useState(1);
   const [viewMode, setViewMode] = useState<CanvasViewMode>("simplified");
   const [picker, setPicker] = useState<PickerState | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const mutate = useMutateDesign();
+  const createUserBuild = useCreateUserBuild();
+  const duplicateBuild = useDuplicateDesignBuild();
+  const deleteBuild = useDeleteDesignBuild();
+  const updateUserComponent = useUpdateUserBuildComponent();
+  const selectBuild = useDesignStore((state) => state.selectBuild);
   const previousQuoteCount = useRef(0);
   const selectedQuote = useMemo(
     () => parseQuoteAuditId(canvasSource, quoteResults),
@@ -222,8 +241,9 @@ export function SystemCanvas({
   );
   const readOnly =
     showingQuote ||
-    (previewBuild !== null &&
-      previewBuild.id !== (session?.active_build_id ?? build?.id));
+    previewBuild?.id !== (session?.active_build_id ?? build?.id);
+  const editingUserBuild =
+    !readOnly && previewBuild?.source === "user";
   const slots = showingQuote ? quoteSlots : designSlots;
   const bomGroups = showingQuote ? quoteBomGroups : designBomGroups;
   const [panel, inverter, protection, battery] = slots;
@@ -254,6 +274,19 @@ export function SystemCanvas({
     }
   }, [sourceOptions, canvasSource, defaultSource]);
 
+  useEffect(() => {
+    const activeBuildId = session?.active_build_id;
+    if (!activeBuildId || isQuoteDiagramSource(canvasSource)) {
+      return;
+    }
+    if (
+      canvasSource !== activeBuildId &&
+      session.builds.some((candidate) => candidate.id === activeBuildId)
+    ) {
+      setCanvasSource(activeBuildId);
+    }
+  }, [session?.active_build_id, session?.builds, canvasSource]);
+
   const inverterRef = useRef<HTMLDivElement>(null);
   const protectionRef = useRef<HTMLDivElement>(null);
   const batteryRef = useRef<HTMLDivElement>(null);
@@ -279,7 +312,16 @@ export function SystemCanvas({
   };
 
   const applySelection = async (option: CatalogOption) => {
-    if (!picker) {
+    if (!picker || !previewBuild) {
+      return;
+    }
+    if (editingUserBuild) {
+      await updateUserComponent.mutateAsync({
+        build_id: previewBuild.id,
+        slot: picker.slot,
+        catalog_id: option.id,
+      });
+      setPicker(null);
       return;
     }
     const patch: Record<string, unknown> = {};
@@ -298,6 +340,54 @@ export function SystemCanvas({
 
   const showFullBom = viewMode === "full";
 
+  const handleCanvasSourceChange = (source: string) => {
+    setCanvasSource(source);
+    if (!isQuoteDiagramSource(source)) {
+      selectBuild(source);
+    }
+  };
+
+  const startFromScratch = () => {
+    createUserBuild.mutate(undefined, {
+      onSuccess: (session) => {
+        setCanvasSource(session.active_build_id);
+      },
+    });
+  };
+
+  const duplicateCustomBuild = (buildId: string) => {
+    duplicateBuild.mutate(buildId, {
+      onSuccess: (session) => {
+        setCanvasSource(session.active_build_id);
+      },
+    });
+  };
+
+  const deleteCustomBuild = (buildId: string) => {
+    const target = sourceOptions.find((option) => option.value === buildId);
+    setDeleteTarget({
+      id: buildId,
+      label: target?.label ?? "This build",
+    });
+  };
+
+  const confirmDeleteBuild = () => {
+    if (!deleteTarget) {
+      return;
+    }
+    deleteBuild.mutate(deleteTarget.id, {
+      onSuccess: (session) => {
+        setCanvasSource(session.active_build_id);
+        setDeleteTarget(null);
+      },
+    });
+  };
+
+  const managePending =
+    createUserBuild.isPending || duplicateBuild.isPending || deleteBuild.isPending;
+  const manageError =
+    createUserBuild.error ?? duplicateBuild.error ?? deleteBuild.error;
+
   return (
     <>
       <div className="relative flex h-full min-h-[32rem] flex-col overflow-hidden rounded-[20px] border border-hairline bg-[#f7f4ed]">
@@ -314,13 +404,34 @@ export function SystemCanvas({
             <DiagramSourcePicker
               value={canvasSource}
               options={sourceOptions}
-              onChange={setCanvasSource}
+              onChange={handleCanvasSourceChange}
+              onDuplicate={duplicateCustomBuild}
+              onDelete={deleteCustomBuild}
+              managePending={managePending}
             />
           ) : (
             <div className="flex-1" />
           )}
-          <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              variant="ghost"
+              disabled={!session || managePending}
+              onClick={startFromScratch}
+              className="h-10 whitespace-nowrap border-hairline bg-white px-3 text-[12.5px] text-ink"
+            >
+              {createUserBuild.isPending ? "Creating build…" : "Start from scratch"}
+            </Button>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </div>
         </div>
+        {manageError ? (
+          <p
+            className="relative z-10 border-b border-hairline bg-[#fff5f3] px-4 py-2 font-sans text-sm text-ember"
+            role="alert"
+          >
+            {manageError.message}
+          </p>
+        ) : null}
 
         <div className="relative min-h-0 flex-1 overflow-auto p-6 lg:p-8">
           <div
@@ -343,7 +454,11 @@ export function SystemCanvas({
                   <CanvasComponentCard
                     component={panel}
                     showProductImage
-                    onSwap={readOnly ? undefined : () => openPicker("panel", "swap")}
+                    onSwap={
+                      readOnly
+                        ? undefined
+                        : () => openPicker("panel", panel.qty > 0 ? "swap" : "add")
+                    }
                   />
 
                   <GapLine />
@@ -353,7 +468,12 @@ export function SystemCanvas({
                       component={inverter}
                       highlighted
                       showProductImage
-                      onSwap={readOnly ? undefined : () => openPicker("inverter", "swap")}
+                      onSwap={
+                        readOnly
+                          ? undefined
+                          : () =>
+                              openPicker("inverter", inverter.qty > 0 ? "swap" : "add")
+                      }
                     />
                   </div>
 
@@ -389,14 +509,23 @@ export function SystemCanvas({
                   <CanvasComponentCard
                     component={panel}
                     showProductImage
-                    onSwap={readOnly ? undefined : () => openPicker("panel", "swap")}
+                    onSwap={
+                      readOnly
+                        ? undefined
+                        : () => openPicker("panel", panel.qty > 0 ? "swap" : "add")
+                    }
                   />
                   <div className="h-5 w-0.5 rounded-pill bg-[#bfb9ab]" aria-hidden="true" />
                   <CanvasComponentCard
                     component={inverter}
                     highlighted
                     showProductImage
-                    onSwap={readOnly ? undefined : () => openPicker("inverter", "swap")}
+                    onSwap={
+                      readOnly
+                        ? undefined
+                        : () =>
+                            openPicker("inverter", inverter.qty > 0 ? "swap" : "add")
+                    }
                   />
                   <div className="h-5 w-0.5 rounded-pill bg-[#bfb9ab]" aria-hidden="true" />
                   <CanvasComponentCard component={protection} showProductImage />
@@ -431,12 +560,20 @@ export function SystemCanvas({
         mode={picker?.mode ?? "swap"}
         onClose={() => setPicker(null)}
         onSelect={(option) => void applySelection(option)}
-        isPending={mutate.isPending}
+        isPending={mutate.isPending || updateUserComponent.isPending}
       />
 
-      {mutate.error ? (
+      <DeleteBuildModal
+        open={deleteTarget !== null}
+        buildLabel={deleteTarget?.label ?? "This build"}
+        pending={deleteBuild.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteBuild}
+      />
+
+      {mutate.error || updateUserComponent.error ? (
         <p className="mt-2 font-sans text-[12px] text-ember" role="alert">
-          {mutate.error.message}
+          {(mutate.error ?? updateUserComponent.error)?.message}
         </p>
       ) : null}
     </>

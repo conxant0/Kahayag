@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { CatalogOption, CatalogPickerSlot } from "../../shared/api/types";
 import { cn } from "../../shared/lib/cn";
+import { peso, pesoRange } from "../../shared/lib/currency";
 import { CanvasSlotIcon, SLOT_ACCENT } from "./canvasSlotIcons";
 import { canvasSlotHeader } from "./designViewModel";
 import { useCatalogOptions } from "./useDesignActions";
@@ -13,6 +14,20 @@ const STATUS_LABELS: Record<CatalogOption["status"], string> = {
   compatible: "Compatible",
   incompatible: "Not compatible",
 };
+
+function catalogPriceLabel(option: CatalogOption): { total: string; detail: string | null } {
+  const total =
+    option.line_total_low_php < option.line_total_high_php
+      ? pesoRange(option.line_total_low_php, option.line_total_high_php)
+      : peso(option.line_total_php);
+  const detail =
+    option.qty > 1 && option.unit_price_php > 0
+      ? `${peso(option.unit_price_php)} × ${Math.round(option.qty)}`
+      : option.unit_price_low_php < option.unit_price_high_php
+        ? `${peso(option.unit_price_low_php)}–${peso(option.unit_price_high_php)} each`
+        : null;
+  return { total, detail };
+}
 
 function CatalogOptionRow({
   option,
@@ -27,6 +42,7 @@ function CatalogOptionRow({
 }) {
   const accent = SLOT_ACCENT[slot];
   const blocked = option.status === "incompatible" || option.status === "selected";
+  const price = catalogPriceLabel(option);
 
   return (
     <li>
@@ -70,6 +86,12 @@ function CatalogOptionRow({
             </span>
           </div>
           <p className="mt-0.5 font-sans text-[11px] text-secondary">{option.summary}</p>
+          <div className="mt-1.5">
+            <p className="font-sans text-[13px] font-bold text-ink">{price.total}</p>
+            {price.detail ? (
+              <p className="font-sans text-[10px] text-secondary">{price.detail}</p>
+            ) : null}
+          </div>
           {option.reason ? (
             <p className="mt-1 font-sans text-[11px] leading-4 text-ember">{option.reason}</p>
           ) : null}

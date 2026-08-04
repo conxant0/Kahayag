@@ -199,7 +199,7 @@ export function quoteMetricsFromAudit(result: QuoteAuditResponse): QuoteMetric[]
       label: "System capacity",
       value:
         typeof result.extracted_system_kwp === "number"
-          ? `${result.extracted_system_kwp.toFixed(1)} kWp`
+          ? `${result.extracted_system_kwp.toFixed(1)} kW`
           : "—",
       detail:
         typeof result.extracted_panel_count === "number"
@@ -215,21 +215,21 @@ export function quoteMetricsFromAudit(result: QuoteAuditResponse): QuoteMetric[]
       detail: result.filename,
     },
     {
-      label: "Kahayag benchmark",
+      label: "Our estimate",
       value: peso(result.benchmark_total_php),
-      detail: `${result.benchmark_system_kwp.toFixed(1)} kWp reference`,
+      detail: `${result.benchmark_system_kwp.toFixed(1)} kW for your roof`,
     },
     {
-      label: "vs benchmark",
+      label: "Price difference",
       value:
         benchmarkDelta === null
           ? "—"
           : benchmarkDelta === 0
-            ? "Matches"
+            ? "About the same"
             : benchmarkDelta > 0
-              ? `${peso(benchmarkDelta)} above`
-              : `${peso(Math.abs(benchmarkDelta))} below`,
-      detail: "Uploaded installer quote",
+              ? `${peso(benchmarkDelta)} higher`
+              : `${peso(Math.abs(benchmarkDelta))} lower`,
+      detail: "Compared to our estimate",
     },
   ];
 }
@@ -241,19 +241,19 @@ export function uploadedQuoteWhyThisPaysCopy(result: QuoteAuditResponse): string
 
   const extracted = result.extracted_total_php;
   if (typeof extracted !== "number" || result.benchmark_total_php <= 0) {
-    return "This quotation was uploaded from your installer and benchmarked against Kahayag's model for this roof.";
+    return "This quote came from your installer. We compared it to what we'd expect for your roof.";
   }
 
   const delta = extracted - result.benchmark_total_php;
   if (delta === 0) {
-    return `This uploaded quote matches Kahayag's benchmark of ${peso(result.benchmark_total_php)} for a ${result.benchmark_system_kwp.toFixed(1)} kWp system.`;
+    return `This quote is about what we'd expect — ${peso(result.benchmark_total_php)} for a ${result.benchmark_system_kwp.toFixed(1)} kW system on your roof.`;
   }
 
   const direction =
     delta > 0
-      ? `${peso(delta)} above Kahayag's benchmark`
-      : `${peso(Math.abs(delta))} below Kahayag's benchmark`;
-  return `This uploaded quote totals ${peso(extracted)} — ${direction} for a comparable ${result.benchmark_system_kwp.toFixed(1)} kWp roof.`;
+      ? `${peso(delta)} higher than we'd expect`
+      : `${peso(Math.abs(delta))} lower than we'd expect`;
+  return `This installer quote totals ${peso(extracted)} — ${direction} for a ${result.benchmark_system_kwp.toFixed(1)} kW system on your roof.`;
 }
 
 export function whyThisPaysCopy(build: DesignBuild): string {

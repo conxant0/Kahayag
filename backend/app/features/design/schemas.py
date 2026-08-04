@@ -80,9 +80,9 @@ class DesignBuildSchema(ContractModel):
     tags: tuple[str, ...]
     combo_id: str
     solve_id: str
-    system_kwp: StrictFloat = Field(gt=0)
-    panel_count: StrictInt = Field(gt=0)
-    inverter_kw: StrictFloat = Field(gt=0)
+    system_kwp: StrictFloat = Field(ge=0)
+    panel_count: StrictInt = Field(ge=0)
+    inverter_kw: StrictFloat = Field(ge=0)
     battery_kwh: StrictFloat | None = Field(default=None, gt=0)
     monthly_savings_php: StrictFloat = Field(ge=0)
     annual_savings_php: StrictFloat = Field(ge=0)
@@ -124,6 +124,7 @@ class DesignSessionSchema(ContractModel):
     last_solve: SolveResultSchema | None = None
     applied: StrictBool = False
     agent_audit: tuple[AgentAuditEntrySchema, ...] = ()
+    homeowner_plans: dict[str, object] | None = None
 
 
 class QuotationLineSchema(ContractModel):
@@ -156,11 +157,16 @@ class QuotationDocumentSchema(ContractModel):
 class BootstrapDesignRequest(ContractModel):
     assessment: dict[str, object]
     property_ref: str = Field(min_length=1)
+    plans: dict[str, object] | None = None
 
 
 class OptimiseDesignRequest(ContractModel):
     session: DesignSessionSchema
     goal: SolverGoal
+
+
+CatalogOptionStatus = Literal["selected", "recommended", "compatible", "incompatible"]
+CatalogPickerSlot = Literal["panel", "inverter", "battery"]
 
 
 class MutateDesignRequest(ContractModel):
@@ -173,10 +179,25 @@ class MutateDesignRequest(ContractModel):
     locked_inverter_id: str | None = None
     locked_battery_id: str | None = None
     panel_count_delta: StrictInt | None = None
+    seed_panel_count: StrictInt | None = Field(default=None, gt=0)
+    swap_slot: CatalogPickerSlot | None = None
+    prefer_cheaper: StrictBool | None = None
 
 
-CatalogOptionStatus = Literal["selected", "recommended", "compatible", "incompatible"]
-CatalogPickerSlot = Literal["panel", "inverter", "battery"]
+class CreateUserBuildRequest(ContractModel):
+    session: DesignSessionSchema
+
+
+class UpdateUserBuildComponentRequest(ContractModel):
+    session: DesignSessionSchema
+    build_id: str = Field(min_length=1)
+    slot: CatalogPickerSlot
+    catalog_id: str = Field(min_length=1)
+
+
+class ManageBuildRequest(ContractModel):
+    session: DesignSessionSchema
+    build_id: str = Field(min_length=1)
 
 
 class CatalogOptionSchema(ContractModel):
@@ -187,6 +208,13 @@ class CatalogOptionSchema(ContractModel):
     status: CatalogOptionStatus
     reason: str | None = None
     specs: dict[str, str | float | int] = Field(default_factory=dict)
+    unit_price_php: StrictFloat = Field(ge=0)
+    unit_price_low_php: StrictFloat = Field(ge=0)
+    unit_price_high_php: StrictFloat = Field(ge=0)
+    line_total_php: StrictFloat = Field(ge=0)
+    line_total_low_php: StrictFloat = Field(ge=0)
+    line_total_high_php: StrictFloat = Field(ge=0)
+    qty: StrictFloat = Field(gt=0)
 
 
 class CatalogOptionsRequest(ContractModel):
@@ -210,11 +238,18 @@ class PlannedActionSchema(ContractModel):
     arguments: dict[str, object] = Field(default_factory=dict)
 
 
+class ReasoningStepSchema(ContractModel):
+    kind: Literal["thinking", "tool_call", "tool_result", "error"]
+    label: str
+    detail: str | None = None
+
+
 class AgentDesignResponse(ContractModel):
     session: DesignSessionSchema
     reply: str
     requires_confirmation: StrictBool = False
     planned_actions: tuple[PlannedActionSchema, ...] = ()
+    reasoning_steps: tuple[ReasoningStepSchema, ...] = ()
 
 
 class ExplainDesignRequest(ContractModel):
@@ -232,6 +267,9 @@ class QuoteAuditFindingSchema(ContractModel):
     message: str
 
 
+QuoteAuditVerdict = Literal["favorable", "caution", "needs_review"]
+
+
 class QuoteAuditResponseSchema(ContractModel):
     filename: str
     extracted_total_php: StrictFloat | None = None
@@ -242,3 +280,7 @@ class QuoteAuditResponseSchema(ContractModel):
     findings: tuple[QuoteAuditFindingSchema, ...] = ()
     summary: str
     diagram_components: tuple[DesignComponentSchema, ...] = ()
+    pros: tuple[str, ...] = ()
+    cons: tuple[str, ...] = ()
+    questions_for_installer: tuple[str, ...] = ()
+    verdict: QuoteAuditVerdict = "needs_review"

@@ -40,6 +40,30 @@ vi.mock("../../../../src/features/design/useDesignActions", () => ({
     isPending: false,
     error: null,
   }),
+  useCreateUserBuild: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useDuplicateDesignBuild: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useDeleteDesignBuild: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useUpdateUserBuildComponent: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
   useCatalogOptions: () => ({
     mutate: vi.fn(),
     mutateAsync: vi.fn().mockResolvedValue([]),
@@ -89,6 +113,7 @@ describe("DesignPage", () => {
     expect(screen.queryByText("Active build")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "AI auto-optimise" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("tablist", { name: "Canvas view mode" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start from scratch" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply design" })).toBeInTheDocument();
   });
 });

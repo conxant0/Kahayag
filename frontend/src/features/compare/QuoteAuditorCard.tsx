@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import { Button } from "../../shared/components/ui";
 import { useDesignStore } from "../../state/designStore";
+import { compareUtilityCardClass } from "./CompareCardsGrid";
 import { useQuoteAudit } from "./useQuoteAudit";
 
 const ACCEPTED_QUOTE_TYPES =
@@ -89,29 +90,30 @@ export function QuoteAuditorCard() {
   };
 
   return (
-    <article
-      className="flex h-full min-h-[420px] flex-col rounded-[20px] border border-dashed border-[#d8d2c4] bg-[#fbf8f1] px-6 pt-[30px] pb-6"
-      aria-label="Quote auditor"
-    >
-      <div className="flex flex-col items-center">
-        <h2 className="font-serif text-[26px] font-medium text-ink">Quote auditor</h2>
+    <article className={compareUtilityCardClass} aria-label="Quote auditor">
+      <div className="flex flex-col items-center text-center">
+        <h2 className="font-serif text-[26px] font-medium leading-none text-ink">
+          Quote auditor
+        </h2>
         <span className="mt-2.5 rounded-pill bg-[#fff4cc] px-[11px] py-1.5 font-sans text-[10.5px] font-semibold tracking-[0.5px] text-[#7a5c00]">
           Expert AI service
         </span>
       </div>
 
-      <div className="mt-12 flex size-[58px] items-center justify-center rounded-pill border border-hairline bg-white text-ink">
-        <DocumentIcon />
-      </div>
+      <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+        <div className="flex size-[58px] items-center justify-center rounded-pill border border-hairline bg-[#fbf8f1] text-ink">
+          <DocumentIcon />
+        </div>
 
-      <h3 className="mt-5 text-center font-serif text-[22px] font-medium leading-7 text-ink">
-        {uploadedCount > 0 ? "Add another installer quote" : "Let AI audit outside quotes"}
-      </h3>
-      <p className="mt-2.5 text-center font-sans text-[12.5px] leading-5 text-tertiary">
-        {uploadedCount > 0
-          ? `${uploadedCount} quote${uploadedCount === 1 ? "" : "s"} appear as compare cards above. Upload more PDFs, photos, or text quotes to benchmark against your Kahayag design.`
-          : "Upload one or more PDFs, photos, or text quotes from any installer. Each audited quote becomes its own compare card."}
-      </p>
+        <h3 className="mt-5 font-serif text-[22px] font-medium leading-7 text-ink">
+          {uploadedCount > 0 ? "Add another installer quote" : "Get a plain-language quote review"}
+        </h3>
+        <p className="mt-2.5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary">
+          {uploadedCount > 0
+            ? `${uploadedCount} quote${uploadedCount === 1 ? "" : "s"} are ready to compare above. Upload another PDF or photo for the same review.`
+            : "Upload a quote from any installer. We check the price, parts, and completeness — and tell you what to ask before you sign."}
+        </p>
+      </div>
 
       <input
         ref={inputRef}
@@ -122,7 +124,7 @@ export function QuoteAuditorCard() {
         onChange={(event) => void handleFiles(event.target.files)}
       />
 
-      <div className="mt-auto w-full pt-8">
+      <div className="mt-auto w-full">
         <Button
           variant="ghost"
           fullWidth

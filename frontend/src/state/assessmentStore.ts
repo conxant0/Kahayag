@@ -117,10 +117,11 @@ export type InstallTimeline =
  * What the homeowner wants from the system, kept beside — not inside — the
  * numbers the assessment is computed from.
  *
- * Nothing here feeds a calculation yet: these answers shape the proposal's
- * framing, so editing one must not throw a computed result away the way
- * editing the bill does. Every field is null until answered, which is how an
- * answer nobody gave stays distinguishable from any answer somebody did.
+ * These answers feed the design solver at bootstrap (goal, consumption uplift,
+ * mounting kit) and give the design agent context for explanations. They do not
+ * alter the POST /assessments recommendation. Every field is null until
+ * answered, which is how an answer nobody gave stays distinguishable from any
+ * answer somebody did.
  */
 export type AssessmentPlans = {
   primaryGoal: PrimaryGoal | null;

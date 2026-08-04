@@ -6,7 +6,8 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from app.domain.design.bom import expand_combo_to_components
+from app.domain.design.bom import _is_microinverter, expand_combo_to_components
+from app.domain.design.catalog import get_inverter, load_catalog
 from app.domain.design.constants import PAYMENT_TERMS, QUOTE_VALIDITY_DAYS
 from app.domain.design.entities import (
     DesignBuild,
@@ -24,14 +25,31 @@ from app.domain.design.financials import (
     build_design_build,
 )
 from app.domain.design.mutations import apply_constraint_patch, goal_constraints
+from app.domain.design.plans import (
+    adjust_annual_consumption_for_future_loads,
+    adjust_target_kwp_for_plans,
+    apply_plans_to_constraints,
+    mounting_kit_id_for_roof_material,
+    parse_homeowner_plans,
+    solver_goal_from_plans,
+)
+from app.domain.design.scoring import pick_swap_combo
 from app.domain.design.solver import constraints_from_sizing, run_solver
+from app.domain.design.user_build import (
+    apply_user_build_component,
+    create_empty_user_build,
+    next_custom_build_label,
+    next_user_build_label,
+)
 from app.features.design.schemas import (
     AgentAuditEntrySchema,
     BootstrapDesignRequest,
+    CreateUserBuildRequest,
     DesignBuildSchema,
     DesignComponentSchema,
     DesignSessionSchema,
     GenerateQuotationRequest,
+    ManageBuildRequest,
     MutateDesignRequest,
     OptimiseDesignRequest,
     QuotationDocumentSchema,
@@ -39,10 +57,12 @@ from app.features.design.schemas import (
     RejectionReasonSchema,
     SolverConstraintsSchema,
     SolveResultSchema,
+    UpdateUserBuildComponentRequest,
     ValidComboSchema,
 )
 
 MAX_SESSION_REJECTIONS = 200
+MANAGEABLE_BUILD_SOURCES = frozenset({"custom", "user"})
 
 
 class NoValidDesignError(Exception):
@@ -54,7 +74,9 @@ def _fingerprint_assessment(assessment: dict[str, object]) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
-def _extract_sizing_inputs(assessment: dict[str, object]) -> tuple[float, int, float, float | None, float, float, float]:
+def _extract_sizing_inputs(
+    assessment: dict[str, object],
+) -> tuple[float, int, float, float | None, float, float, float, int]:
     from app.domain.design.catalog import load_catalog
     from app.domain.design.solver import _panel_footprint_m2
 
@@ -79,6 +101,7 @@ def _extract_sizing_inputs(assessment: dict[str, object]) -> tuple[float, int, f
     tariff = float(Decimal(str(assessment.get("resolved_tariff_php_per_kwh", "12"))))
     annual_generation = float(Decimal(str(recommendation["annual_generation_kwh"])))
     annual_yield_per_kwp = annual_generation / target_kwp if target_kwp > 0 else 1400.0
+    seed_panel_count = int(recommendation["panel_count"])
 
     return (
         target_kwp,
@@ -88,6 +111,7 @@ def _extract_sizing_inputs(assessment: dict[str, object]) -> tuple[float, int, f
         annual_consumption,
         tariff,
         annual_yield_per_kwp,
+        seed_panel_count,
     )
 
 
@@ -207,6 +231,7 @@ def _to_session_schema(session: DesignSession) -> DesignSessionSchema:
             )
             for entry in session.agent_audit
         ),
+        homeowner_plans=session.homeowner_plans,
     )
 
 
@@ -221,8 +246,13 @@ def _build_from_combo(
     annual_yield_per_kwp_kwh: float,
     resolved_tariff_php_per_kwh: float,
     ai_suggested: bool = False,
+    mounting_kit_id: str | None = None,
 ) -> DesignBuild:
-    components = expand_combo_to_components(combo, ai_suggested=ai_suggested)
+    components = expand_combo_to_components(
+        combo,
+        ai_suggested=ai_suggested,
+        mounting_kit_id=mounting_kit_id,
+    )
     return build_design_build(
         build_id=str(uuid.uuid4()),
         label=label,
@@ -245,6 +275,8 @@ def _session_from_solve(
     annual_consumption_kwh: float,
     annual_yield_per_kwp_kwh: float,
     resolved_tariff_php_per_kwh: float,
+    homeowner_plans: dict[str, object] | None = None,
+    mounting_kit_id: str | None = None,
 ) -> DesignSession:
     if len(solve_result.valid) < 1:
         raise NoValidDesignError("Solver found no valid equipment combinations.")
@@ -260,6 +292,7 @@ def _session_from_solve(
         annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
         resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
         ai_suggested=True,
+        mounting_kit_id=mounting_kit_id,
     )
 
     return DesignSession(
@@ -269,6 +302,105 @@ def _session_from_solve(
         builds=(ai_build,),
         last_solve=solve_result,
         applied=False,
+        homeowner_plans=homeowner_plans,
+    )
+
+
+def _mounting_kit_from_session(session: DesignSessionSchema) -> str | None:
+    if session.homeowner_plans:
+        roof_material = session.homeowner_plans.get("roof_material")
+        if isinstance(roof_material, str):
+            return mounting_kit_id_for_roof_material(roof_material)  # type: ignore[arg-type]
+
+    active = next(
+        (build for build in session.builds if build.id == session.active_build_id),
+        session.builds[0],
+    )
+    for component in active.components:
+        if component.slot == "structure" and component.catalog_id:
+            return component.catalog_id
+    return None
+
+
+def _component_catalog_id(build: DesignBuildSchema, slot: str) -> str | None:
+    for component in build.components:
+        if component.slot == slot and component.catalog_id:
+            return component.catalog_id
+    return None
+
+
+def _swap_failure_message(swap_slot: str, *, prefer_cheaper: bool) -> str:
+    slot_label = {
+        "panel": "panel",
+        "inverter": "inverter",
+        "battery": "battery",
+    }[swap_slot]
+    if prefer_cheaper:
+        return f"No cheaper compatible {slot_label} is available for the rest of this build."
+    return f"No compatible alternate {slot_label} is available for the rest of this build."
+
+
+def _inverter_line_cost_mid(inverter, panel_count: int) -> float:
+    qty = panel_count if _is_microinverter(inverter) else 1
+    return inverter.price_php.mid * qty
+
+
+def _active_inverter_line_cost(active: DesignBuildSchema) -> float | None:
+    for component in active.components:
+        if component.slot == "inverter":
+            return component.line_total_php
+    return None
+
+
+def _pick_cheaper_inverter_combo(
+    valid: tuple[ValidCombo, ...],
+    *,
+    active: DesignBuildSchema,
+    current_inverter_id: str,
+) -> ValidCombo | None:
+    catalog = load_catalog()
+    current_inverter = get_inverter(current_inverter_id, catalog)
+    current_panel_id = _component_catalog_id(active, "panel")
+    current_battery_id = _component_catalog_id(active, "battery")
+    current_inverter_line = _active_inverter_line_cost(active)
+    if current_inverter_line is None:
+        current_inverter_line = _inverter_line_cost_mid(
+            current_inverter,
+            active.panel_count,
+        )
+
+    candidates: list[ValidCombo] = []
+    for combo in valid:
+        if combo.inverter_id == current_inverter_id:
+            continue
+        if current_panel_id and combo.panel_id != current_panel_id:
+            continue
+        if combo.panel_count != active.panel_count:
+            continue
+        if current_battery_id and combo.battery_id != current_battery_id:
+            continue
+        if current_battery_id is None and combo.battery_id is not None:
+            continue
+        if combo.estimated_cost_php >= active.total_investment_php:
+            continue
+        inverter = get_inverter(combo.inverter_id, catalog)
+        candidate_line = _inverter_line_cost_mid(inverter, combo.panel_count)
+        if candidate_line >= current_inverter_line:
+            continue
+        candidates.append(combo)
+
+    if not candidates:
+        return None
+    return min(
+        candidates,
+        key=lambda combo: (
+            combo.estimated_cost_php,
+            _inverter_line_cost_mid(
+                get_inverter(combo.inverter_id, catalog),
+                combo.panel_count,
+            ),
+            -combo.fit_score,
+        ),
     )
 
 
@@ -279,6 +411,7 @@ def _session_with_custom_build(
     annual_consumption_kwh: float,
     annual_yield_per_kwp_kwh: float,
     resolved_tariff_php_per_kwh: float,
+    selected_combo: ValidCombo | None = None,
 ) -> DesignSessionSchema:
     if len(solve_result.valid) < 1:
         raise NoValidDesignError("Solver found no valid equipment combinations.")
@@ -287,7 +420,7 @@ def _session_with_custom_build(
     if not preserved:
         raise NoValidDesignError("Session has no builds to preserve.")
 
-    top = solve_result.valid[0]
+    top = selected_combo or solve_result.valid[0]
     custom_build = _build_from_combo(
         top,
         solve_id=solve_result.solve_id,
@@ -297,6 +430,7 @@ def _session_with_custom_build(
         annual_consumption_kwh=annual_consumption_kwh,
         annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
         resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
+        mounting_kit_id=_mounting_kit_from_session(existing),
     )
 
     return existing.model_copy(
@@ -310,6 +444,7 @@ def _session_with_custom_build(
 
 
 def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSchema:
+    homeowner_plans = parse_homeowner_plans(request.plans)
     (
         target_kwp,
         max_panel_count,
@@ -318,7 +453,23 @@ def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSc
         annual_consumption,
         tariff,
         annual_yield,
+        seed_panel_count,
     ) = _extract_sizing_inputs(request.assessment)
+
+    if homeowner_plans is not None:
+        annual_consumption = adjust_annual_consumption_for_future_loads(
+            annual_consumption,
+            homeowner_plans.future_loads,
+        )
+
+    target_kwp = adjust_target_kwp_for_plans(
+        target_kwp,
+        max_panel_count=max_panel_count,
+        seed_panel_count=seed_panel_count,
+        plans=homeowner_plans,
+    )
+
+    initial_goal = solver_goal_from_plans(homeowner_plans)
 
     constraints = constraints_from_sizing(
         target_kwp=target_kwp,
@@ -328,21 +479,26 @@ def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSc
         annual_consumption_kwh=annual_consumption,
         resolved_tariff_php_per_kwh=tariff,
         annual_yield_per_kwp_kwh=annual_yield,
-        goal="auto",
+        goal=initial_goal,
+        seed_panel_count=seed_panel_count,
     )
+    constraints = apply_plans_to_constraints(constraints, homeowner_plans)
+    mounting_kit_id = mounting_kit_id_for_roof_material(
+        homeowner_plans.roof_material if homeowner_plans else None,
+    )
+
     solve_result = run_solver(constraints)
+    if not solve_result.valid:
+        solve_result = run_solver(replace(constraints, seed_panel_count=None))
     if not solve_result.valid and budget_php is not None:
-        relaxed = constraints_from_sizing(
-            target_kwp=target_kwp,
-            max_panel_count=max_panel_count,
-            usable_roof_area_m2=usable_roof_area_m2,
-            budget_php=None,
-            annual_consumption_kwh=annual_consumption,
-            resolved_tariff_php_per_kwh=tariff,
-            annual_yield_per_kwp_kwh=annual_yield,
-            goal="auto",
-        )
+        relaxed = replace(constraints, budget_php=None)
         solve_result = run_solver(relaxed)
+        if not solve_result.valid:
+            solve_result = run_solver(replace(relaxed, seed_panel_count=None))
+
+    plans_context = (
+        homeowner_plans.to_context_dict() if homeowner_plans is not None else None
+    )
 
     session = _session_from_solve(
         solve_result=solve_result,
@@ -351,6 +507,8 @@ def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSc
         annual_consumption_kwh=annual_consumption,
         annual_yield_per_kwp_kwh=annual_yield,
         resolved_tariff_php_per_kwh=tariff,
+        homeowner_plans=plans_context,
+        mounting_kit_id=mounting_kit_id,
     )
     return _to_session_schema(session)
 
@@ -412,6 +570,8 @@ def optimise_design_session(request: OptimiseDesignRequest) -> DesignSessionSche
         annual_consumption_kwh=annual_consumption,
         annual_yield_per_kwp_kwh=annual_yield,
         resolved_tariff_php_per_kwh=tariff,
+        homeowner_plans=request.session.homeowner_plans,
+        mounting_kit_id=_mounting_kit_from_session(request.session),
     )
     if not session.builds:
         raise NoValidDesignError("Solver found no valid equipment combinations.")
@@ -437,16 +597,337 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         locked_inverter_id=request.locked_inverter_id,
         locked_battery_id=request.locked_battery_id,
         panel_count_delta=request.panel_count_delta,
+        seed_panel_count=request.seed_panel_count,
     )
     solve_result = run_solver(patched)
     if not solve_result.valid and patched.budget_php is not None:
         solve_result = run_solver(replace(patched, budget_php=None))
+    if not solve_result.valid:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
+
+    selected_combo: ValidCombo | None = None
+    if request.swap_slot:
+        active = next(
+            (build for build in request.session.builds if build.id == request.session.active_build_id),
+            None,
+        )
+        if active is None:
+            raise NoValidDesignError("Session has no active build to swap from.")
+        prefer_cheaper = (
+            request.prefer_cheaper
+            if request.prefer_cheaper is not None
+            else request.goal == "budget"
+        )
+        current_inverter_id = _component_catalog_id(active, "inverter")
+        if (
+            request.swap_slot == "inverter"
+            and prefer_cheaper
+            and current_inverter_id is not None
+        ):
+            selected_combo = _pick_cheaper_inverter_combo(
+                solve_result.valid,
+                active=active,
+                current_inverter_id=current_inverter_id,
+            )
+        else:
+            valid_combos = solve_result.valid
+            if prefer_cheaper:
+                valid_combos = tuple(
+                    combo
+                    for combo in solve_result.valid
+                    if combo.estimated_cost_php < active.total_investment_php
+                )
+            selected_combo = pick_swap_combo(
+                valid_combos,
+                swap_slot=request.swap_slot,
+                current_panel_id=_component_catalog_id(active, "panel"),
+                current_inverter_id=current_inverter_id,
+                current_battery_id=_component_catalog_id(active, "battery"),
+                current_panel_count=active.panel_count,
+                prefer_cheaper=prefer_cheaper,
+            )
+        if selected_combo is None:
+            raise NoValidDesignError(
+                _swap_failure_message(request.swap_slot, prefer_cheaper=prefer_cheaper),
+            )
+        if request.swap_slot == "inverter":
+            if (
+                current_inverter_id is not None
+                and selected_combo.inverter_id == current_inverter_id
+            ):
+                raise NoValidDesignError(
+                    _swap_failure_message("inverter", prefer_cheaper=prefer_cheaper),
+                )
+            active_panel_id = _component_catalog_id(active, "panel")
+            if (
+                active_panel_id is not None
+                and selected_combo.panel_id != active_panel_id
+            ):
+                raise NoValidDesignError(
+                    "No cheaper inverter is available without changing your panels.",
+                )
+
     return _session_with_custom_build(
         existing=request.session,
         solve_result=solve_result,
         annual_consumption_kwh=domain_constraints.annual_consumption_kwh,
         annual_yield_per_kwp_kwh=domain_constraints.annual_yield_per_kwp_kwh,
         resolved_tariff_php_per_kwh=domain_constraints.resolved_tariff_php_per_kwh,
+        selected_combo=selected_combo,
+    )
+
+
+def create_user_build_session(request: CreateUserBuildRequest) -> DesignSessionSchema:
+    if request.session.last_solve is None:
+        raise NoValidDesignError("Session has no prior solve to branch from.")
+
+    user_count = sum(1 for build in request.session.builds if build.source == "user")
+    label = f"Your build {chr(ord('A') + user_count)}"
+    user_build = create_empty_user_build(
+        solve_id=request.session.last_solve.solve_id,
+        label=label,
+    )
+    user_build_schema = _to_build_schema(user_build)
+    return request.session.model_copy(
+        update={
+            "builds": request.session.builds + (user_build_schema,),
+            "active_build_id": user_build_schema.id,
+            "applied": False,
+        },
+    )
+
+
+def update_user_build_component_session(
+    request: UpdateUserBuildComponentRequest,
+) -> DesignSessionSchema:
+    if request.session.last_solve is None:
+        raise NoValidDesignError("Session has no prior solve to update from.")
+
+    target = next(
+        (build for build in request.session.builds if build.id == request.build_id),
+        None,
+    )
+    if target is None:
+        raise NoValidDesignError(f"Build {request.build_id} not found in session.")
+    if target.source != "user":
+        raise NoValidDesignError("Only user builds can be edited component-by-component.")
+
+    domain_target = DesignBuild(
+        id=target.id,
+        label=target.label,
+        tags=target.tags,
+        combo_id=target.combo_id,
+        solve_id=target.solve_id,
+        system_kwp=target.system_kwp,
+        panel_count=target.panel_count,
+        inverter_kw=target.inverter_kw,
+        battery_kwh=target.battery_kwh,
+        monthly_savings_php=target.monthly_savings_php,
+        annual_savings_php=target.annual_savings_php,
+        payback_years=target.payback_years,
+        total_investment_php=target.total_investment_php,
+        total_investment_low_php=target.total_investment_low_php,
+        total_investment_high_php=target.total_investment_high_php,
+        subtotal_php=target.subtotal_php,
+        vat_php=target.vat_php,
+        inverter_utilisation_pct=target.inverter_utilisation_pct,
+        fit_score=target.fit_score,
+        co2_tonnes_avoided_yearly=target.co2_tonnes_avoided_yearly,
+        insight=target.insight,
+        components=tuple(
+            DesignComponent(
+                slot=component.slot,
+                catalog_id=component.catalog_id,
+                brand=component.brand,
+                model=component.model,
+                summary=component.summary,
+                qty=component.qty,
+                unit=component.unit,
+                unit_price_php=component.unit_price_php,
+                price_as_of=component.price_as_of,
+                line_total_php=component.line_total_php,
+                warranty_note=component.warranty_note,
+                badges=component.badges,
+                specs=component.specs,
+                product_image=component.product_image,
+            )
+            for component in target.components
+        ),
+        source=target.source,
+    )
+    domain_constraints = replace(
+        _domain_constraints_from_session(
+            request.session.last_solve.constraints,
+            session=request.session,
+        ),
+        seed_panel_count=next(
+            (
+                build.panel_count
+                for build in request.session.builds
+                if build.source == "ai_suggested" and build.panel_count > 0
+            ),
+            next(
+                (build.panel_count for build in request.session.builds if build.panel_count > 0),
+                None,
+            ),
+        ),
+    )
+    updated_build = apply_user_build_component(
+        domain_target,
+        slot=request.slot,
+        catalog_id=request.catalog_id,
+        constraints=domain_constraints,
+        annual_consumption_kwh=domain_constraints.annual_consumption_kwh,
+        annual_yield_per_kwp_kwh=domain_constraints.annual_yield_per_kwp_kwh,
+        resolved_tariff_php_per_kwh=domain_constraints.resolved_tariff_php_per_kwh,
+    )
+    updated_schema = _to_build_schema(updated_build)
+    builds = tuple(
+        updated_schema if build.id == updated_schema.id else build
+        for build in request.session.builds
+    )
+    return request.session.model_copy(
+        update={
+            "builds": builds,
+            "active_build_id": updated_schema.id,
+            "applied": False,
+        },
+    )
+
+
+def _schema_builds_as_domain(builds: tuple[DesignBuildSchema, ...]) -> tuple[DesignBuild, ...]:
+    return tuple(
+        DesignBuild(
+            id=build.id,
+            label=build.label,
+            tags=build.tags,
+            combo_id=build.combo_id,
+            solve_id=build.solve_id,
+            system_kwp=build.system_kwp,
+            panel_count=build.panel_count,
+            inverter_kw=build.inverter_kw,
+            battery_kwh=build.battery_kwh,
+            monthly_savings_php=build.monthly_savings_php,
+            annual_savings_php=build.annual_savings_php,
+            payback_years=build.payback_years,
+            total_investment_php=build.total_investment_php,
+            total_investment_low_php=build.total_investment_low_php,
+            total_investment_high_php=build.total_investment_high_php,
+            subtotal_php=build.subtotal_php,
+            vat_php=build.vat_php,
+            inverter_utilisation_pct=build.inverter_utilisation_pct,
+            fit_score=build.fit_score,
+            co2_tonnes_avoided_yearly=build.co2_tonnes_avoided_yearly,
+            insight=build.insight,
+            components=tuple(
+                DesignComponent(
+                    slot=component.slot,
+                    catalog_id=component.catalog_id,
+                    brand=component.brand,
+                    model=component.model,
+                    summary=component.summary,
+                    qty=component.qty,
+                    unit=component.unit,
+                    unit_price_php=component.unit_price_php,
+                    price_as_of=component.price_as_of,
+                    line_total_php=component.line_total_php,
+                    warranty_note=component.warranty_note,
+                    badges=component.badges,
+                    specs=component.specs,
+                    product_image=component.product_image,
+                )
+                for component in build.components
+            ),
+            source=build.source,
+        )
+        for build in builds
+    )
+
+
+def _duplicate_build_schema(
+    build: DesignBuildSchema,
+    *,
+    label: str,
+) -> DesignBuildSchema:
+    new_id = str(uuid.uuid4())
+    return build.model_copy(
+        update={
+            "id": new_id,
+            "label": label,
+            "combo_id": f"{build.source}:{new_id[:8]}",
+        },
+    )
+
+
+def _fallback_active_build_id(
+    builds: tuple[DesignBuildSchema, ...],
+    *,
+    excluded_id: str,
+) -> str:
+    remaining = tuple(build for build in builds if build.id != excluded_id)
+    if not remaining:
+        raise NoValidDesignError("Session must keep at least one build.")
+    preferred = next(
+        (build for build in remaining if build.source == "ai_suggested"),
+        None,
+    )
+    return (preferred or remaining[0]).id
+
+
+def duplicate_build_session(request: ManageBuildRequest) -> DesignSessionSchema:
+    target = next(
+        (build for build in request.session.builds if build.id == request.build_id),
+        None,
+    )
+    if target is None:
+        raise NoValidDesignError(f"Build {request.build_id} not found in session.")
+    if target.source not in MANAGEABLE_BUILD_SOURCES:
+        raise NoValidDesignError("Only custom and user builds can be duplicated.")
+
+    domain_builds = _schema_builds_as_domain(request.session.builds)
+    if target.source == "user":
+        label = next_user_build_label(domain_builds)
+    else:
+        label = next_custom_build_label(domain_builds)
+
+    duplicate = _duplicate_build_schema(target, label=label)
+    return request.session.model_copy(
+        update={
+            "builds": request.session.builds + (duplicate,),
+            "active_build_id": duplicate.id,
+            "applied": False,
+        },
+    )
+
+
+def delete_build_session(request: ManageBuildRequest) -> DesignSessionSchema:
+    target = next(
+        (build for build in request.session.builds if build.id == request.build_id),
+        None,
+    )
+    if target is None:
+        raise NoValidDesignError(f"Build {request.build_id} not found in session.")
+    if target.source not in MANAGEABLE_BUILD_SOURCES:
+        raise NoValidDesignError("Only custom and user builds can be deleted.")
+    if len(request.session.builds) <= 1:
+        raise NoValidDesignError("Cannot delete the last build in the session.")
+
+    remaining = tuple(
+        build for build in request.session.builds if build.id != request.build_id
+    )
+    active_build_id = request.session.active_build_id
+    if active_build_id == request.build_id:
+        active_build_id = _fallback_active_build_id(
+            request.session.builds,
+            excluded_id=request.build_id,
+        )
+
+    return request.session.model_copy(
+        update={
+            "builds": remaining,
+            "active_build_id": active_build_id,
+            "applied": False,
+        },
     )
 
 
