@@ -177,6 +177,7 @@ export function PermitsPage() {
             <PermitChatSidebar
               applicant={applicant}
               onApplicantChange={handleApplicantChange}
+              onAssessmentChange={setLastAssessment}
               propertyAddress={propertyAddress}
               systemKwp={systemKwp}
               uploads={uploads}

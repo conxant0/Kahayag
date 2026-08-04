@@ -22,6 +22,7 @@ const APPLICANT: ApplicantFormValues = {
   fullName: "Juan Dela Cruz",
   isRegisteredOwner: "yes",
   registeredOwnerName: "",
+  delegatesFilingToRepresentative: false,
 };
 
 const UNCHANGED_APPLICANT: ApplicantAnswers = {
@@ -29,6 +30,7 @@ const UNCHANGED_APPLICANT: ApplicantAnswers = {
   full_name: "Juan Dela Cruz",
   is_registered_owner: true,
   registered_owner_name: null,
+  delegates_filing_to_representative: false,
 };
 
 function replyWith(reply: string, applicant: ApplicantAnswers = UNCHANGED_APPLICANT) {
@@ -48,6 +50,7 @@ function renderSidebar(
   const props = {
     applicant: APPLICANT,
     onApplicantChange: vi.fn(),
+    onAssessmentChange: vi.fn(),
     propertyAddress: "12 Mango Ave, Cebu City",
     systemKwp: 5,
     uploads: new Map<string, File>(),
@@ -142,6 +145,7 @@ describe("PermitChatSidebar", () => {
       fullName: "Juan Dela Cruz",
       isRegisteredOwner: "no",
       registeredOwnerName: "Maria Santos",
+      delegatesFilingToRepresentative: false,
     });
   });
 

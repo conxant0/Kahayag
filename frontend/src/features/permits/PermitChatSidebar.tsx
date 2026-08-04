@@ -6,13 +6,15 @@
 // questions are the shared Chip. Engine replies carry the cobalt left rule
 // (cobalt informs); the homeowner's own words sit in the neutral track fill.
 // When the endpoint returns an updated `applicant`, it is handed back to the
-// page so the checklist and findings recompute from it
-// (permitsViewModel.deriveAssessment) — the chat can set inputs, not just
-// answer questions.
+// page, and the endpoint's own recomputed `assessment` (domain output, same
+// as POST /permits/assess) is applied straight to the page's displayed
+// assessment — the chat can set inputs and refresh the checklist/findings in
+// one round trip, not just answer questions.
 import { useState } from "react";
 
 import { Chip } from "../../shared/components/ui";
 import type { ApplicantFormValues } from "./ApplicantForm";
+import type { PermitAssessment } from "./permitTypes";
 import { fromApiApplicant, toApiApplicant } from "./permitsViewModel";
 import { usePermitChat } from "./usePermitChat";
 
@@ -58,20 +60,22 @@ function appendTurn(current: readonly ChatTurn[], turn: ChatTurn): readonly Chat
   return [...current, turn].slice(-MAX_TURNS);
 }
 
-// Shallow compare of the four applicant fields the chat can change, so a
+// Shallow compare of the five applicant fields the chat can change, so a
 // pure question doesn't re-trigger the page's assess request.
 function applicantEquals(a: ApplicantFormValues, b: ApplicantFormValues): boolean {
   return (
     a.solarInOriginalPermit === b.solarInOriginalPermit &&
     a.fullName === b.fullName &&
     a.isRegisteredOwner === b.isRegisteredOwner &&
-    a.registeredOwnerName === b.registeredOwnerName
+    a.registeredOwnerName === b.registeredOwnerName &&
+    a.delegatesFilingToRepresentative === b.delegatesFilingToRepresentative
   );
 }
 
 export function PermitChatSidebar({
   applicant,
   onApplicantChange,
+  onAssessmentChange,
   propertyAddress,
   systemKwp,
   uploads,
@@ -79,6 +83,7 @@ export function PermitChatSidebar({
 }: {
   applicant: ApplicantFormValues;
   onApplicantChange: (values: ApplicantFormValues) => void;
+  onAssessmentChange: (assessment: PermitAssessment) => void;
   propertyAddress: string;
   systemKwp: number;
   uploads: ReadonlyMap<string, File>;
@@ -111,6 +116,7 @@ export function PermitChatSidebar({
       if (!applicantEquals(applicant, nextApplicant)) {
         onApplicantChange(nextApplicant);
       }
+      onAssessmentChange(response.assessment);
     } catch {
       // chat.error surfaces below.
     }
