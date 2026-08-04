@@ -100,11 +100,15 @@ def _grounding_snapshot(
     *,
     applicant: ApplicantAnswers,
     findings: tuple[PermitFindingSchema, ...],
+    track: str,
+    packet_status: str,
 ) -> dict[str, object]:
     catalog = load_catalog()
     docs = required_documents(applicant, catalog)
     permits = required_permits(applicant, catalog)
     return {
+        "track": track,
+        "packet_status": packet_status,
         "documents": [
             {
                 "id": doc.id,
@@ -211,7 +215,12 @@ def run_permit_chat_turn(
             assessment=assessment.model_dump(),
         )
     else:
-        grounding = _grounding_snapshot(applicant=updated_applicant, findings=assessment.findings)
+        grounding = _grounding_snapshot(
+            applicant=updated_applicant,
+            findings=assessment.findings,
+            track=assessment.track,
+            packet_status=assessment.packet_status,
+        )
         reply = chat_client.answer_question(user_text=user_text, grounding=grounding)
 
     return PermitChatResponseSchema(

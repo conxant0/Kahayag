@@ -206,6 +206,34 @@ def test_qa_on_uncovered_question_says_catalog_does_not_cover_it() -> None:
     assert "doesn't cover that question" in response.reply
 
 
+def test_disabled_fallback_answers_track_question() -> None:
+    applicant = _retrofit_applicant()
+    response = run_permit_chat_turn(
+        applicant=applicant,
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="What track am I on?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert response.reply == f"You are on the {response.assessment.track} track."
+
+
+def test_disabled_fallback_answers_packet_status_question() -> None:
+    applicant = _retrofit_applicant()
+    response = run_permit_chat_turn(
+        applicant=applicant,
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="What is my packet status?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert response.reply == f"Packet status is {response.assessment.packet_status}."
+
+
 def test_disabled_fallback_answers_and_recomputes() -> None:
     uploads = (
         UploadedDocument(

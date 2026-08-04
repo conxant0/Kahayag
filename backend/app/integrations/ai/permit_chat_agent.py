@@ -312,6 +312,11 @@ class DisabledPermitChatClient:
     ) -> str:
         lowered = user_text.lower()
 
+        if "track" in lowered:
+            return f"You are on the {grounding.get('track')} track."
+        if "packet" in lowered and "status" in lowered:
+            return f"Packet status is {grounding.get('packet_status')}."
+
         finding, doc = _match_finding(lowered, grounding)
         if finding is not None and doc is not None:
             return _cite(doc, message=str(finding["message"]))
