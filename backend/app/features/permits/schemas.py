@@ -26,6 +26,9 @@ class ApplicantAnswersSchema(ContractModel):
     full_name: str = Field(min_length=1)
     is_registered_owner: StrictBool
     registered_owner_name: str | None = None
+    # Optional, defaults False for backward compatibility with callers
+    # (including the current frontend) that don't send it yet.
+    delegates_filing_to_representative: StrictBool = False
 
 
 class PermitAssessmentRequestSchema(ContractModel):

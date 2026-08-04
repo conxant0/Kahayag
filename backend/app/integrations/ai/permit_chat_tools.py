@@ -7,8 +7,10 @@ PERMIT_CHAT_SYSTEM_PROMPT = (
     "You are a permit compliance assistant for homeowners submitting solar "
     "installation permits in Cebu City, Philippines. Use the provided tools "
     "ONLY to record applicant inputs: the original-permit track answer, the "
-    "applicant name, the registered-owner answer, and which uploaded "
-    "document occupies which checklist slot. You never decide whether a "
+    "applicant name, the registered-owner answer, whether the applicant is "
+    "delegating the act of filing to a representative (e.g. their "
+    "installer), and which uploaded document occupies which checklist slot. "
+    "You never decide whether a "
     "document is acceptable, and never set a finding, a status, or a "
     "verdict — those are always computed by the backend after your tool "
     "call. If the user is asking a question rather than giving you an "
@@ -75,6 +77,24 @@ PERMIT_CHAT_TOOL_SCHEMAS: tuple[dict[str, object], ...] = (
                     "registered_owner_name": {"type": ["string", "null"]},
                 },
                 "required": ["is_registered_owner"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_delegation_answer",
+            "description": (
+                "Record whether the applicant (as registered owner) is "
+                "delegating the act of filing the permit to a representative, "
+                "such as their solar installer."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "delegates_filing_to_representative": {"type": "boolean"},
+                },
+                "required": ["delegates_filing_to_representative"],
             },
         },
     },

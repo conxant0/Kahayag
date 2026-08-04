@@ -12,12 +12,19 @@ DocumentStatus = Literal["pending"]
 
 @dataclass(frozen=True)
 class ApplicantAnswers:
-    """The three applicant inputs from CLOSED-applicant-inputs.md."""
+    """The applicant inputs from CLOSED-applicant-inputs.md, plus the
+    delegation answer added for the SPA fix (see rules.py)."""
 
     solar_in_original_permit: SolarInOriginalPermitAnswer
     full_name: str
     is_registered_owner: bool
     registered_owner_name: str | None = None
+    # Optional, defaults False so existing callers (including the frontend,
+    # which cannot be updated yet) stay compatible. True means the registered
+    # owner delegates the act of filing to a representative (e.g. their
+    # installer) while still being the owner — distinct from is_registered_owner
+    # being False.
+    delegates_filing_to_representative: bool = False
 
 
 @dataclass(frozen=True)

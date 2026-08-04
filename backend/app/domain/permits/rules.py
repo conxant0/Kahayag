@@ -55,20 +55,35 @@ def check_net_metering_eligibility(build: PermitBuildSpec) -> NetMeteringEligibi
 def required_documents(
     applicant: ApplicantAnswers, catalog: PermitCatalog | None = None
 ) -> list[DocumentRequirement]:
-    """Maps (track, owner-mismatch) to the homeowner-owed document list.
+    """Maps (track, owner-mismatch, delegation) to the homeowner-owed document
+    list.
 
-    The owner_mismatch condition (OBO items 17/18/19/24) is required only when
+    The owner_mismatch condition (OBO items 17/18/19) is required only when
     the applicant is not the registered owner; the applicant picks which of
-    the four instruments applies, so all four remain listed as alternatives.
+    those instruments applies, so all remain listed as alternatives.
+
+    The owner_mismatch_or_delegation condition (OBO item 24, the notarized
+    SPA) fires on either of two independent triggers per the OBO checklist's
+    "if applicant acts via representative" line: the applicant not being the
+    registered owner, OR the registered owner delegating the act of filing to
+    a representative (e.g. their installer) while still being the owner. The
+    second trigger is [UNVERIFIED as Cebu-OBO-specific policy] — see
+    .wayfinder/cebu-permit-submission-research.md, "Who may file".
     """
     cat = catalog or load_catalog()
     track = resolve_track(applicant.solar_in_original_permit)
     docs = documents_for_track(track, cat)
-    return [
-        doc
-        for doc in docs
-        if doc.condition != "owner_mismatch" or not applicant.is_registered_owner
-    ]
+    owner_mismatch = not applicant.is_registered_owner
+    needs_authorization = owner_mismatch or applicant.delegates_filing_to_representative
+
+    def _included(doc: DocumentRequirement) -> bool:
+        if doc.condition == "owner_mismatch":
+            return owner_mismatch
+        if doc.condition == "owner_mismatch_or_delegation":
+            return needs_authorization
+        return True
+
+    return [doc for doc in docs if _included(doc)]
 
 
 def required_permits(

@@ -82,6 +82,19 @@ def test_set_owner_answer_clears_owner_name_when_owner() -> None:
     assert applicant.registered_owner_name is None
 
 
+def test_set_delegation_answer_updates_applicant() -> None:
+    result, applicant, _ = _execute_tool(
+        PlannedPermitToolCall(
+            "set_delegation_answer", {"delegates_filing_to_representative": True}
+        ),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={},
+    )
+    assert result == {"delegates_filing_to_representative": True}
+    assert applicant.delegates_filing_to_representative is True
+    assert applicant.is_registered_owner is True  # unrelated to ownership
+
+
 def test_assign_document_slot_moves_file_into_slot() -> None:
     result, _applicant, slots = _execute_tool(
         PlannedPermitToolCall(

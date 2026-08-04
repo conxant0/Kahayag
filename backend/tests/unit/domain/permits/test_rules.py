@@ -43,7 +43,12 @@ def test_retrofit_track_excludes_owner_mismatch_docs_when_owner_matches() -> Non
         is_registered_owner=True,
     )
     docs = required_documents(applicant)
-    owner_mismatch_ids = {"obo_17_deed_of_absolute_sale", "obo_18_consent_and_authority"}
+    owner_mismatch_ids = {
+        "obo_17_deed_of_absolute_sale",
+        "obo_18_consent_and_authority",
+        "obo_19_contract_of_lease_lot",
+        "obo_24_special_power_of_attorney",
+    }
     assert not (owner_mismatch_ids & {d.id for d in docs})
 
 
@@ -62,6 +67,52 @@ def test_retrofit_track_includes_owner_mismatch_docs_when_owner_differs() -> Non
         "obo_19_contract_of_lease_lot",
         "obo_24_special_power_of_attorney",
     } <= doc_ids
+
+
+def test_delegation_alone_triggers_spa_when_applicant_is_owner() -> None:
+    """The registered owner delegates filing to their installer while still
+    being the owner: obo_17/18/19 (which need an owner-mismatch reason)
+    stay excluded, but obo_24 (the SPA) fires because item 24 is triggered by
+    either condition per the OBO checklist."""
+    applicant = ApplicantAnswers(
+        solar_in_original_permit="no",
+        full_name="Juan Dela Cruz",
+        is_registered_owner=True,
+        delegates_filing_to_representative=True,
+    )
+    doc_ids = {d.id for d in required_documents(applicant)}
+    assert "obo_24_special_power_of_attorney" in doc_ids
+    assert not (
+        {"obo_17_deed_of_absolute_sale", "obo_18_consent_and_authority",
+         "obo_19_contract_of_lease_lot"}
+        & doc_ids
+    )
+
+
+def test_owner_mismatch_alone_still_triggers_spa_without_delegation_flag() -> None:
+    """Existing owner-mismatch path is unchanged: delegation defaults False."""
+    applicant = ApplicantAnswers(
+        solar_in_original_permit="not_sure",
+        full_name="Maria Santos",
+        is_registered_owner=False,
+        registered_owner_name="Juan Dela Cruz",
+    )
+    doc_ids = {d.id for d in required_documents(applicant)}
+    assert applicant.delegates_filing_to_representative is False
+    assert "obo_24_special_power_of_attorney" in doc_ids
+
+
+def test_owner_mismatch_and_delegation_together_still_trigger_spa_once() -> None:
+    applicant = ApplicantAnswers(
+        solar_in_original_permit="not_sure",
+        full_name="Maria Santos",
+        is_registered_owner=False,
+        registered_owner_name="Juan Dela Cruz",
+        delegates_filing_to_representative=True,
+    )
+    docs = required_documents(applicant)
+    spa_matches = [d for d in docs if d.id == "obo_24_special_power_of_attorney"]
+    assert len(spa_matches) == 1
 
 
 def test_retrofit_track_always_includes_renovation_proof_alternatives() -> None:

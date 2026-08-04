@@ -192,14 +192,14 @@
       "obo_item": 24,
       "title": "Special Power of Attorney (notarized)",
       "track": "retrofit",
-      "condition": "owner_mismatch",
+      "condition": "owner_mismatch_or_delegation",
       "group": "owner_authorization",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 24 — required only if the applicant acts via a representative.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 24 — required if the applicant acts via a representative. Triggered either by the applicant not being the registered owner, or by the registered owner delegating the act of filing to a representative (e.g. their installer) while remaining the owner. The second trigger is inferred from the checklist's SPA line plus generic practice, not independently confirmed as Cebu-OBO-specific. [UNVERIFIED as Cebu-OBO-specific policy]",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
       "cross_check_fields": ["registered_owner_name"],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": true
     },
     {
       "id": "obo_20_occupancy_certificate",
