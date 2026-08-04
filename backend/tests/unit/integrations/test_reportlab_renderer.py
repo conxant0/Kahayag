@@ -5,6 +5,7 @@ from decimal import Decimal
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, Spacer, Table
 
+from app.features.assessment.schemas import CompletedAssessment
 from app.features.reports.schemas import GeoPoint, PanelPolygon, ReportPDFRequest
 from app.features.reports.service import (
     build_projection,
@@ -137,6 +138,41 @@ def test_notice_uses_the_same_content_width_as_tables() -> None:
 
 
 def test_kwh_formats_repeating_and_exact_decimals_without_scientific_notation() -> None:
-    assert _kwh(Decimal("5000") / Decimal("11.50")) == "434.78 kWh"
-    assert _kwh(Decimal("6000") / Decimal("12.00")) == "500.00 kWh"
-    assert _kwh(Decimal("5000") / Decimal("10.00")) == "500.00 kWh"
+    assert _kwh(Decimal(5000) / Decimal("11.50")) == "434.78 kWh"
+    assert _kwh(Decimal(6000) / Decimal("12.00")) == "500.00 kWh"
+    assert _kwh(Decimal(5000) / Decimal("10.00")) == "500.00 kWh"
+
+
+def test_renderer_accepts_bill_derived_consumption_with_null_raw_input(
+    completed_assessment_data,
+) -> None:
+    completed_assessment_data["inputs"]["monthly_consumption_kwh"] = None
+    completed_assessment_data["consumption_source"] = "bill"
+    completed_assessment_data["estimated_monthly_consumption_kwh"] = "416.67"
+    assessment = CompletedAssessment.model_validate(completed_assessment_data)
+
+    report = build_report_input(assessment)
+    roof = (
+        GeoPoint(latitude="10.31570", longitude="123.88540"),
+        GeoPoint(latitude="10.31582", longitude="123.88540"),
+        GeoPoint(latitude="10.31582", longitude="123.88555"),
+        GeoPoint(latitude="10.31570", longitude="123.88555"),
+    )
+    panel = PanelPolygon(corners=(roof[0], roof[1], roof[2], roof[3]))
+    request = ReportPDFRequest(
+        assessment=assessment,
+        roof_polygon=roof,
+        panel_polygons=(panel,) * assessment.recommendation.panel_count,
+    )
+
+    pdf = render_report_pdf(
+        request=request,
+        narrative=resolve_narrative(report, None),
+        projection=build_projection(report),
+        sensitivity=build_sensitivity_cases(report),
+        satellite_image=None,
+        report_id="KAH-20260731-BILL",
+        generated_at=datetime(2026, 7, 31, tzinfo=timezone.utc),
+    )
+
+    assert pdf.startswith(b"%PDF")

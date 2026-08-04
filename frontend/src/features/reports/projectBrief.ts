@@ -231,7 +231,7 @@ function computeSizingForPanelClass(
       annualGenerationKwh,
       annualConsumptionKwh,
     );
-    const rate = Number(inputs.electricity_rate_php_per_kwh);
+    const rate = Number(result.resolved_tariff_php_per_kwh);
     const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
     const systemCapacityKwp = Number(recommendation.system_capacity_kwp);
 
@@ -283,7 +283,7 @@ function computeSizingForPanelClass(
     annualGenerationKwh,
     annualConsumptionKwh,
   );
-  const rate = Number(inputs.electricity_rate_php_per_kwh);
+  const rate = Number(result.resolved_tariff_php_per_kwh);
   const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
   const estimatedBaseCostPhp = Math.floor(

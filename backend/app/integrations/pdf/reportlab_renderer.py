@@ -50,6 +50,10 @@ def _kwh(value: Decimal) -> str:
     return f"{Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):f} kWh"
 
 
+def _rate(value: Decimal) -> str:
+    return f"PHP {Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):f}/kWh"
+
+
 def _styles() -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
     return {
@@ -427,7 +431,7 @@ def render_report_pdf(
                         ["Input", "Value", "Source"],
                         ["Monthly electricity bill", _money(report.inputs.monthly_bill_php), "User-provided"],
                         ["Monthly consumption", _kwh(report.estimated_monthly_consumption_kwh), "Calculated or supplied"],
-                        ["Electricity tariff", f"PHP {report.inputs.electricity_rate_php_per_kwh}/kWh", "Assessment input"],
+                        ["Electricity tariff", _rate(report.resolved_tariff_php_per_kwh), "Default or supplied"],
                         ["Budget", _money(report.inputs.budget_php or 0), "User-provided"],
                         ["Usable roof area", f"{report.roof.usable_area_m2} m2", "Roof trace"],
                     ]
