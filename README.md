@@ -55,6 +55,7 @@ before it reaches the user.
 | Solar data | [Google Solar API](https://developers.google.com/maps/documentation/solar) (`buildingInsights:findClosest`, `dataLayers:get`) | Supplies per-roof segment pitch, azimuth, annual sunshine hours, and the flux/mask rasters behind the shading summary — the one keyed, billed vendor accepted because no free source has this resolution. |
 | Map imagery | Google Maps (browser script tag) | Basemap tiled to match the Google Solar rasters, avoiding a second coordinate/imagery pipeline. |
 | Address search / geocoding | [Nominatim](https://nominatim.org/) (OpenStreetMap), proxied through the backend | Free, keyless address lookup; server-side proxying enforces the 1 req/sec usage policy and a proper User-Agent. |
+| Approximate location | [ip-api.com](http://ip-api.com/), proxied through the backend | Returns a rough lat/lon from the client's IP so the map can centre before the homeowner searches for an address. Keyless, free tier. |
 | PDF generation | [ReportLab](https://www.reportlab.com/) | Renders the final report locally, no external service or key. |
 
 **Datasets:** none are bundled or trained on. All solar, imagery, and address
@@ -88,7 +89,9 @@ cp frontend/.env.example frontend/.env
 
 No API keys are required to boot the stack — the AI and solar providers
 default to `disabled` and fall back to deterministic behavior. `frontend/.env`
-must set `VITE_API_BASE_URL` to an absolute URL including the scheme.
+must set `VITE_API_BASE_URL` to an absolute URL including the scheme, and
+`VITE_GOOGLE_MAPS_API_KEY` to a key with the Maps JavaScript API enabled
+(restrict by HTTP referrer in Google Cloud Console).
 
 ### 2. Backend
 
