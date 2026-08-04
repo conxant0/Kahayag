@@ -11,7 +11,7 @@ import {
   resolveRotationDegrees,
 } from "./footprintGeometry";
 import type { LocalBox, LocalPoint, RoofPlane } from "./footprintGeometry";
-import { apiGet } from "../shared/api/client";
+import { ApiError, apiGet } from "../shared/api/client";
 import { ENDPOINTS } from "../shared/api/endpoints";
 
 /** Named edges rather than the corner pairs a mapping API tends to use. */
@@ -63,6 +63,12 @@ function isBounds(value: unknown): value is OutlineBounds {
  * Null rather than a throw: an outline is a convenience, and a building the
  * provider has never surveyed is an ordinary outcome rather than a failure.
  * The caller draws its own starting shape instead.
+ *
+ * A 404 and a provider failure are not the same nothing, though. A building
+ * never surveyed will still not be surveyed a second later, so a 404 settles
+ * it. A 5xx or a dropped connection is transient, and treating it as "never
+ * surveyed" silently downgraded the whole session to the plain square; one
+ * immediate retry is the cheapest way to tell the two apart.
  */
 export async function fetchBuildingOutline(position: {
   latitude: number;
@@ -72,29 +78,38 @@ export async function fetchBuildingOutline(position: {
     latitude: String(position.latitude),
     longitude: String(position.longitude),
   });
+  const path = `${ENDPOINTS.roofOutline}?${params.toString()}`;
 
   try {
-    const payload = await apiGet<BuildingOutline>(
-      `${ENDPOINTS.roofOutline}?${params.toString()}`,
-    );
-
-    if (!payload || typeof payload !== "object") {
+    return normalised(await apiGet<BuildingOutline>(path));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
       return null;
     }
 
-    const segments = Array.isArray(payload.segments)
-      ? payload.segments.filter((segment) => isBounds(segment?.bounding_box))
-      : [];
-    const bounds = isBounds(payload.bounding_box) ? payload.bounding_box : null;
-
-    if (!bounds && segments.length === 0) {
+    try {
+      return normalised(await apiGet<BuildingOutline>(path));
+    } catch {
       return null;
     }
+  }
+}
 
-    return { center: payload.center ?? null, bounding_box: bounds, segments };
-  } catch {
+function normalised(payload: BuildingOutline | null): BuildingOutline | null {
+  if (!payload || typeof payload !== "object") {
     return null;
   }
+
+  const segments = Array.isArray(payload.segments)
+    ? payload.segments.filter((segment) => isBounds(segment?.bounding_box))
+    : [];
+  const bounds = isBounds(payload.bounding_box) ? payload.bounding_box : null;
+
+  if (!bounds && segments.length === 0) {
+    return null;
+  }
+
+  return { center: payload.center ?? null, bounding_box: bounds, segments };
 }
 
 /**
