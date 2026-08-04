@@ -49,7 +49,6 @@ describe("resolveRoofTraceStage", () => {
     expect(view.stage).toBe("idle");
     expect(view.action).toEqual({ label: "Trace my roof", kind: "start" });
     expect(view.actionEnabled).toBe(true);
-    expect(view.canRedraw).toBe(false);
     expect(view.canClear).toBe(false);
   });
 
@@ -107,7 +106,7 @@ describe("resolveRoofTraceStage", () => {
 
     expect(view.stage).toBe("confirmed");
     expect(view.action).toEqual({ label: "Edit tracing", kind: "start" });
-    expect(view.canRedraw).toBe(true);
+    expect(view.canClear).toBe(true);
   });
 
   it("keeps tracing in charge while a confirmed roof is being edited", () => {
@@ -121,7 +120,7 @@ describe("resolveRoofTraceStage", () => {
   it("only offers to discard once there is something to discard", () => {
     expect(stageOf().canClear).toBe(false);
     expect(stageOf({ vertexCount: 4 }).canClear).toBe(true);
-    expect(stageOf({ isTracingRoof: true, vertexCount: 4 }).canRedraw).toBe(
+    expect(stageOf({ isTracingRoof: true, vertexCount: 4 }).canClear).toBe(
       true,
     );
   });

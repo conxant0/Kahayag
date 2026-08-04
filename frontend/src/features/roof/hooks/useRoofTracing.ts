@@ -670,27 +670,6 @@ export function useRoofTracing(
     setRoofPolygon(null);
   };
 
-  /**
-   * Throws away the current shape and stays in tracing, ready for the first
-   * click of a fresh outline.
-   *
-   * An empty shape used to be a dead end, back when corners were only ever
-   * dragged. Clicking corners into place is the whole gesture now, so empty
-   * is simply the starting state.
-   */
-  const redrawRoofTracing = () => {
-    if (!propertyCentre() || googleStatus !== "ready") {
-      return;
-    }
-
-    setValidationMessage("");
-    setRoofCoordinates([]);
-    clearRoofVertexMarkers();
-    clearPolygonPath();
-    createRoofPolygon();
-    setIsTracingRoof(true);
-  };
-
   return {
     googleStatus,
     roofCoordinates,
@@ -701,7 +680,6 @@ export function useRoofTracing(
     startRoofTracing,
     finishRoofTracing,
     resetRoofTracing,
-    redrawRoofTracing,
   };
 }
 /* eslint-enable react-hooks/immutability */

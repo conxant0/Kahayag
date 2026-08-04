@@ -1,4 +1,4 @@
-// Defines which stage of tracing the screen is in, and what it should say.
+﻿// Defines which stage of tracing the screen is in, and what it should say.
 //
 // Kept out of the component and free of JSX so the wording and the enabling
 // rules can be asserted directly. The screen renders this; it does not decide
@@ -21,8 +21,6 @@ export type RoofTraceStageView = {
   action: { label: string; kind: "start" | "confirm" } | null;
   /** Whether the main control can be pressed right now. */
   actionEnabled: boolean;
-  /** Whether the shape can be thrown away and drawn again. */
-  canRedraw: boolean;
   /** Whether there is anything to clear. */
   canClear: boolean;
 };
@@ -55,7 +53,6 @@ export function resolveRoofTraceStage({
       hint: "Go back a step and pick your property, then you can trace its roof here.",
       action: null,
       actionEnabled: false,
-      canRedraw: false,
       canClear: false,
     };
   }
@@ -68,7 +65,6 @@ export function resolveRoofTraceStage({
       hint: "The satellite map could not load, so there is nothing to trace on. Check your connection and reload the page.",
       action: null,
       actionEnabled: false,
-      canRedraw: false,
       canClear: false,
     };
   }
@@ -79,7 +75,6 @@ export function resolveRoofTraceStage({
       hint: "Loading the satellite view of your property.",
       action: { label: "Trace my roof", kind: "start" },
       actionEnabled: false,
-      canRedraw: false,
       canClear: false,
     };
   }
@@ -96,7 +91,6 @@ export function resolveRoofTraceStage({
       // refuses — too small, or crossing itself — cannot offer it. The colour
       // of the trace says which problem it is while the button waits.
       actionEnabled: vertexCount >= MIN_VERTICES && traceIsUsable,
-      canRedraw: true,
       canClear: true,
     };
   }
@@ -107,7 +101,6 @@ export function resolveRoofTraceStage({
       hint: "That is your roof. Continue, or edit the shape if it needs another pass.",
       action: { label: "Edit tracing", kind: "start" },
       actionEnabled: true,
-      canRedraw: true,
       canClear: true,
     };
   }
@@ -117,7 +110,6 @@ export function resolveRoofTraceStage({
     hint: "You will draw the outline yourself: click each corner of the roof you could put panels on, right around the pin.",
     action: { label: "Trace my roof", kind: "start" },
     actionEnabled: true,
-    canRedraw: false,
     canClear: vertexCount > 0,
   };
 }

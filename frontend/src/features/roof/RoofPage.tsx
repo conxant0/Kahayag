@@ -74,7 +74,6 @@ export function RoofPage() {
         startRoofTracing={roofTracing.startRoofTracing}
         finishRoofTracing={roofTracing.finishRoofTracing}
         resetRoofTracing={roofTracing.resetRoofTracing}
-        redrawRoofTracing={roofTracing.redrawRoofTracing}
       />
     </FlowLayout>
   );

@@ -24,7 +24,6 @@ function renderControls() {
       startRoofTracing={() => {}}
       finishRoofTracing={() => {}}
       resetRoofTracing={() => {}}
-      redrawRoofTracing={() => {}}
     />,
   );
 
