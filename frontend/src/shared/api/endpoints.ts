@@ -19,5 +19,6 @@ export const ENDPOINTS = {
   designsQuoteAudit: "/designs/quote-audit",
   designsAgent: "/designs/agent",
   designsExplain: "/designs/explain",
+  permitsAssess: "/permits/assess",
   permitsChat: "/permits/chat",
 } as const;

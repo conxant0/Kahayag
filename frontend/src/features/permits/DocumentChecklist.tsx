@@ -96,7 +96,7 @@ function DocumentRow({
   document: PermitDocumentChecklistItem;
   assessment: PermitAssessment;
   uploadedInSession: boolean;
-  onUpload: () => void;
+  onUpload: (file: File) => void;
   quiet: boolean;
   totalStops: number;
 }) {
@@ -175,8 +175,9 @@ function DocumentRow({
             accept="application/pdf,image/*"
             className="sr-only"
             onChange={(event) => {
-              if (event.target.files?.[0]) {
-                onUpload();
+              const file = event.target.files?.[0];
+              if (file) {
+                onUpload(file);
                 event.target.value = "";
               }
             }}
@@ -334,7 +335,7 @@ export function DocumentChecklist({
 }: {
   assessment: PermitAssessment;
   sessionUploads: ReadonlySet<string>;
-  onUpload: (documentId: string) => void;
+  onUpload: (documentId: string, file: File) => void;
 }) {
   const [showUploaded, setShowUploaded] = useState(false);
   const totalStops = officeRunStops(assessment).length;
@@ -345,7 +346,7 @@ export function DocumentChecklist({
       document={document}
       assessment={assessment}
       uploadedInSession={sessionUploads.has(document.document_id)}
-      onUpload={() => onUpload(document.document_id)}
+      onUpload={(file) => onUpload(document.document_id, file)}
       quiet={quiet}
       totalStops={totalStops}
     />
