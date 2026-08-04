@@ -125,6 +125,7 @@ const LIMITING_CONSTRAINT_LABELS: Record<string, string> = {
   demand: "Electricity use",
   budget: "Budget",
   roof_area: "Roof area",
+  user_selected: "Your selection",
 };
 
 export function formatLimitingConstraint(
