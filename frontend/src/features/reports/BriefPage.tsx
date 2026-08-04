@@ -224,12 +224,21 @@ export function BriefPage() {
       cta={
         <>
           <ButtonLink
-            to={ROUTE_PATHS.report}
+            to={ROUTE_PATHS.permits}
             fullWidth
             className="lg:h-16 lg:text-[18px]"
           >
-            Download PDF
+            Check permit requirements
             <CtaArrow />
+          </ButtonLink>
+
+          <ButtonLink
+            to={ROUTE_PATHS.report}
+            fullWidth
+            variant="ghost"
+            className="lg:h-16 lg:text-[18px]"
+          >
+            Download PDF
           </ButtonLink>
 
           <button
