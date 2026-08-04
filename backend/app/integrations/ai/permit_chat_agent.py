@@ -51,8 +51,17 @@ class PermitChatClient(Protocol):
 
 
 _TRACK_ANSWER_PATTERN = re.compile(r"\boriginal (?:building )?permit\b", re.IGNORECASE)
-_NAME_PATTERN = re.compile(
-    r"(?:my name is|call me|i am)\s+([A-Za-z.'\- ]{2,60})", re.IGNORECASE
+# "my name is"/"call me" are unambiguous declarations. Bare "i am <X>" is not
+# — it also opens clauses like "i am not the registered owner" or "i am the
+# owner" — so it gets its own pattern below, gated by a stopword check.
+_NAME_PATTERN = re.compile(r"(?:my name is|call me)\s+([A-Za-z.'\- ]{2,60})", re.IGNORECASE)
+_I_AM_NAME_PATTERN = re.compile(
+    r"\bi am\s+([A-Za-z][A-Za-z.'\-]*(?:\s+[A-Za-z][A-Za-z.'\-]*){0,3})", re.IGNORECASE
+)
+# Words that mean "i am <word>" is an assertion about track/ownership/status,
+# not a person's name, so _I_AM_NAME_PATTERN must not capture it as one.
+_I_AM_NAME_STOPWORDS = frozenset(
+    {"the", "a", "an", "not", "still", "on", "in", "registered", "owner", "sure"}
 )
 _OWNER_NAME_PATTERN = re.compile(
     r"owner(?:'s)? name is\s+([A-Za-z.'\- ]{2,60})", re.IGNORECASE
@@ -66,6 +75,67 @@ _DELEGATION_PATTERN = re.compile(
     r"|\bfile\w*\s+(?:on my behalf|for me)\b",
     re.IGNORECASE,
 )
+
+
+def _extract_i_am_name(user_text: str) -> str | None:
+    """"i am <candidate>" only counts as a name if <candidate> doesn't open
+    with a stopword — otherwise it's "i am not the registered owner", "i am
+    on the streamlined track", etc., not a person's name."""
+    match = _I_AM_NAME_PATTERN.search(user_text)
+    if not match:
+        return None
+    candidate = match.group(1).strip()
+    words = candidate.split()
+    if not words or words[0].lower() in _I_AM_NAME_STOPWORDS:
+        return None
+    return candidate
+
+
+def _is_declarative_owner_statement(lowered: str) -> bool:
+    """"i am the owner"/"not the owner" are declarative only outside a
+    question clause — "...if I am the registered owner?" must not fire."""
+    return not lowered.rstrip().endswith("?") and " if " not in lowered
+
+
+# Leading words that make a sentence read as interrogative.
+_QUESTION_LEAD_WORDS = frozenset(
+    {
+        "what", "why", "how", "when", "where", "which", "who",
+        "do", "does", "did", "can", "could", "should", "would",
+        "is", "are", "am", "will",
+    }
+)
+
+# A message matching one of these is a clear declarative assertion about the
+# applicant, even if it also reads like a question (e.g. ends in "?") — it
+# must still reach tool planning rather than being routed to Q&A.
+_DECLARATIVE_OVERRIDE_PATTERNS = (
+    re.compile(r"\bmy name is\b", re.IGNORECASE),
+    re.compile(r"\bcall me\b", re.IGNORECASE),
+    re.compile(r"\bi am not the registered owner\b", re.IGNORECASE),
+    re.compile(r"\bowner(?:'s)? name is\b", re.IGNORECASE),
+    re.compile(r"\b(?:in|was in) the original (?:building )?permit\b", re.IGNORECASE),
+)
+
+
+def is_question_only(user_text: str) -> bool:
+    """Deterministic gate: True means "route straight to grounded Q&A, never
+    to tool planning." Exists because the tool-planning fallback regexes are
+    loose enough to fire inside a question clause (e.g. "...if I am the
+    registered owner?"), silently rewriting the applicant form for what was
+    only a question. A message that reads as interrogative (ends with "?" or
+    leads with a question word) is question-only UNLESS it also contains a
+    clear declarative assertion about the applicant, in which case it must
+    still go through tool planning."""
+    stripped = user_text.strip()
+    if not stripped:
+        return False
+    lowered = stripped.lower()
+    leading_word = next(iter(re.findall(r"[a-z']+", lowered)), "")
+    is_interrogative = stripped.endswith("?") or leading_word in _QUESTION_LEAD_WORDS
+    if not is_interrogative:
+        return False
+    return not any(pattern.search(lowered) for pattern in _DECLARATIVE_OVERRIDE_PATTERNS)
 
 
 # Generic words shared across many catalog titles ("Barangay Clearance",
@@ -174,8 +244,17 @@ class DisabledPermitChatClient:
                     "set_applicant_name", {"full_name": name_match.group(1).strip()}
                 )
             )
+        else:
+            i_am_name = _extract_i_am_name(user_text)
+            if i_am_name:
+                calls.append(
+                    PlannedPermitToolCall("set_applicant_name", {"full_name": i_am_name})
+                )
 
-        if "not the registered owner" in lowered or "not the owner" in lowered:
+        is_owner_assertion = _is_declarative_owner_statement(lowered)
+        if is_owner_assertion and (
+            "not the registered owner" in lowered or "not the owner" in lowered
+        ):
             owner_match = _OWNER_NAME_PATTERN.search(user_text)
             calls.append(
                 PlannedPermitToolCall(
@@ -188,7 +267,9 @@ class DisabledPermitChatClient:
                     },
                 )
             )
-        elif "i am the registered owner" in lowered or "i am the owner" in lowered:
+        elif is_owner_assertion and (
+            "i am the registered owner" in lowered or "i am the owner" in lowered
+        ):
             calls.append(
                 PlannedPermitToolCall(
                     "set_owner_answer",

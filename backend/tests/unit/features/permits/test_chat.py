@@ -1,6 +1,8 @@
 # Defines unit tests for the permits chat tool dispatch and the hard
 # boundary that no tool can write a finding, status, or verdict directly.
 
+import re
+
 import httpx
 
 from app.domain.permits.entities import ApplicantAnswers, PermitBuildSpec
@@ -258,6 +260,86 @@ def test_groq_qa_falls_back_when_reply_omits_required_citation(monkeypatch) -> N
     )
     assert "http" in response.reply
     assert "could not be confirmed in research" in response.reply.lower()
+
+
+QUESTION_ONLY_PHRASINGS = (
+    "Do I need a notarized authorization?",
+    "What track am I on?",
+    "Why is the barangay clearance required?",
+    "Can my installer file for me?",
+    "Is the cedula required if I am the registered owner?",
+)
+
+
+def test_question_only_phrasings_get_grounded_replies_and_leave_applicant_unchanged() -> None:
+    """These read as plain questions. Regression coverage for the intent
+    router misclassifying them as applicant-detail updates (they used to
+    trip the loose regex fallbacks and rewrite the form silently)."""
+    for user_text in QUESTION_ONLY_PHRASINGS:
+        applicant = _retrofit_applicant()
+        response = run_permit_chat_turn(
+            applicant=applicant,
+            build=BUILD,
+            property_address=ADDRESS,
+            uploads=(),
+            user_text=user_text,
+            chat_client=CHAT_CLIENT,
+            intake_client=CLIENT,
+        )
+        assert not re.match(r"^Updated:", response.reply), user_text
+        assert response.applicant.full_name == applicant.full_name
+        assert response.applicant.is_registered_owner == applicant.is_registered_owner
+        assert response.applicant.registered_owner_name == applicant.registered_owner_name
+
+
+def test_declarative_phrasings_still_update_applicant() -> None:
+    cases = (
+        ("My name is Juan Dela Cruz", "full_name", "Juan Dela Cruz"),
+        ("I am not the registered owner, the owner's name is Maria Santos", None, None),
+        ("Solar was in the original building permit — yes", "solar_in_original_permit", "yes"),
+    )
+    for user_text, attr, expected in cases:
+        response = run_permit_chat_turn(
+            applicant=_retrofit_applicant(),
+            build=BUILD,
+            property_address=ADDRESS,
+            uploads=(),
+            user_text=user_text,
+            chat_client=CHAT_CLIENT,
+            intake_client=CLIENT,
+        )
+        if attr is not None:
+            assert getattr(response.applicant, attr) == expected, user_text
+
+    owner_response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="I am not the registered owner, the owner's name is Maria Santos",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert owner_response.applicant.is_registered_owner is False
+    assert owner_response.applicant.registered_owner_name == "Maria Santos"
+
+
+def test_no_op_tool_call_does_not_produce_updated_reply() -> None:
+    """Setting a value that already matches the current applicant is dropped
+    from the tool audit, so the turn falls through to Q&A instead of
+    replying "Updated: …" for a change that never happened."""
+    applicant = _retrofit_applicant(full_name="Maria Santos")
+    response = run_permit_chat_turn(
+        applicant=applicant,
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="My name is Maria Santos",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert not re.match(r"^Updated:", response.reply)
+    assert response.applicant.full_name == "Maria Santos"
 
 
 def test_groq_qa_passes_through_a_compliant_reply(monkeypatch) -> None:
