@@ -12,7 +12,8 @@
 Kahayag Energy is a homeowner-facing solar pre-feasibility application for
 residential properties in the Philippines. A homeowner locates their
 property, traces their roof, describes their electricity use, and receives a
-system recommendation with financial outcomes and a shareable report.
+system recommendation with financial outcomes, a government permit
+compliance check, and a shareable report.
 
 There is no database and no account system — assessment data lives in
 browser session state for the duration of a visit. The goal is to give a
@@ -55,12 +56,17 @@ or site condition. Three surfaces use AI:
 - **Quote comparison** — an uploaded installer quote is OCR'd and then an AI
   auditor summarises how the installer's price and specs compare against
   Kahayag's benchmark build, using only extracted facts.
+- **Permit compliance chat** — a grounded Q&A agent answers homeowner
+  questions about Cebu City permit requirements and captures applicant
+  details via chat; the required-document checklist, prerequisites, and
+  packet status all come from the deterministic permit rules catalog in
+  `backend/app/domain/permits/`, never from the model.
 
 ## AI Tools, Frameworks, & Datasets Used
 
 | Category | Choice | Purpose |
 | --- | --- | --- |
-| LLM (report, design agent, quote audit) | [Groq](https://groq.com/) (OpenAI-compatible chat completions API) | Powers three surfaces: (1) report narration — turns validated report values into cautious prose; (2) design agent — a tool-calling loop that lets homeowners refine their system via natural-language chat (`query_catalog`, `run_solver`, `update_build`, etc.); (3) quote auditor — summarises how an uploaded installer quote compares to Kahayag's benchmark. Chosen over OpenAI for a free tier with no card on file. |
+| LLM (report, design agent, quote audit, permit chat) | [Groq](https://groq.com/) (OpenAI-compatible chat completions API) | Powers four surfaces: (1) report narration — turns validated report values into cautious prose; (2) design agent — a tool-calling loop that lets homeowners refine their system via natural-language chat (`query_catalog`, `run_solver`, `update_build`, etc.); (3) quote auditor — summarises how an uploaded installer quote compares to Kahayag's benchmark; (4) permit chat — grounded Q&A over the Cebu City permit rules catalog and applicant-detail capture. Chosen over OpenAI for a free tier with no card on file. |
 | Quote OCR | [Google Cloud Vision](https://cloud.google.com/vision) (`DOCUMENT_TEXT_DETECTION`), Groq vision fallback, or local Tesseract | Extracts text from uploaded installer quote images/PDFs before the auditor parses facts (total price, system size, panel count). |
 | Solar data | [Google Solar API](https://developers.google.com/maps/documentation/solar) (`buildingInsights:findClosest`, `dataLayers:get`) | Supplies per-roof segment pitch, azimuth, annual sunshine hours, and the flux/mask rasters behind the shading summary — the one keyed, billed vendor accepted because no free source has this resolution. |
 | Map imagery (browser) | Google Maps JavaScript API | Basemap tiled to match the Google Solar rasters, avoiding a second coordinate/imagery pipeline. |
@@ -77,8 +83,9 @@ All keyed integrations (Google Solar, Groq, Google Cloud Vision) default to
 `disabled`. With no credentials configured, the stack still boots: the
 assessment falls back to deterministic nationwide peak-sun-hour assumptions,
 the design agent uses rule-based responses, the quote auditor is unavailable,
-and the report is generated without AI narration — no API key is required to
-run or test the project.
+the permit chat falls back to a disabled-chat response while the document
+checklist still renders from the rules catalog, and the report is generated
+without AI narration — no API key is required to run or test the project.
 
 ## Setup & Run Instructions for Testing the Project
 
