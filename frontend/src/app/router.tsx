@@ -1,9 +1,9 @@
 // Defines route composition for the assessment flow.
 //
-// Every path in ROUTE_PATHS is registered from the start. Screens that have not
-// been built render `PendingScreen`, and each is swapped for the real component
-// in the pull request that lands its feature — so the flow can be walked end to
-// end throughout, and an unbuilt screen never looks like a broken route.
+// Every path in ROUTE_PATHS is registered. Unbuilt screens used to render
+// `PendingScreen` until the pull request that landed the feature swapped it for
+// the real component; the last of those swaps has happened, so every path now
+// resolves to the screen it names.
 import { createBrowserRouter } from "react-router-dom";
 
 import { AssessmentPage } from "../features/assessment";
@@ -16,7 +16,6 @@ import { BriefPage, ReportPage } from "../features/reports";
 import { EditLayoutPage, ResultsPage } from "../features/results";
 import { RoofPage } from "../features/roof";
 
-import { PendingScreen } from "./PendingScreen";
 import { ROUTE_PATHS } from "./routePaths";
 
 export const router = createBrowserRouter([
