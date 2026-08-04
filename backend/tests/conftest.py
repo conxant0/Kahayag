@@ -36,3 +36,12 @@ def cebu_building_insights_payload() -> dict:
     return json.loads(
         (FIXTURES_DIR / "google_solar_building_insights.json").read_text()
     )
+
+
+@pytest.fixture
+def medium_quality_building_insights_payload() -> dict:
+    """A real Quezon City house, served only once `requiredQuality` allows
+    MEDIUM imagery — the tier the default HIGH-only search answered with 404."""
+    return json.loads(
+        (FIXTURES_DIR / "google_solar_building_insights_medium.json").read_text()
+    )

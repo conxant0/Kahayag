@@ -135,3 +135,26 @@ def test_falls_back_to_the_stated_area_when_the_pitch_is_missing() -> None:
 
     assert outline is not None
     assert outline["segments"][0]["ground_area_square_meters"] == 40.0
+
+
+def test_reads_a_real_medium_quality_payload(
+    medium_quality_building_insights_payload: dict,
+) -> None:
+    # Captured from a Quezon City house that the HIGH-only default could not
+    # see at all. MEDIUM-tier payloads carry the same geometry fields, so the
+    # reducer must treat them like any other survey rather than a special case.
+    outline = extract_roof_outline(medium_quality_building_insights_payload)
+
+    assert outline is not None
+    assert outline["bounding_box"] == {
+        "south": 14.6223396,
+        "west": 121.06476169999998,
+        "north": 14.6223899,
+        "east": 121.0648271,
+    }
+    # Three raw planes, one of 3.3 m2 dropped as noise, the rest largest first.
+    areas = [
+        round(segment["area_square_meters"], 2) for segment in outline["segments"]
+    ]
+    assert areas == [11.4, 10.55]
+    assert outline["segments"][0]["ground_area_square_meters"] == 11.1
