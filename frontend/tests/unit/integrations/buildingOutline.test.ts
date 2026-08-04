@@ -6,6 +6,7 @@ import {
   fetchBuildingOutline,
   outlineToCorners,
 } from "../../../src/integrations/buildingOutline";
+import qcProject4 from "../../fixtures/qcProject4Outline.json";
 
 const BUILDING = {
   south: 10.3155,
@@ -154,6 +155,43 @@ describe("fetchBuildingOutline", () => {
     ).resolves.toBeNull();
   });
 
+  it("does not retry a building that was never surveyed", async () => {
+    // A 404 settles it: the building will still not be surveyed a second
+    // later, so a second request would only spend quota on the same answer.
+    const fetchMock = mockFetch({ detail: "none" }, false, 404);
+
+    await fetchBuildingOutline({ latitude: 10.3157, longitude: 123.8854 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a provider failure once before giving up", async () => {
+    // A 5xx is transient, and treating it like "never surveyed" silently
+    // downgraded the whole session to the plain square.
+    const fetchMock = mockFetch({ detail: "boom" }, false, 502);
+
+    await expect(
+      fetchBuildingOutline({ latitude: 10.3157, longitude: 123.8854 }),
+    ).resolves.toBeNull();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("recovers the outline when the retry succeeds", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => PAYLOAD });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outline = await fetchBuildingOutline({
+      latitude: 10.3157,
+      longitude: 123.8854,
+    });
+
+    expect(outline?.segments).toHaveLength(1);
+  });
+
   it("discards a payload carrying no usable geometry", async () => {
     mockFetch({ center: null, bounding_box: null, segments: [] });
 
@@ -266,6 +304,32 @@ describe("outlineToCorners", () => {
 
     expect(corners).toHaveLength(6);
     expect(areaOf(corners)).toBeCloseTo(14 * 8 + 6 * 8, 0);
+  });
+
+  it("fits a real Quezon City house from MEDIUM-quality imagery", () => {
+    // Captured from expanded coverage: the HIGH-only search answered 404 for
+    // this building, so it only ever seeded the fallback square. The payload
+    // carries the same geometry as a HIGH survey and must fit the same way.
+    const corners = outlineToCorners(qcProject4.outline, qcProject4.pin)!;
+
+    expect(corners).toHaveLength(4);
+
+    // The fitted seed should cover roughly the ground the planes measured
+    // (11.1 + 10.27 m²), not the whole padded bounding box.
+    const latitude = qcProject4.pin.latitude;
+    const metresPerLongitude =
+      METRES_PER_DEGREE_LATITUDE * Math.cos((latitude * Math.PI) / 180);
+    const points = corners.map((corner) => ({
+      x: corner.longitude * metresPerLongitude,
+      y: corner.latitude * METRES_PER_DEGREE_LATITUDE,
+    }));
+    const twice = points.reduce((total, point, index) => {
+      const next = points[(index + 1) % points.length];
+      return total + point.x * next.y - next.x * point.y;
+    }, 0);
+
+    expect(Math.abs(twice) / 2).toBeGreaterThan(15);
+    expect(Math.abs(twice) / 2).toBeLessThan(26);
   });
 
   it("walks the corners in order, so the seed is not a bowtie", () => {

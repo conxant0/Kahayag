@@ -1,0 +1,44 @@
+{
+  "pin": {
+    "latitude": 14.62237,
+    "longitude": 121.06478
+  },
+  "outline": {
+    "center": {
+      "latitude": 14.622368400000001,
+      "longitude": 121.0647939
+    },
+    "bounding_box": {
+      "south": 14.6223396,
+      "west": 121.06476169999998,
+      "north": 14.6223899,
+      "east": 121.0648271
+    },
+    "segments": [
+      {
+        "bounding_box": {
+          "south": 14.622339700000001,
+          "west": 121.06477110000002,
+          "north": 14.622378900000001,
+          "east": 121.0648178
+        },
+        "area_square_meters": 11.401584,
+        "ground_area_square_meters": 11.1,
+        "pitch_degrees": 13.207515,
+        "azimuth_degrees": 316.41043
+      },
+      {
+        "bounding_box": {
+          "south": 14.6223622,
+          "west": 121.06476169999998,
+          "north": 14.622389799999999,
+          "east": 121.06481489999999
+        },
+        "area_square_meters": 10.549514,
+        "ground_area_square_meters": 10.27,
+        "pitch_degrees": 13.218628,
+        "azimuth_degrees": 11.323173
+      }
+    ]
+  }
+}
