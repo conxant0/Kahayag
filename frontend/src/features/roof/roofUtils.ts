@@ -162,6 +162,88 @@ export function centreOutlineOn(
   }));
 }
 
+/**
+ * Slides an outline the shortest distance that puts it over the pin.
+ *
+ * The centroid-on-pin move above turned out to cause the misalignment it was
+ * meant to prevent: replayed against 98 captured provider payloads, it fired
+ * on two thirds of fitted outlines and dragged shapes the imagery had placed
+ * correctly by 8 to 37 metres, planting them over streets and neighbouring
+ * roofs. The pin still has to end up covered — it is what the previous step
+ * confirmed — but the shortest slide that covers it keeps the fit as close as
+ * possible to where the imagery put it.
+ *
+ * The pin lands a metre inside the nearest edge rather than exactly on it, so
+ * the containment check that prompted the slide does not fail again on a
+ * boundary case; a smaller margin covers shapes too small to absorb a metre.
+ * A shape that still cannot cover the pin falls back to the centroid move.
+ */
+export function slideOutlineToCover(
+  coordinates: RoofCoordinate[],
+  point: RoofCoordinate,
+): RoofCoordinate[] {
+  if (!coordinates.length || isPointInsidePolygon(coordinates, point)) {
+    return coordinates;
+  }
+
+  const metresPerDegreeLatitude = EARTH_RADIUS_METERS * toRadians(1);
+  const metresPerDegreeLongitude =
+    metresPerDegreeLatitude * Math.cos(toRadians(point.latitude));
+  const toLocal = (coordinate: RoofCoordinate) => ({
+    x: coordinate.longitude * metresPerDegreeLongitude,
+    y: coordinate.latitude * metresPerDegreeLatitude,
+  });
+
+  const pin = toLocal(point);
+  const points = coordinates.map(toLocal);
+
+  // The closest point to the pin anywhere on the outline's boundary.
+  let nearest = points[0];
+  let nearestDistance = Infinity;
+  for (let index = 0; index < points.length; index += 1) {
+    const a = points[index];
+    const b = points[(index + 1) % points.length];
+    const alongX = b.x - a.x;
+    const alongY = b.y - a.y;
+    const lengthSquared = alongX * alongX + alongY * alongY;
+    const t =
+      lengthSquared === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((pin.x - a.x) * alongX + (pin.y - a.y) * alongY) / lengthSquared,
+            ),
+          );
+    const candidate = { x: a.x + t * alongX, y: a.y + t * alongY };
+    const distance = Math.hypot(pin.x - candidate.x, pin.y - candidate.y);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = candidate;
+    }
+  }
+
+  if (nearestDistance > 0) {
+    for (const marginMetres of [1, 0.25]) {
+      const scale = (nearestDistance + marginMetres) / nearestDistance;
+      const slid = coordinates.map((coordinate) => ({
+        latitude:
+          coordinate.latitude +
+          ((pin.y - nearest.y) * scale) / metresPerDegreeLatitude,
+        longitude:
+          coordinate.longitude +
+          ((pin.x - nearest.x) * scale) / metresPerDegreeLongitude,
+      }));
+      if (isPointInsidePolygon(slid, point)) {
+        return slid;
+      }
+    }
+  }
+
+  return centreOutlineOn(coordinates, point);
+}
+
 function projectCoordinates(coordinates: RoofCoordinate[]) {
   if (!coordinates.length) {
     return [];
