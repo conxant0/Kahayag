@@ -1,7 +1,8 @@
 // Defines stable route names and paths for the assessment flow.
 //
 // The order below is the demo loop: landing -> locate -> trace -> energy ->
-// plans -> loading -> results -> invest -> why -> brief -> report.
+// plans -> loading -> results -> design -> compare -> quotation -> permits ->
+// invest -> why -> brief -> report.
 export const ROUTE_PATHS = {
   landing: "/",
   locate: "/locate",

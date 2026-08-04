@@ -196,7 +196,7 @@ Landing → Locate property → Trace roof → Energy & budget → Plans → Loa
 ### 6.2 Extended exploration flow
 
 ```
-Results → Design → Compare → Quotation
+Results → Design → Compare → Quotation → Permits
          ↓
     Edit layout (/results/layout)
          ↓
