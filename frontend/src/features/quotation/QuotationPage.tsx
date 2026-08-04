@@ -271,7 +271,7 @@ export function QuotationPage() {
                     </div>
 
                     <div className="mt-5 hidden flex-col gap-2 print:hidden lg:flex">
-                      <ButtonLink to={ROUTE_PATHS.permits} fullWidth>
+                      <ButtonLink to={ROUTE_PATHS.brief} fullWidth>
                         Start saving with solar
                       </ButtonLink>
                       <Button
@@ -308,7 +308,7 @@ export function QuotationPage() {
 
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-hairline bg-paper px-4 pt-3 pb-4 print:hidden lg:hidden">
         <div className="mx-auto flex max-w-md flex-col gap-2">
-          <ButtonLink to={ROUTE_PATHS.permits} fullWidth>
+          <ButtonLink to={ROUTE_PATHS.brief} fullWidth>
             Start saving with solar
           </ButtonLink>
           <Button

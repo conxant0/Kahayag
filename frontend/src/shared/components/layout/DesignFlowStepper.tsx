@@ -1,5 +1,5 @@
-// Defines the six-step progress indicator for the D3 design flow (D6 adds
-// the permits step after Quotation).
+// Defines the six-step progress indicator for the D3 design flow. Permits is
+// the last step now that the pipeline runs quotation → brief → report → permits.
 import { Link } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../../app/routePaths";
