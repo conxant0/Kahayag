@@ -35,6 +35,14 @@ export interface PermitDocumentChecklistItem {
   status: DocumentSlotStatus;
   expires: boolean | null;
   unverified: boolean;
+  /** Where to get it — a government office, "any commissioned notary
+   * public", or "N/A" for a document the applicant already holds. */
+  issuing_agency: string;
+  /** Ordered, plain-language actions for obtaining the document. */
+  steps: readonly string[];
+  /** Other document ids (from this same assessment) that must be satisfied
+   * first. Empty when nothing gates this document. */
+  prerequisites: readonly string[];
 }
 
 export interface PermitRequirement {

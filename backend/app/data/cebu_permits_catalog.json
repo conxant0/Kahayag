@@ -12,12 +12,14 @@
       "issuing_agency": "Cebu City Office of the Building Official (OBO)",
       "legal_basis": "Presidential Decree No. 1096 (National Building Code of the Philippines); for the RE-retrofit case, DILG-DPWH-DICT-DTI Joint Memorandum Circular No. 2021-01 governs the process per JMC 001-2026 Section 6.",
       "source_url": "https://www.dilg.gov.ph/PDF_File/issuances/joint_circulars/dilg-joincircular-2026114_6a8ceeefa2.pdf",
-      "tracks": ["retrofit"],
+      "tracks": [
+        "retrofit"
+      ],
       "processing_time_note": "No numeric fee schedule located from a primary source; fees are reportedly computed from an itemized assessment.",
       "unverified": false,
       "unverified_notes": [
         "No primary source found stating a kW threshold below which the Building Permit is waived for a retrofit; treat 'always required for retrofits' as the safe assumption.",
-        "Fee schedule for a residential solar retrofit specifically is unverified — no numeric figure located.",
+        "Fee schedule for a residential solar retrofit specifically is unverified \u2014 no numeric figure located.",
         "Whether the Cebu City OBO portal (mics.cebucity.gov.ph/obo) supports full online submission or only tracking is unverified."
       ]
     },
@@ -27,7 +29,10 @@
       "issuing_agency": "Cebu City OBO (Building Official)",
       "legal_basis": "JMC 001-2026 Section 6.1.1 (streamlined track, for existing permitted establishments); otherwise bundled into the standard Building Permit application as item 4 (Electrical Permit Application Form). RA 7920 and the Philippine Electrical Code govern the underlying electrical work standards.",
       "source_url": "https://www.dilg.gov.ph/PDF_File/issuances/joint_circulars/dilg-joincircular-2026114_6a8ceeefa2.pdf",
-      "tracks": ["streamlined", "retrofit"],
+      "tracks": [
+        "streamlined",
+        "retrofit"
+      ],
       "processing_time_note": "Not more than 3 working days under JMC 001-2026 Section 6.1.1.3 ('simple' complexity category); deemed approved if the LGU misses this window, per RA 11032 Section 10.",
       "unverified": false,
       "unverified_notes": []
@@ -38,7 +43,10 @@
       "issuing_agency": "Cebu City OBO (Building Official), after physical inspection",
       "legal_basis": "JMC 001-2026 Section 6.1.2.",
       "source_url": "https://www.dilg.gov.ph/PDF_File/issuances/joint_circulars/dilg-joincircular-2026114_6a8ceeefa2.pdf",
-      "tracks": ["streamlined", "retrofit"],
+      "tracks": [
+        "streamlined",
+        "retrofit"
+      ],
       "processing_time_note": "Not more than 7 working days under JMC 001-2026 Section 6.1.2.3 ('complex' complexity category); deemed approved if the LGU misses this window, per RA 11032 Section 10.",
       "unverified": false,
       "unverified_notes": [
@@ -51,7 +59,10 @@
       "issuing_agency": "Visayan Electric (VECO)",
       "legal_basis": "JMC 001-2026 Section 5.3, citing the DOE Net-Metering Guidebook 2022 (p.18), tracing to RA 9513 Section 4 (distributed generation cap).",
       "source_url": "https://www.visayanelectric.com/customer-services/apply-electrical-connection-1",
-      "tracks": ["streamlined", "retrofit"],
+      "tracks": [
+        "streamlined",
+        "retrofit"
+      ],
       "processing_time_note": "Distribution utilities must process complete applications within 10 working days effective 1 April 2026 (down from 20 days).",
       "unverified": false,
       "unverified_notes": [
@@ -70,10 +81,18 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 10 (Form OBO-FM-PII-B-36, v.00, Eff. Date May 15, 2023).",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["property_address"],
+      "cross_check_fields": [
+        "property_address"
+      ],
       "expires": null,
       "expiry_note": "Checklist notes it is 'typically time-bound' but states no explicit validity window. [UNVERIFIED]",
-      "unverified": true
+      "unverified": true,
+      "issuing_agency": "Cebu City Planning and Development Office (CPDO) or the OBO Zoning Section [UNVERIFIED \u2014 the checklist does not name which office issues this].",
+      "steps": [
+        "Request a Locational Clearance for the property. The OBO checklist does not confirm which office issues it for Cebu City \u2014 ask at the OBO counter or the City Planning and Development Office (CPDO) before your visit. [UNVERIFIED]",
+        "Bring the property address and, if you have it, your lot title or tax declaration to identify the lot."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_12_barangay_clearance",
@@ -84,10 +103,19 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 12.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "property_address"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "property_address"
+      ],
       "expires": null,
       "expiry_note": "No Cebu-specific validity window found on the primary checklist. General Philippine practice is commonly cited elsewhere as 6 months to 1 year, but that figure is not confirmed for Cebu. [UNVERIFIED]",
-      "unverified": true
+      "unverified": true,
+      "issuing_agency": "Barangay Hall (the property's barangay)",
+      "steps": [
+        "Go to the barangay hall of the barangay that covers the property and request a barangay clearance for construction.",
+        "Bring a valid ID and proof of address. Office hours and exact requirements vary per barangay \u2014 check with yours before heading out."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_13_hoa_clearance",
@@ -98,10 +126,18 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 13.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["property_address"],
+      "cross_check_fields": [
+        "property_address"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Your property's Homeowners' Association (HOA); a notary if no HOA exists",
+      "steps": [
+        "If the property is inside a subdivision or village with an HOA, request a Homeowners' Association Clearance from the HOA office.",
+        "If there is no HOA, have an Affidavit of No Homeowners' Association drafted and notarized instead \u2014 the checklist accepts either."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_14_tct",
@@ -112,10 +148,20 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 14.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "tct_number"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "tct_number"
+      ],
       "expires": false,
       "expiry_note": "No explicit validity window stated, though it must be a 'certified true copy', implying recency.",
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Registry of Deeds, Cebu City",
+      "steps": [
+        "Request a certified true copy online through the LRA eSerbisyo portal (eserbisyo.lra.gov.ph) \u2014 delivered to you, no office visit needed \u2014 or walk in to the Registry of Deeds.",
+        "Have the registered owner's name, title (TCT) number, and lot number on hand.",
+        "Allow 5\u20137 working days for a provincial request like Cebu, longer if the title needs manual validation."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_15_tax_declaration_lot",
@@ -126,10 +172,19 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 15.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "tax_declaration_number"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "tax_declaration_number"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "City Assessor's Office, Cebu City Hall",
+      "steps": [
+        "Go to the City Assessor's Office at Cebu City Hall and request a certified true copy of the lot's tax declaration.",
+        "Have the owner's name, tax declaration number, and lot number on hand \u2014 the copy must carry them exactly as registered."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_16_tax_clearance_lot",
@@ -140,10 +195,23 @@
       "group": null,
       "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 16.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "property_address", "issue_date"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "property_address",
+        "issue_date"
+      ],
       "expires": true,
-      "expiry_note": "Annual — reflects current-year real property tax payment status.",
-      "unverified": false
+      "expiry_note": "Annual \u2014 reflects current-year real property tax payment status.",
+      "unverified": false,
+      "issuing_agency": "City Treasurer's Office, Cebu City Hall",
+      "steps": [
+        "Go to the City Treasurer's Office at Cebu City Hall and request a real property tax clearance for the lot.",
+        "Bring the lot's current Tax Declaration \u2014 the Treasurer's Office checks the clearance against it. [UNVERIFIED \u2014 the OBO checklist does not state this order explicitly; based on standard Cebu City Treasurer practice.]",
+        "Real property tax must be paid up for the current year before the clearance is issued \u2014 settle any balance first."
+      ],
+      "prerequisites": [
+        "obo_15_tax_declaration_lot"
+      ]
     },
     {
       "id": "obo_17_deed_of_absolute_sale",
@@ -152,12 +220,21 @@
       "track": "retrofit",
       "condition": "owner_mismatch",
       "group": "owner_authorization",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 17 — required only if the applicant is not the registered owner.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 17 \u2014 required only if the applicant is not the registered owner.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "property_address"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "property_address"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Any commissioned notary public",
+      "steps": [
+        "Required only if you are not the registered owner. Locate the Deed of Absolute Sale transferring the lot to you.",
+        "If it is not already notarized, bring it to any commissioned notary public."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_18_consent_and_authority",
@@ -166,12 +243,20 @@
       "track": "retrofit",
       "condition": "owner_mismatch",
       "group": "owner_authorization",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 18 — required only if the applicant is not the registered owner.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 18 \u2014 required only if the applicant is not the registered owner.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name"],
+      "cross_check_fields": [
+        "registered_owner_name"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Any commissioned notary public",
+      "steps": [
+        "Required only if you are not the registered owner. Have the registered owner write and sign a Consent and Authority naming who is authorized to file for this property.",
+        "Bring it to any commissioned notary public for notarization \u2014 this can happen at any point, in any order."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_19_contract_of_lease_lot",
@@ -180,12 +265,22 @@
       "track": "retrofit",
       "condition": "owner_mismatch",
       "group": "owner_authorization",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 19 — required only if the applicant is not the registered owner.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 19 \u2014 required only if the applicant is not the registered owner.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "property_address", "issue_date"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "property_address",
+        "issue_date"
+      ],
       "expires": true,
       "expiry_note": "Has a lease term / expiry, not a fixed duration on the checklist.",
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Any commissioned notary public",
+      "steps": [
+        "Required only if you are not the registered owner and lease the lot. Locate your Contract of Lease for the lot.",
+        "If it is not already notarized, bring it to any commissioned notary public."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_24_special_power_of_attorney",
@@ -194,12 +289,20 @@
       "track": "retrofit",
       "condition": "owner_mismatch_or_delegation",
       "group": "owner_authorization",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 24 — required if the applicant acts via a representative. Triggered either by the applicant not being the registered owner, or by the registered owner delegating the act of filing to a representative (e.g. their installer) while remaining the owner. The second trigger is inferred from the checklist's SPA line plus generic practice, not independently confirmed as Cebu-OBO-specific. [UNVERIFIED as Cebu-OBO-specific policy]",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 24 \u2014 required if the applicant acts via a representative. Triggered either by the applicant not being the registered owner, or by the registered owner delegating the act of filing to a representative (e.g. their installer) while remaining the owner. The second trigger is inferred from the checklist's SPA line plus generic practice, not independently confirmed as Cebu-OBO-specific. [UNVERIFIED as Cebu-OBO-specific policy]",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name"],
+      "cross_check_fields": [
+        "registered_owner_name"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": true
+      "unverified": true,
+      "issuing_agency": "Any commissioned notary public",
+      "steps": [
+        "Required if you are not the registered owner, or if the registered owner is delegating the act of filing to a representative (e.g. their installer) while remaining the owner.",
+        "Have the registered owner draft and sign a Special Power of Attorney naming the representative, then have it notarized by any commissioned notary public."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_20_occupancy_certificate",
@@ -208,12 +311,20 @@
       "track": "retrofit",
       "condition": null,
       "group": "renovation_proof",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 20 — required for renovation projects, of which a solar retrofit is one.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 20 \u2014 required for renovation projects, of which a solar retrofit is one.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["property_address"],
+      "cross_check_fields": [
+        "property_address"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Cebu City Office of the Building Official (OBO)",
+      "steps": [
+        "Request a copy of the property's Occupancy Certificate from the Cebu City OBO \u2014 this is the record issued when the building was originally completed and inspected.",
+        "Only one of the Occupancy Certificate or the Tax Declaration & Tax Clearance for the Building is needed, not both."
+      ],
+      "prerequisites": []
     },
     {
       "id": "obo_21_tax_declaration_and_clearance_building",
@@ -222,12 +333,22 @@
       "track": "retrofit",
       "condition": null,
       "group": "renovation_proof",
-      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 21 — alternative to the Occupancy Certificate for renovation projects.",
+      "legal_basis": "Cebu City OBO Building Permit Requirements Checklist, item 21 \u2014 alternative to the Occupancy Certificate for renovation projects.",
       "source_url": "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
-      "cross_check_fields": ["registered_owner_name", "tax_declaration_number", "issue_date"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "tax_declaration_number",
+        "issue_date"
+      ],
       "expires": true,
       "expiry_note": "Annual, for the tax clearance portion.",
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "City Assessor's Office and City Treasurer's Office, Cebu City Hall",
+      "steps": [
+        "Only needed if you don't have an Occupancy Certificate. Request a certified true copy of the Tax Declaration for the building (separate from the lot's) from the City Assessor's Office.",
+        "Request the building's Tax Clearance from the City Treasurer's Office \u2014 reflects current-year real property tax payment status for the building."
+      ],
+      "prerequisites": []
     },
     {
       "id": "veco_valid_government_id",
@@ -236,12 +357,17 @@
       "track": "retrofit",
       "condition": null,
       "group": null,
-      "legal_basis": "Visayan Electric net-metering application requirements — 'Valid IDs & Proof of Ownership'.",
+      "legal_basis": "Visayan Electric net-metering application requirements \u2014 'Valid IDs & Proof of Ownership'.",
       "source_url": "https://www.visayanelectric.com/customer-services/apply-electrical-connection-1",
       "cross_check_fields": [],
       "expires": null,
       "expiry_note": "VECO's page does not specify an ID type or expiry rule. [UNVERIFIED]",
-      "unverified": true
+      "unverified": true,
+      "issuing_agency": "N/A \u2014 bring an existing government-issued photo ID",
+      "steps": [
+        "Bring any valid government-issued photo ID. VECO's page does not specify an accepted list. [UNVERIFIED]"
+      ],
+      "prerequisites": []
     },
     {
       "id": "veco_proof_of_ownership",
@@ -250,12 +376,20 @@
       "track": "retrofit",
       "condition": null,
       "group": null,
-      "legal_basis": "Visayan Electric net-metering application requirements — 'Valid IDs & Proof of Ownership'.",
+      "legal_basis": "Visayan Electric net-metering application requirements \u2014 'Valid IDs & Proof of Ownership'.",
       "source_url": "https://www.visayanelectric.com/customer-services/apply-electrical-connection-1",
-      "cross_check_fields": ["registered_owner_name", "property_address"],
+      "cross_check_fields": [
+        "registered_owner_name",
+        "property_address"
+      ],
       "expires": false,
       "expiry_note": "VECO does not specify the exact accepted document type beyond 'proof of ownership'. [UNVERIFIED]",
-      "unverified": true
+      "unverified": true,
+      "issuing_agency": "N/A \u2014 bring an existing ownership document",
+      "steps": [
+        "Bring a document proving you own the property. VECO's page does not specify the accepted type beyond 'proof of ownership' \u2014 your Tax Declaration or Certified True Copy of Title are the safest choices. [UNVERIFIED]"
+      ],
+      "prerequisites": []
     },
     {
       "id": "jmc_net_metering_application_form",
@@ -266,10 +400,19 @@
       "group": null,
       "legal_basis": "JMC 001-2026 Section 6.1.1.1(a).",
       "source_url": "https://www.dilg.gov.ph/PDF_File/issuances/joint_circulars/dilg-joincircular-2026114_6a8ceeefa2.pdf",
-      "cross_check_fields": ["property_address"],
+      "cross_check_fields": [
+        "property_address"
+      ],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Submitted to the Cebu City OBO",
+      "steps": [
+        "Fill out the Net-Metering Application Form (JMC Annex 1) in 3 copies.",
+        "Submit it together with the Electrical Single Line Diagram at the Cebu City OBO to start the Electrical Permit process.",
+        "The OBO processes a complete submission in up to 3 working days (Step 1: submission, Step 2: order of payment, Step 3: pay fees, Step 4: claim the permit)."
+      ],
+      "prerequisites": []
     },
     {
       "id": "jmc_electrical_single_line_diagram",
@@ -278,12 +421,18 @@
       "track": "streamlined",
       "condition": null,
       "group": null,
-      "legal_basis": "JMC 001-2026 Section 6.1.1.1(b) — signed and sealed by a registered Electrical Engineer.",
+      "legal_basis": "JMC 001-2026 Section 6.1.1.1(b) \u2014 signed and sealed by a registered Electrical Engineer.",
       "source_url": "https://www.dilg.gov.ph/PDF_File/issuances/joint_circulars/dilg-joincircular-2026114_6a8ceeefa2.pdf",
       "cross_check_fields": [],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Prepared by your installer's Electrical Engineer; submitted to the Cebu City OBO",
+      "steps": [
+        "Have a registered Electrical Engineer prepare and sign/seal the Electrical Single Line Diagram (service entrance to main breaker, showing the solar connection) in 3 sets.",
+        "Submit it together with the Net-Metering Application Form at the Cebu City OBO."
+      ],
+      "prerequisites": []
     },
     {
       "id": "jmc_certificate_of_completion",
@@ -297,7 +446,13 @@
       "cross_check_fields": [],
       "expires": false,
       "expiry_note": null,
-      "unverified": false
+      "unverified": false,
+      "issuing_agency": "Submitted to the Cebu City OBO",
+      "steps": [
+        "Once your installation is complete, get the Certificate of Completion (JMC Annex 2) signed and submit 1 copy to the OBO.",
+        "This starts the Certificate of Final Electrical Inspection process \u2014 a physical inspection follows, taking up to 7 working days."
+      ],
+      "prerequisites": []
     }
   ]
 }
