@@ -2,6 +2,7 @@
 import { layoutPanelsInPolygon } from "../results/panelLayoutUtils";
 import type {
   AssessmentResult,
+  DesignBuild,
   GeoPoint,
   RoofPolygon,
 } from "../../shared/api/types";
@@ -14,14 +15,19 @@ export interface ReportPdfRequest {
   assessment: AssessmentResult;
   roof_polygon: GeoPoint[];
   panel_polygons: PanelPolygon[];
+  // The chosen D3 build, when the homeowner went through that flow. The
+  // backend recomposes the quotation from it and prints both in the PDF.
+  design_build?: DesignBuild;
 }
 
 export function buildReportRequest({
   result,
   roofPolygon,
+  designBuild = null,
 }: {
   result: AssessmentResult | null;
   roofPolygon: RoofPolygon | null;
+  designBuild?: DesignBuild | null;
 }): ReportPdfRequest {
   const roof = roofPolygon?.coordinates ?? [];
   if (!result || roof.length < 3) {
@@ -46,5 +52,6 @@ export function buildReportRequest({
     panel_polygons: panels.map((panel) => ({
       corners: panel.corners,
     })),
+    ...(designBuild ? { design_build: designBuild } : {}),
   };
 }

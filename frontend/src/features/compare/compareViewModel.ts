@@ -1,6 +1,6 @@
 // Maps design session builds into compare-page view models.
 import type { DesignBuild, DesignSession } from "../../shared/api/types";
-import { peso } from "../../shared/lib/currency";
+import { peso, pesoRange, pesoRangeCompact } from "../../shared/lib/currency";
 
 export type CompareMetric = {
   label: string;
@@ -27,28 +27,27 @@ export type CompareBuildView = {
   technicalRows: CompareMetric[];
 };
 
-export function costPerWatt(build: DesignBuild): number {
-  const watts = build.system_kwp * 1000;
-  if (watts <= 0) {
-    return 0;
-  }
-  return build.total_investment_php / watts;
-}
-
-export function formatCostPerWatt(build: DesignBuild): string {
-  return `₱${costPerWatt(build).toFixed(0)}/W`;
+export function formatInvestmentRange(build: DesignBuild): string {
+  const useCompact =
+    build.total_investment_low_php >= 1_000_000 ||
+    build.total_investment_high_php >= 1_000_000;
+  return useCompact
+    ? pesoRangeCompact(
+        build.total_investment_low_php,
+        build.total_investment_high_php,
+      )
+    : pesoRange(build.total_investment_low_php, build.total_investment_high_php);
 }
 
 export function compareBuilds(session: DesignSession): CompareBuildView[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
     [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
-  const alternate =
-    session.builds.find((build) => build.source === "custom") ??
-    session.builds.find((build) => build.id !== suggested?.id);
+  const customBuilds = session.builds.filter((build) => build.source === "custom");
 
-  const ordered = [suggested, alternate].filter(
-    (build): build is DesignBuild => build !== undefined,
+  const ordered = [suggested, ...customBuilds].filter(
+    (build, index, builds): build is DesignBuild =>
+      build !== undefined && builds.indexOf(build) === index,
   );
 
   return ordered.map((build) => {
@@ -62,7 +61,7 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
       paybackLabel: build.payback_years
         ? `${build.payback_years.toFixed(1)} years`
         : "—",
-      totalInvestmentLabel: peso(build.total_investment_php),
+      totalInvestmentLabel: formatInvestmentRange(build),
       utilisationPct: build.inverter_utilisation_pct,
       insight: build.insight,
       overviewSpecs: overviewSpecs(build),
@@ -123,7 +122,6 @@ function overviewSpecs(build: DesignBuild): CompareSpecRow[] {
 function overviewMetrics(build: DesignBuild): CompareMetric[] {
   return [
     { label: "Total cost", value: peso(build.total_investment_php) },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
     {
       label: "Payback",
       value: build.payback_years ? `${build.payback_years.toFixed(1)} years` : "—",
@@ -181,7 +179,6 @@ function technicalMetrics(build: DesignBuild): CompareMetric[] {
       label: "CO₂ avoided",
       value: `${build.co2_tonnes_avoided_yearly.toFixed(1)} t/yr`,
     },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
     { label: "Fit score", value: build.fit_score.toFixed(1) },
   ];
 }

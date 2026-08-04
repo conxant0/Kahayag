@@ -21,12 +21,19 @@ class Settings(BaseSettings):
     ai_provider: str = "disabled"  # groq | disabled
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
+    groq_vision_model: str = "qwen/qwen3.6-27b"
+    quote_ocr_provider: str = "google_vision"  # google_vision | groq
+    google_cloud_vision_api_key: str = ""
 
     nominatim_base_url: str = "https://nominatim.openstreetmap.org"
     nominatim_user_agent: str = "kahayag-energy/1.0"
 
     solar_provider: str = "disabled"  # google | disabled
     google_solar_api_key: str = ""
+
+    # Server-side Static Maps key for the PDF's satellite photo; the report
+    # falls back to Esri World Imagery when empty or when the call fails.
+    google_maps_api_key: str = ""
 
 
 @lru_cache

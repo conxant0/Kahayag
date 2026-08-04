@@ -58,6 +58,15 @@ def _quantize_sunshine(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.1"))
 
 
+def _clamp_retention_ratio(ratio: Decimal) -> Decimal:
+    """Google Solar stats can exceed 1.0 after rounding; treat as unshaded."""
+    if ratio > Decimal(1):
+        return Decimal(1)
+    if ratio < Decimal(0):
+        return Decimal(0)
+    return ratio
+
+
 def _median_quantile(quantiles: list[float]) -> float:
     if not quantiles:
         raise InvalidSunshineDataError("sunshineQuantiles must not be empty")
@@ -98,8 +107,10 @@ def analyze_building_insights(
     if max_sunshine <= 0:
         raise InvalidSunshineDataError("maxSunshineHoursPerYear must be greater than zero")
 
-    retention_ratio = (Decimal(str(median_sunshine)) / Decimal(str(max_sunshine))).quantize(
-        Decimal("0.01")
+    retention_ratio = _clamp_retention_ratio(
+        (Decimal(str(median_sunshine)) / Decimal(str(max_sunshine))).quantize(
+            Decimal("0.01")
+        )
     )
     shading_impact = classify_shading_impact(retention_ratio)
 
@@ -152,9 +163,11 @@ def _parse_roof_segments(
 
         segment_median = _median_quantile(quantiles)
         segment_max = quantiles[-1]
-        segment_retention = (
-            Decimal(str(segment_median)) / Decimal(str(max_sunshine))
-        ).quantize(Decimal("0.01"))
+        segment_retention = _clamp_retention_ratio(
+            (Decimal(str(segment_median)) / Decimal(str(max_sunshine))).quantize(
+                Decimal("0.01")
+            )
+        )
 
         parsed.append(
             RoofSegmentShading(

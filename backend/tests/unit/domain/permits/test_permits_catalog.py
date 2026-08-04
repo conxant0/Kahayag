@@ -50,3 +50,24 @@ def test_permits_for_track_building_permit_only_applies_to_retrofit() -> None:
     streamlined_permits = {p.id for p in permits_for_track("streamlined", catalog)}
     assert "building_permit" in retrofit_permits
     assert "building_permit" not in streamlined_permits
+
+
+def test_every_document_has_steps_and_an_issuing_agency() -> None:
+    catalog = load_catalog()
+    for doc in catalog.documents:
+        assert doc.steps, f"{doc.id} has no steps"
+        assert doc.issuing_agency
+
+
+def test_prerequisites_reference_valid_document_ids_in_the_same_catalog() -> None:
+    catalog = load_catalog()
+    known_ids = {doc.id for doc in catalog.documents}
+    for doc in catalog.documents:
+        assert set(doc.prerequisites) <= known_ids, f"{doc.id} has a dangling prerequisite"
+        assert doc.id not in doc.prerequisites, f"{doc.id} cannot require itself"
+
+
+def test_tax_clearance_requires_tax_declaration_first() -> None:
+    catalog = load_catalog()
+    tax_clearance = next(d for d in catalog.documents if d.id == "obo_16_tax_clearance_lot")
+    assert tax_clearance.prerequisites == ("obo_15_tax_declaration_lot",)

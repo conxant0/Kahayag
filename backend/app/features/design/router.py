@@ -6,11 +6,14 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.core.config import Settings, get_settings
 from app.features.design.agent import explain_design_session, run_design_agent_turn
+from app.features.design.catalog_options import get_catalog_options
 from app.features.design.quote_audit import audit_uploaded_quote
 from app.features.design.schemas import (
     AgentDesignRequest,
     AgentDesignResponse,
     BootstrapDesignRequest,
+    CatalogOptionSchema,
+    CatalogOptionsRequest,
     DesignSessionSchema,
     ExplainDesignRequest,
     ExplainDesignResponse,
@@ -30,6 +33,7 @@ from app.features.design.service import (
     optimise_design_session,
 )
 from app.integrations.ai import get_design_agent_client, get_quote_auditor_client
+from app.integrations.quote_parsing import get_quote_image_transcriber
 
 router = APIRouter(prefix="/designs", tags=["designs"])
 
@@ -58,6 +62,11 @@ def mutate_design(request: MutateDesignRequest) -> DesignSessionSchema:
         return mutate_design_session(request)
     except NoValidDesignError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/catalog-options", response_model=tuple[CatalogOptionSchema, ...])
+def catalog_options(request: CatalogOptionsRequest) -> tuple[CatalogOptionSchema, ...]:
+    return get_catalog_options(request)
 
 
 @router.get(
@@ -122,11 +131,16 @@ async def audit_quote(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
+        quote_client = get_quote_auditor_client(settings)
         return audit_uploaded_quote(
             filename=file.filename or "upload.txt",
             content=content,
             session=session_payload,
-            client=get_quote_auditor_client(settings),
+            client=quote_client,
+            image_transcriber=get_quote_image_transcriber(
+                settings,
+                quote_client=quote_client,
+            ),
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

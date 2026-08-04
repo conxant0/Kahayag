@@ -84,6 +84,47 @@ describe("ReportPage", () => {
     expect(screen.getByText("Panel layout on your roof")).toBeInTheDocument();
   });
 
+  it("keeps the optional contact details with the session", async () => {
+    seedSession();
+    const user = userEvent.setup();
+
+    render(
+      <Providers>
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
+      </Providers>,
+    );
+
+    await user.type(screen.getByLabelText("Full name"), "Juana dela Cruz");
+    await user.type(screen.getByLabelText("Mobile number"), "0917 123 4567");
+
+    expect(useAssessmentStore.getState().contactDetails).toMatchObject({
+      fullName: "Juana dela Cruz",
+      mobile: "0917 123 4567",
+    });
+    // Typing a name must not discard the result this page is built on.
+    expect(useAssessmentStore.getState().result).not.toBeNull();
+  });
+
+  it("leaves the download open with the contact fields blank", () => {
+    // Every contact field is optional: the proposal is the homeowner's either
+    // way, so an empty form must never hold the PDF hostage.
+    seedSession();
+
+    render(
+      <Providers>
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
+      </Providers>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Download PDF report/ }),
+    ).toBeEnabled();
+  });
+
   it("blocks the download until a roof has been traced", () => {
     seedSession({ roof: null });
 
@@ -174,36 +215,25 @@ describe("ReportPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears the session before starting another assessment", async () => {
-    const user = userEvent.setup();
+  it("offers a CTA to the permit check below the PDF download", () => {
     seedSession();
-
-    const router = createMemoryRouter(
-      [
-        { path: "/report", element: <ReportPage /> },
-        { path: "/", element: <p>Landing</p> },
-      ],
-      { initialEntries: ["/report"] },
-    );
 
     render(
       <Providers>
-        <RouterProvider router={router} />
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
       </Providers>,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Start another assessment" }),
-    );
-
-    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
-    // Left behind entirely: arriving at step one holding the previous roof
-    // would offer to resume what was just abandoned.
-    const session = useAssessmentStore.getState();
-    expect(session.result).toBeNull();
-    expect(session.selectedProperty).toBeNull();
-    expect(session.roofPolygon).toBeNull();
-    expect(session.energyInputs.monthlyBillPhp).toBeNull();
+    const permitLink = screen.getByRole("link", {
+      name: /Check permit requirements/,
+    });
+    expect(permitLink).toBeInTheDocument();
+    expect(permitLink).toHaveAttribute("href", "/permits");
+    expect(
+      screen.queryByRole("button", { name: "Start another assessment" }),
+    ).not.toBeInTheDocument();
   });
 
   it("redirects to energy when no assessment has been run", async () => {

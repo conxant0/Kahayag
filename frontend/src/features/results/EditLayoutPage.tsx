@@ -22,7 +22,7 @@ import {
 } from "./panelCountAdjustment";
 import { layoutPanelsInPolygon } from "./panelLayoutUtils";
 import { resolveLayoutContext } from "./layoutContext";
-import { PanelLayoutPreview } from "./components/PanelLayoutPreview";
+import { ResultsMapPane } from "./components/ResultsMapPane";
 
 export function EditLayoutPage() {
   const navigate = useNavigate();
@@ -99,23 +99,38 @@ export function EditLayoutPage() {
     return () => window.clearTimeout(timer);
   }, [initialPanelCount, mutateAsync, requestedPanelCount, result]);
 
-  if (!result || !layoutContext) {
-    return <Navigate to={ROUTE_PATHS.energy} replace />;
-  }
-
-  const roofCoordinates = layoutContext.coordinates;
+  const roofCoordinates = useMemo(
+    () => layoutContext?.coordinates ?? [],
+    [layoutContext],
+  );
   const fluxKey = computeFluxCacheKey({
     roofCoordinates,
     selectedProperty,
   });
   const cachedFlux = fluxEntry?.key === fluxKey ? fluxEntry : null;
-  const panels = layoutPanelsInPolygon({
-    coordinates: roofCoordinates,
-    panelCount: requestedPanelCount,
-    panelWidthM: layoutContext.panelWidthM,
-    panelHeightM: layoutContext.panelHeightM,
-    flux: cachedFlux?.flux,
-  });
+  const panels = useMemo(() => {
+    if (!layoutContext) {
+      return [];
+    }
+    return layoutPanelsInPolygon({
+      coordinates: roofCoordinates,
+      panelCount: requestedPanelCount,
+      panelWidthM: layoutContext.panelWidthM,
+      panelHeightM: layoutContext.panelHeightM,
+      flux: cachedFlux?.flux,
+    });
+  }, [
+    roofCoordinates,
+    requestedPanelCount,
+    layoutContext,
+    cachedFlux?.flux,
+  ]);
+
+  if (!result || !layoutContext) {
+    // Memory-only result: recompute via /loading rather than dropping the
+    // visitor on the bill screen after a refresh.
+    return <Navigate to={ROUTE_PATHS.loading} replace />;
+  }
   const recommendation =
     candidateAdjustment?.recommendation ?? result.recommendation;
   const financials = candidateAdjustment?.financials ?? result.financials;
@@ -152,10 +167,12 @@ export function EditLayoutPage() {
       nextDisabled={isPending || !canSave}
       nextLoading={isPending}
       pane={
-        <PanelLayoutPreview
+        <ResultsMapPane
+          selectedProperty={selectedProperty}
           roofCoordinates={roofCoordinates}
           panels={panels}
-          status={adjustmentError ?? "Panel placement preview"}
+          flux={cachedFlux?.flux}
+          mask={cachedFlux?.mask}
         />
       }
       lead={
@@ -173,25 +190,8 @@ export function EditLayoutPage() {
         formatValue={(value) => `${value} of ${maxPanels} max`}
       />
 
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="ghost"
-          onClick={() =>
-            handlePanelCountChange(result.recommendation.panel_count)
-          }
-          disabled={requestedPanelCount === result.recommendation.panel_count}
-        >
-          Set recommended
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => handlePanelCountChange(initialPanelCount)}
-          disabled={requestedPanelCount === initialPanelCount}
-        >
-          <span aria-hidden="true">↺</span> Reset layout
-        </Button>
-      </div>
-
+      {/* The figures the slider drives sit directly under it — cause and
+          effect adjacent — with the corrective actions demoted below. */}
       <section
         className="flex w-full flex-col gap-2.5 pt-1"
         aria-label="Live results"
@@ -228,8 +228,29 @@ export function EditLayoutPage() {
         </dl>
       </section>
 
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          fullWidth
+          onClick={() =>
+            handlePanelCountChange(result.recommendation.panel_count)
+          }
+          disabled={requestedPanelCount === result.recommendation.panel_count}
+        >
+          Set recommended
+        </Button>
+        <Button
+          variant="ghost"
+          fullWidth
+          onClick={() => handlePanelCountChange(initialPanelCount)}
+          disabled={requestedPanelCount === initialPanelCount}
+        >
+          <span aria-hidden="true">↺</span> Reset layout
+        </Button>
+      </div>
+
       {adjustmentError ? (
-        <p className="font-sans text-sm text-red-700" role="alert">
+        <p className="font-sans text-sm text-ember" role="alert">
           {adjustmentError}
         </p>
       ) : null}

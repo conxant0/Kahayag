@@ -34,6 +34,7 @@ class CatalogPanel:
     price_php: CatalogPrice
     certified_compatible_inverters: tuple[str, ...]
     warranty_product_years: int
+    product_image: str | None = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,7 @@ class CatalogInverter:
     certified_batteries: tuple[str, ...]
     price_php: CatalogPrice
     warranty_years: int
+    product_image: str | None = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,7 @@ class CatalogBattery:
     price_php: CatalogPrice
     warranty_years: int
     recommended_inverter_brands: tuple[str, ...]
+    product_image: str | None = None
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,7 @@ class CatalogPackage:
     price_php: CatalogPrice | None = None
     price_php_per_kwp: CatalogPrice | None = None
     warranty_years: int = 0
+    product_image: str | None = None
 
 
 @dataclass(frozen=True)
@@ -116,6 +120,7 @@ def _parse_panel(raw: dict[str, Any]) -> CatalogPanel:
         price_php=_parse_price(raw["price_php"]),
         certified_compatible_inverters=tuple(raw.get("certified_compatible_inverters", [])),
         warranty_product_years=int(warranty.get("product_years", 0)),
+        product_image=raw.get("product_image"),
     )
 
 
@@ -136,6 +141,7 @@ def _parse_inverter(raw: dict[str, Any]) -> CatalogInverter:
         certified_batteries=tuple(raw.get("certified_batteries", [])),
         price_php=_parse_price(raw["price_php"]),
         warranty_years=int(warranty.get("years", 0)),
+        product_image=raw.get("product_image"),
     )
 
 
@@ -151,6 +157,7 @@ def _parse_battery(raw: dict[str, Any]) -> CatalogBattery:
         price_php=_parse_price(raw["price_php"]),
         warranty_years=int(warranty.get("years", 0)),
         recommended_inverter_brands=tuple(raw.get("recommended_inverter_brands", [])),
+        product_image=raw.get("product_image"),
     )
 
 
@@ -168,6 +175,7 @@ def _parse_package(raw: dict[str, Any]) -> CatalogPackage:
         price_php=_parse_price(price) if price else None,
         price_php_per_kwp=_parse_price(price_per_kwp) if price_per_kwp else None,
         warranty_years=int(warranty.get("years", 0)),
+        product_image=raw.get("product_image"),
     )
 
 

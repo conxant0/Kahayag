@@ -15,11 +15,18 @@ class GoogleSolarProvider:
     def find_closest_building_insights(
         self, *, latitude: float, longitude: float
     ) -> dict:
+        # Accept every imagery tier, not just HIGH. Leaving `requiredQuality`
+        # unset restricts the search to HIGH-quality imagery, which in the
+        # Philippines exists only around Metro Cebu and Davao: probed against 60
+        # residential coordinates nationwide, the default answered 8 and the
+        # other 52 were 404s that all resolve at MEDIUM or BASE quality. Google
+        # still returns the best imagery it has, so covered areas are unchanged.
         response = _get(
             BUILDING_INSIGHTS_URL,
             params={
                 "location.latitude": latitude,
                 "location.longitude": longitude,
+                "requiredQuality": "BASE",
                 "key": self._api_key,
             },
         )

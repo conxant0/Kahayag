@@ -11,12 +11,12 @@ from dataclasses import replace
 
 from app.domain.permits.catalog import load_catalog
 from app.domain.permits.entities import ApplicantAnswers, PermitBuildSpec
-from app.domain.permits.rules import required_documents
+from app.domain.permits.rules import required_documents, required_permits
 from app.features.permits.intake import UploadedDocument, assess_permit_documents
 from app.features.permits.schemas import (
     ApplicantAnswersSchema,
-    PermitAssessmentResponseSchema,
     PermitChatResponseSchema,
+    PermitFindingSchema,
 )
 from app.integrations.ai.document_intake import DocumentIntakeClient
 from app.integrations.ai.permit_chat_agent import (
@@ -99,28 +99,21 @@ def _execute_tool(
 def _grounding_snapshot(
     *,
     applicant: ApplicantAnswers,
-    assessment: PermitAssessmentResponseSchema,
+    findings: tuple[PermitFindingSchema, ...],
 ) -> dict[str, object]:
     catalog = load_catalog()
-    required_docs = required_documents(applicant, catalog)
-    required_doc_ids = {doc.id for doc in required_docs}
+    docs = required_documents(applicant, catalog)
+    permits = required_permits(applicant, catalog)
     return {
-        "track": assessment.track,
-        "packet_status": assessment.packet_status,
-        "required_document_ids": sorted(required_doc_ids),
         "documents": [
             {
                 "id": doc.id,
                 "title": doc.title,
-                "track": doc.track,
-                "condition": doc.condition,
-                "group": doc.group,
-                "obo_item": doc.obo_item,
                 "legal_basis": doc.legal_basis,
                 "source_url": doc.source_url,
                 "unverified": doc.unverified,
             }
-            for doc in catalog.documents
+            for doc in docs
         ],
         "permits": [
             {
@@ -132,9 +125,9 @@ def _grounding_snapshot(
                 "unverified": permit.unverified,
                 "unverified_notes": list(permit.unverified_notes),
             }
-            for permit in catalog.permits
+            for permit in permits
         ],
-        "findings": [finding.model_dump() for finding in assessment.findings],
+        "findings": [finding.model_dump() for finding in findings],
     }
 
 
@@ -218,7 +211,7 @@ def run_permit_chat_turn(
             assessment=assessment.model_dump(),
         )
     else:
-        grounding = _grounding_snapshot(applicant=updated_applicant, assessment=assessment)
+        grounding = _grounding_snapshot(applicant=updated_applicant, findings=assessment.findings)
         reply = chat_client.answer_question(user_text=user_text, grounding=grounding)
 
     return PermitChatResponseSchema(

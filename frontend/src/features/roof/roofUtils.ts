@@ -129,39 +129,6 @@ export function isPointInsidePolygon(
   return inside;
 }
 
-/**
- * Slides an outline over so it sits on the pin, keeping its size and angle.
- *
- * The fitted shape can be a good read of the roof and still miss the pin, on a
- * long building where the planes near the pin are small. Moving it is better
- * than discarding it: the shape and angle came from the imagery and are worth
- * keeping, and only its position was ever in doubt.
- */
-export function centreOutlineOn(
-  coordinates: RoofCoordinate[],
-  point: RoofCoordinate,
-): RoofCoordinate[] {
-  if (!coordinates.length) {
-    return coordinates;
-  }
-
-  const total = coordinates.reduce(
-    (sum, coordinate) => ({
-      latitude: sum.latitude + coordinate.latitude,
-      longitude: sum.longitude + coordinate.longitude,
-    }),
-    { latitude: 0, longitude: 0 },
-  );
-
-  const latitudeShift = point.latitude - total.latitude / coordinates.length;
-  const longitudeShift = point.longitude - total.longitude / coordinates.length;
-
-  return coordinates.map((coordinate) => ({
-    latitude: coordinate.latitude + latitudeShift,
-    longitude: coordinate.longitude + longitudeShift,
-  }));
-}
-
 function projectCoordinates(coordinates: RoofCoordinate[]) {
   if (!coordinates.length) {
     return [];
@@ -270,48 +237,6 @@ export function isValidRoofTrace(
   coordinates: RoofCoordinate[] | null | undefined,
 ) {
   return validateRoofPolygon(coordinates).isValid;
-}
-
-/**
- * The starting shape, so tracing begins with something to adjust.
- *
- * A blank map asks someone to produce a polygon from nothing, which is both
- * the hardest way to start and the easiest to get wrong. A square over the
- * property is wrong in a way that is obvious and quick to correct: drag four
- * corners onto the roof rather than invent them.
- *
- * Sized like a modest single-storey roof, so the fallback is in the right
- * neighbourhood when the imagery provider has no footprint to offer.
- */
-export const DEFAULT_OUTLINE_SIDE_METERS = 12;
-
-export function createDefaultRoofOutline(
-  centre: RoofCoordinate,
-  sideMeters: number = DEFAULT_OUTLINE_SIDE_METERS,
-): RoofCoordinate[] {
-  const half = sideMeters / 2;
-  const latitudeDelta = (half / EARTH_RADIUS_METERS) * (180 / Math.PI);
-  const longitudeDelta =
-    latitudeDelta / Math.max(Math.cos(toRadians(centre.latitude)), 1e-6);
-
-  return [
-    {
-      latitude: centre.latitude + latitudeDelta,
-      longitude: centre.longitude - longitudeDelta,
-    },
-    {
-      latitude: centre.latitude + latitudeDelta,
-      longitude: centre.longitude + longitudeDelta,
-    },
-    {
-      latitude: centre.latitude - latitudeDelta,
-      longitude: centre.longitude + longitudeDelta,
-    },
-    {
-      latitude: centre.latitude - latitudeDelta,
-      longitude: centre.longitude - longitudeDelta,
-    },
-  ];
 }
 
 /**

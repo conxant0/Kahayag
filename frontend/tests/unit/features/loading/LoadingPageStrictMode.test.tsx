@@ -82,6 +82,7 @@ describe("LoadingPage under StrictMode", () => {
     store.setPropertySelection(PROPERTY);
     store.setRoofPolygon(ROOF);
     store.setEnergyInputs({ monthlyBillPhp: 4800 });
+    store.setPlans({ primaryGoal: "reduce-bill", usagePattern: "daytime" });
     apiPost.mockResolvedValue(assessmentFixture);
 
     const router = renderAtLoading();
@@ -99,6 +100,7 @@ describe("LoadingPage under StrictMode", () => {
     store.setPropertySelection(PROPERTY);
     store.setRoofPolygon(ROOF);
     store.setEnergyInputs({ monthlyBillPhp: 4800 });
+    store.setPlans({ primaryGoal: "reduce-bill", usagePattern: "daytime" });
     apiPost.mockRejectedValue(new Error("The assessment service is down."));
 
     renderAtLoading();

@@ -51,6 +51,9 @@ class PermitDocumentChecklistItemSchema(ContractModel):
     status: DocumentSlotStatus
     expires: StrictBool | None
     unverified: StrictBool
+    issuing_agency: str
+    steps: tuple[str, ...]
+    prerequisites: tuple[str, ...]
 
 
 class PermitRequirementSchema(ContractModel):

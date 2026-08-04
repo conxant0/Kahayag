@@ -4,10 +4,12 @@ import type {
   DesignBuild,
   DesignComponent,
   DesignSession,
+  QuoteAuditResponse,
   RejectionReason,
   SolverGoal,
 } from "../../shared/api/types";
-import { peso } from "../../shared/lib/currency";
+import { quoteAuditId, quoteAuditLabel } from "../compare/quoteAuditIds";
+import { pesoRange } from "../../shared/lib/currency";
 
 const SLOT_ORDER: ComponentSlot[] = [
   "panel",
@@ -36,6 +38,30 @@ const CANVAS_SLOT_HEADERS: Record<ComponentSlot, string> = {
   installation: "Installation",
 };
 
+export type CanvasViewMode = "simplified" | "full";
+
+export const CANVAS_VIEW_OPTIONS: ReadonlyArray<{
+  value: CanvasViewMode;
+  label: string;
+}> = [
+  { value: "simplified", label: "Simplified" },
+  { value: "full", label: "Full BOM" },
+];
+
+const FULL_VIEW_GROUP_ORDER: ComponentSlot[] = [
+  "protection",
+  "structure",
+  "electrical",
+  "installation",
+  "battery",
+];
+
+export type CanvasBomGroup = {
+  slot: ComponentSlot;
+  label: string;
+  components: DesignComponent[];
+};
+
 export function getActiveBuild(session: DesignSession | null): DesignBuild | null {
   if (!session) {
     return null;
@@ -45,6 +71,63 @@ export function getActiveBuild(session: DesignSession | null): DesignBuild | nul
     session.builds[0] ??
     null
   );
+}
+
+export const QUOTE_DIAGRAM_SOURCE_PREFIX = "quote:";
+
+export function isQuoteDiagramSource(value: string): boolean {
+  return value.startsWith(QUOTE_DIAGRAM_SOURCE_PREFIX);
+}
+
+export type DiagramSourceOption = {
+  value: string;
+  label: string;
+  description: string;
+  kind: "build" | "quote";
+};
+
+function compareOrderedBuilds(session: DesignSession): DesignBuild[] {
+  const suggested =
+    session.builds.find((build) => build.source === "ai_suggested") ??
+    [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
+  const customBuilds = session.builds.filter((build) => build.source === "custom");
+
+  return [suggested, ...customBuilds].filter(
+    (build, index, builds): build is DesignBuild =>
+      build !== undefined && builds.indexOf(build) === index,
+  );
+}
+
+export function diagramSourceOptions(
+  session: DesignSession | null,
+  quoteResults: QuoteAuditResponse[],
+): DiagramSourceOption[] {
+  if (!session) {
+    return [];
+  }
+
+  const options: DiagramSourceOption[] = compareOrderedBuilds(session).map(
+    (build) => ({
+      value: build.id,
+      label: build.label,
+      description: `${build.system_kwp.toFixed(1)} kWp · Solver build`,
+      kind: "build",
+    }),
+  );
+
+  quoteResults.forEach((quoteResult, index) => {
+    if (quoteResult.diagram_components.length === 0) {
+      return;
+    }
+    options.push({
+      value: quoteAuditId(quoteResult, index),
+      label: quoteAuditLabel(quoteResult, index),
+      description: "From uploaded quote",
+      kind: "quote",
+    });
+  });
+
+  return options;
 }
 
 export type DesignSummaryTile = {
@@ -74,10 +157,13 @@ export function summaryTiles(build: DesignBuild | null): DesignSummaryTile[] {
 }
 
 export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
-  if (!build) {
-    return [];
-  }
-  const bySlot = new Map(build.components.map((c) => [c.slot, c]));
+  return canvasSlotsFromComponents(build?.components ?? []);
+}
+
+export function canvasSlotsFromComponents(
+  components: DesignComponent[],
+): DesignComponent[] {
+  const bySlot = new Map(components.map((c) => [c.slot, c]));
   return SLOT_ORDER.map(
     (slot) =>
       bySlot.get(slot) ?? {
@@ -98,6 +184,30 @@ export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
   );
 }
 
+export function canvasBomGroups(build: DesignBuild | null): CanvasBomGroup[] {
+  return canvasBomGroupsFromComponents(build?.components ?? []);
+}
+
+export function canvasBomGroupsFromComponents(
+  components: DesignComponent[],
+): CanvasBomGroup[] {
+  const groups = new Map<ComponentSlot, DesignComponent[]>();
+  for (const component of components) {
+    if (component.slot === "panel" || component.slot === "inverter") {
+      continue;
+    }
+    const existing = groups.get(component.slot) ?? [];
+    existing.push(component);
+    groups.set(component.slot, existing);
+  }
+
+  return FULL_VIEW_GROUP_ORDER.filter((slot) => groups.has(slot)).map((slot) => ({
+    slot,
+    label: CANVAS_SLOT_HEADERS[slot],
+    components: groups.get(slot) ?? [],
+  }));
+}
+
 export function canvasSlotHeader(slot: ComponentSlot): string {
   return CANVAS_SLOT_HEADERS[slot] ?? slot;
 }
@@ -115,7 +225,7 @@ export function rejectionsForCombo(
 }
 
 export function formatBuildInvestment(build: DesignBuild): string {
-  return peso(build.total_investment_php);
+  return pesoRange(build.total_investment_low_php, build.total_investment_high_php);
 }
 
 export const GOAL_LABELS: Record<SolverGoal, string> = {

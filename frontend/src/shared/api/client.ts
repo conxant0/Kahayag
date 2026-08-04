@@ -4,6 +4,20 @@ import { API_BASE_URL } from "../config/env";
 /** Used when the response carries no `Content-Disposition` filename. */
 const FALLBACK_REPORT_FILENAME = "kahayag-solar-report.pdf";
 
+/**
+ * A failure status, kept on the error so callers can branch on it.
+ *
+ * "The backend has no answer" (a 404) and "the backend could not answer" (a
+ * 5xx, a timeout) call for different handling — one is an ordinary outcome,
+ * the other may be worth retrying — and a bare message string cannot tell
+ * them apart.
+ */
+export class ApiError extends Error {
+  constructor(readonly status: number) {
+    super(`Request failed: ${status}`);
+  }
+}
+
 // FastAPI's default validation-error handler shapes `detail` as an array of
 // {loc, msg, type} objects rather than a string; join their messages instead
 // of surfacing the raw array as JSON.
@@ -57,7 +71,7 @@ export async function apiGet<T>(
     signal: options.signal,
   });
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    throw new ApiError(response.status);
   }
   return response.json() as Promise<T>;
 }

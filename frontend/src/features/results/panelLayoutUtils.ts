@@ -313,6 +313,13 @@ export function layoutPanelsInPolygon({
     rotatePointAround(seed, point, -roofAngle),
   );
 
+  // Tried in both directions, independently per call: the panel's physical
+  // dimensions never change, but whichever orientation packs more of the
+  // requested count into this roof shape is the one kept. Re-run at a
+  // different panelCount or a different polygon and the winner can flip —
+  // that's the packer re-optimizing, not a size change. This trade-off isn't
+  // specified anywhere outside this file; it's an implementation choice
+  // preserved from the original packer, not a documented product decision.
   const orientations = [
     { panelWidthM, panelHeightM },
     { panelWidthM: panelHeightM, panelHeightM: panelWidthM },

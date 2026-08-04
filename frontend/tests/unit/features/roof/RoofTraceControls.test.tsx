@@ -10,7 +10,7 @@ function renderControls() {
     mapStatus: "ready",
     hasProperty: true,
     isTracingRoof: false,
-    isFittingOutline: false,
+    traceIsUsable: false,
     vertexCount: 0,
     hasConfirmedPolygon: false,
   });
@@ -24,7 +24,6 @@ function renderControls() {
       startRoofTracing={() => {}}
       finishRoofTracing={() => {}}
       resetRoofTracing={() => {}}
-      redrawRoofTracing={() => {}}
     />,
   );
 

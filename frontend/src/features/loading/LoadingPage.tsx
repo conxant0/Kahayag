@@ -63,6 +63,8 @@ export function LoadingPage() {
   );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
+  const plans = useAssessmentStore((state) => state.plans);
+  const contactDetails = useAssessmentStore((state) => state.contactDetails);
   const fluxCacheEntry = useFluxCacheStore((state) => state.entry);
   const result = readAssessmentResult(rawResult);
 
@@ -70,6 +72,8 @@ export function LoadingPage() {
     selectedProperty,
     roofPolygon,
     energyInputs,
+    plans,
+    contactDetails,
   });
 
   const { mutate, isPending, isSuccess, error } = useSubmitAssessment();

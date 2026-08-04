@@ -170,17 +170,21 @@ describe("EditLayoutPage", () => {
     });
   });
 
-  it("redirects to energy when the stored result is missing", async () => {
+  it("redirects to loading when the stored result is missing", async () => {
     const router = createMemoryRouter(
       [
         { path: "/results/layout", element: <EditLayoutPage /> },
-        { path: "/energy", element: <p>Energy</p> },
+        { path: "/loading", element: <p>Loading</p> },
       ],
       { initialEntries: ["/results/layout"] },
     );
 
     render(<RouterProvider router={router} />);
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/energy"));
+    // /loading recomputes the memory-only result from persisted inputs; its
+    // own guard walks further back when those are missing too.
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/loading"),
+    );
   });
 });

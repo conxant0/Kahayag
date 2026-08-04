@@ -59,6 +59,7 @@ function seedCompleteSession() {
   store.setPropertySelection(PROPERTY);
   store.setRoofPolygon(ROOF);
   store.setEnergyInputs({ monthlyBillPhp: 4800 });
+  store.setPlans({ primaryGoal: "reduce-bill", usagePattern: "daytime" });
 }
 
 /**
@@ -86,6 +87,7 @@ function renderAtLoading() {
       { path: "/loading", element: <LoadingPage /> },
       { path: "/locate", element: <p>Locate</p> },
       { path: "/energy", element: <p>Energy</p> },
+      { path: "/plans", element: <p>Plans</p> },
       { path: "/results", element: <p>Results</p> },
     ],
     { initialEntries: ["/loading"] },

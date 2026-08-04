@@ -4,7 +4,7 @@ import { NEXT_STEPS } from "./quotationViewModel";
 export function WhatHappensNext() {
   return (
     <section
-      className="rounded-[20px] border border-hairline bg-white p-5"
+      className="rounded-[20px] border border-hairline bg-white p-5 print:hidden"
       aria-label="What happens next"
     >
       <h2 className="font-sans text-sm font-semibold text-ink">

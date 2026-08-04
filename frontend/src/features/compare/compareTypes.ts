@@ -1,2 +1,2 @@
 // Shared compare-screen mode union.
-export type CompareMode = "overview" | "technical";
+export type CompareLayout = "cards" | "matrix";

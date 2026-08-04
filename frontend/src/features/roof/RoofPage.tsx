@@ -40,14 +40,14 @@ export function RoofPage() {
     mapStatus: roofTracing.googleStatus,
     hasProperty: Boolean(selectedProperty),
     isTracingRoof: roofTracing.isTracingRoof,
-    isFittingOutline: roofTracing.isFittingOutline,
+    traceIsUsable: roofTracing.isUsableTrace,
     vertexCount: roofTracing.roofCoordinates.length,
     hasConfirmedPolygon: Boolean(storedRoofPolygon),
   });
 
   return (
     <FlowLayout
-      step="Step 2 of 4"
+      step="Step 2 of 5"
       title="Trace your roof."
       backHref={ROUTE_PATHS.locate}
       backLabel="Back to location"
@@ -60,6 +60,7 @@ export function RoofPage() {
           <RoofTracePane
             mapContainerRef={mapContainerRef}
             selectedProperty={selectedProperty}
+            isTracing={roofTracing.isTracingRoof}
           />
         </MapSurface>
       }
@@ -70,10 +71,9 @@ export function RoofPage() {
         vertexCount={roofTracing.roofCoordinates.length}
         roofMetrics={roofTracing.roofMetrics}
         validationMessage={roofTracing.validationMessage}
-        startRoofTracing={() => void roofTracing.startRoofTracing()}
+        startRoofTracing={roofTracing.startRoofTracing}
         finishRoofTracing={roofTracing.finishRoofTracing}
         resetRoofTracing={roofTracing.resetRoofTracing}
-        redrawRoofTracing={() => void roofTracing.redrawRoofTracing()}
       />
     </FlowLayout>
   );

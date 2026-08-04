@@ -1,6 +1,12 @@
 // Builds the /brief view model from assessment data and panel-class choice.
 import { peso } from "../../shared/lib/currency";
-import type { AssessmentResult, RoofPolygon } from "../../shared/api/types";
+import type {
+  AssessmentResult,
+  DesignBuild,
+  QuotationDocument,
+  RoofPolygon,
+} from "../../shared/api/types";
+import { formatIssuedDate } from "../quotation/quotationViewModel";
 import { formatShadingImpact } from "../assessment/formatAssessmentResult";
 import {
   buildPredictionConfidence,
@@ -225,12 +231,13 @@ function computeSizingForPanelClass(
 
   if (recommendation.panel_category_id === panelCategoryId) {
     const annualGenerationKwh = Number(recommendation.annual_generation_kwh);
-    const annualConsumptionKwh = Number(inputs.monthly_consumption_kwh) * 12;
+    const annualConsumptionKwh =
+      Number(result.estimated_monthly_consumption_kwh) * 12;
     const billableGenerationKwh = Math.min(
       annualGenerationKwh,
       annualConsumptionKwh,
     );
-    const rate = Number(inputs.electricity_rate_php_per_kwh);
+    const rate = Number(result.resolved_tariff_php_per_kwh);
     const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
     const systemCapacityKwp = Number(recommendation.system_capacity_kwp);
 
@@ -249,7 +256,7 @@ function computeSizingForPanelClass(
 
   const usableAreaM2 = Number(result.roof.usable_area_m2);
   const annualYieldPerKwpKwh = resolveAnnualYieldPerKwpKwh(assumptions);
-  const monthlyConsumptionKwh = Number(inputs.monthly_consumption_kwh);
+  const monthlyConsumptionKwh = Number(result.estimated_monthly_consumption_kwh);
   const annualConsumptionKwh = monthlyConsumptionKwh * 12;
   const consumptionLimitedSystemSizeKwp =
     annualConsumptionKwh / annualYieldPerKwpKwh;
@@ -282,7 +289,7 @@ function computeSizingForPanelClass(
     annualGenerationKwh,
     annualConsumptionKwh,
   );
-  const rate = Number(inputs.electricity_rate_php_per_kwh);
+  const rate = Number(result.resolved_tariff_php_per_kwh);
   const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const monthlySavingsPhp = Math.floor(annualSavingsPhp / 12);
   const estimatedBaseCostPhp = Math.floor(
@@ -448,6 +455,67 @@ function buildFinancialRows(sizing: {
           ? "—"
           : `${Number(sizing.paybackYears).toFixed(1)} years`,
     },
+  ];
+}
+
+/**
+ * Rows for the design the homeowner chose in the D3 flow. Every figure is the
+ * solver's own — this only formats what the backend already computed.
+ */
+export function buildDesignRows(build: DesignBuild): BriefRow[] {
+  return [
+    { label: "Build", value: build.label },
+    { label: "System size", value: `${build.system_kwp.toFixed(1)} kWp` },
+    { label: "Panels", value: `${build.panel_count} panels` },
+    { label: "Inverter", value: `${build.inverter_kw} kW` },
+    {
+      label: "Battery",
+      value: build.battery_kwh ? `${build.battery_kwh} kWh` : "None",
+    },
+    {
+      label: "Total investment",
+      value: peso(build.total_investment_php),
+      cobalt: true,
+    },
+  ];
+}
+
+/**
+ * Financial rows for a chosen design, replacing the assessment-derived ones:
+ * once a build is settled the solver's savings and payback are the figures
+ * the homeowner is actually buying.
+ */
+export function buildDesignFinancialRows(build: DesignBuild): BriefRow[] {
+  return [
+    { label: "Monthly savings", value: peso(build.monthly_savings_php) },
+    { label: "Annual savings", value: peso(build.annual_savings_php) },
+    {
+      label: "Payback",
+      value:
+        build.payback_years == null
+          ? "—"
+          : `${build.payback_years.toFixed(1)} years`,
+    },
+    {
+      label: "CO₂ avoided",
+      value: `${build.co2_tonnes_avoided_yearly.toFixed(1)} t per year`,
+      cobalt: true,
+    },
+  ];
+}
+
+/**
+ * Rows for the quotation the backend composed for that build. The quote
+ * number, dates and totals are the document's own; nothing is authored here.
+ */
+export function buildQuotationRows(quote: QuotationDocument): BriefRow[] {
+  return [
+    { label: "Quote number", value: `#${quote.quote_number}` },
+    { label: "Issued", value: formatIssuedDate(quote.quote_date) },
+    { label: "Valid for", value: `${quote.validity_days} days` },
+    { label: "Subtotal", value: peso(quote.subtotal_php) },
+    { label: "VAT (12%)", value: peso(quote.vat_php) },
+    { label: "Total", value: peso(quote.total_php), cobalt: true },
   ];
 }
 
