@@ -5,6 +5,7 @@ import { ROUTE_PATHS } from "../../app/routePaths";
 import { ContentScreen } from "../../shared/components/layout";
 import {
   Button,
+  ButtonLink,
   CtaArrow,
   KahayagSunrise,
   Rule,
@@ -28,11 +29,9 @@ export function ReportPage() {
   );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
-  const reset = useAssessmentStore((state) => state.reset);
   const result = readAssessmentResult(rawResult);
 
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [isStartingOver, setIsStartingOver] = useState(false);
   const { mutateAsync: downloadReport, isPending } = useDownloadReport();
 
   const report = useMemo(
@@ -61,19 +60,6 @@ export function ReportPage() {
       );
     }
   };
-
-  const startAnotherAssessment = () => {
-    setIsStartingOver(true);
-    reset();
-  };
-
-  // Ordered above the guard deliberately. Clearing the session empties
-  // `result`, and the guard below reads that as an assessment that was never
-  // run — so an imperative navigate would be overruled on the same render and
-  // land on /energy instead of the start.
-  if (isStartingOver) {
-    return <Navigate to={ROUTE_PATHS.landing} replace />;
-  }
 
   if (!result) {
     return <Navigate to={ROUTE_PATHS.energy} replace />;
@@ -108,16 +94,16 @@ export function ReportPage() {
               : "The report draws your panel layout, so it needs your roof trace."}
           </p>
 
-          {/* The end of the journey, and the only place a second assessment can
-              begin: the session holds one property at a time, so starting over
-              means clearing it rather than navigating back into it. */}
-          <button
-            type="button"
-            onClick={startAnotherAssessment}
-            className="w-full text-center font-sans text-[15px] font-semibold text-cobalt hover:underline"
+          {/* The journey continues to the permit check; the report is no longer
+              the final step. */}
+          <ButtonLink
+            to={ROUTE_PATHS.permits}
+            fullWidth
+            className="lg:h-16 lg:text-[18px]"
           >
-            Start another assessment
-          </button>
+            Check permit requirements
+            <CtaArrow />
+          </ButtonLink>
 
           {/* Ember interrupts — the one place on this screen that does. */}
           {downloadError ? (
