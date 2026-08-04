@@ -7,6 +7,8 @@ import type {
 } from "../../../src/state/assessmentStore";
 import {
   ASSESSMENT_SESSION_STORAGE_KEY as KEY,
+  DEFAULT_ASSESSMENT_PLANS,
+  DEFAULT_CONTACT_DETAILS,
   DEFAULT_ENERGY_INPUTS,
   readStoredSession,
   useAssessmentStore,
@@ -55,6 +57,8 @@ describe("readStoredSession", () => {
       selectedProperty: null,
       roofPolygon: null,
       energyInputs: DEFAULT_ENERGY_INPUTS,
+      plans: DEFAULT_ASSESSMENT_PLANS,
+      contactDetails: DEFAULT_CONTACT_DETAILS,
     });
   });
 
@@ -66,6 +70,20 @@ describe("readStoredSession", () => {
   });
 
   it("restores a complete session", () => {
+    const plans = {
+      primaryGoal: "reduce-bill",
+      usagePattern: "daytime",
+      futureLoads: ["aircon", "ev"],
+      roofMaterial: "metal",
+      propertyKind: "house",
+      ownsProperty: true,
+      timeline: "six-months",
+    };
+    const contactDetails = {
+      fullName: "Juana dela Cruz",
+      email: "juana@example.com",
+      mobile: "0917 123 4567",
+    };
     seed({
       selectedProperty: PROPERTY,
       roofPolygon: ROOF,
@@ -74,6 +92,8 @@ describe("readStoredSession", () => {
         electricityRatePhpPerKwh: 11.5,
         budgetPhp: 250000,
       },
+      plans,
+      contactDetails,
     });
 
     expect(readStoredSession()).toEqual({
@@ -84,7 +104,43 @@ describe("readStoredSession", () => {
         electricityRatePhpPerKwh: 11.5,
         budgetPhp: 250000,
       },
+      plans,
+      contactDetails,
     });
+  });
+
+  it("drops a stored plan answer that is outside its closed set", () => {
+    seed({
+      plans: {
+        primaryGoal: "get-famous",
+        usagePattern: "daytime",
+        futureLoads: ["ev", "time-machine"],
+        ownsProperty: "yes",
+      },
+    });
+
+    expect(readStoredSession().plans).toEqual({
+      ...DEFAULT_ASSESSMENT_PLANS,
+      usagePattern: "daytime",
+      futureLoads: ["ev"],
+    });
+  });
+
+  it("keeps an explicit 'none planned' apart from an unanswered question", () => {
+    seed({ plans: { futureLoads: [] } });
+
+    // An empty list is an answer somebody gave; null is the question nobody
+    // reached. Restoring one as the other would repaint the step wrongly.
+    expect(readStoredSession().plans.futureLoads).toEqual([]);
+    expect(readStoredSession().contactDetails).toEqual(DEFAULT_CONTACT_DETAILS);
+  });
+
+  it("reads a list of only invalid loads as unanswered, not as 'none'", () => {
+    // Validation emptied the list; nobody chose the empty list. Restoring it
+    // as [] would paint the explicit "None" chip for an answer never given.
+    seed({ plans: { futureLoads: ["time-machine", 7] } });
+
+    expect(readStoredSession().plans.futureLoads).toBeNull();
   });
 
   it("drops only the field that is corrupt", () => {
@@ -262,6 +318,44 @@ describe("useAssessmentStore", () => {
     expect(storedSession()?.selectedProperty).toEqual(PROPERTY);
   });
 
+  it.each([
+    [
+      "a plan answer changes",
+      () => useAssessmentStore.getState().setPlans({ primaryGoal: "reduce-bill" }),
+    ],
+    [
+      "a contact detail is typed",
+      () =>
+        useAssessmentStore.getState().setContactDetails({ fullName: "Juana" }),
+    ],
+  ])("keeps a computed result when %s", (_label, editContext) => {
+    // No calculation reads these answers, so editing one must not discard a
+    // result computed from numbers that have not changed — contact details
+    // are typed on the report screen, where losing the result loses the page.
+    useAssessmentStore.getState().setResult({ is_provisional: true });
+
+    editContext();
+
+    expect(useAssessmentStore.getState().result).toEqual({
+      is_provisional: true,
+    });
+  });
+
+  it("persists plan answers and contact details with the session", () => {
+    useAssessmentStore
+      .getState()
+      .setPlans({ primaryGoal: "backup-outages", futureLoads: [] });
+    useAssessmentStore.getState().setContactDetails({ mobile: "0917 000 111" });
+
+    expect(storedSession()?.plans).toMatchObject({
+      primaryGoal: "backup-outages",
+      futureLoads: [],
+    });
+    expect(storedSession()?.contactDetails).toMatchObject({
+      mobile: "0917 000 111",
+    });
+  });
+
   it("drops a roof trace when a different property is chosen", () => {
     useAssessmentStore.getState().setPropertySelection(PROPERTY);
     useAssessmentStore.getState().setRoofPolygon(ROOF);
@@ -285,6 +379,8 @@ describe("useAssessmentStore", () => {
     store.setPropertySelection(PROPERTY);
     store.setRoofPolygon(ROOF);
     store.setEnergyInputs({ monthlyBillPhp: 4800 });
+    store.setPlans({ primaryGoal: "reduce-bill", usagePattern: "balanced" });
+    store.setContactDetails({ fullName: "Juana" });
     store.setResult({ is_provisional: true });
 
     useAssessmentStore.getState().reset();
@@ -294,6 +390,8 @@ describe("useAssessmentStore", () => {
       selectedProperty: null,
       roofPolygon: null,
       energyInputs: DEFAULT_ENERGY_INPUTS,
+      plans: DEFAULT_ASSESSMENT_PLANS,
+      contactDetails: DEFAULT_CONTACT_DETAILS,
     });
     expect(window.sessionStorage.getItem(KEY)).toBeNull();
   });

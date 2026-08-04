@@ -13,6 +13,7 @@ import { useAssessmentStore } from "../../state/assessmentStore";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { buildReportPreview } from "./projectBrief";
 import { buildReportRequest } from "./buildReportRequest";
+import { ContactDetailsCard } from "./components/ContactDetailsCard";
 import { useDownloadReport } from "./hooks/useDownloadReport";
 
 /**
@@ -28,6 +29,10 @@ export function ReportPage() {
   );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
+  const contactDetails = useAssessmentStore((state) => state.contactDetails);
+  const setContactDetails = useAssessmentStore(
+    (state) => state.setContactDetails,
+  );
   const reset = useAssessmentStore((state) => state.reset);
   const result = readAssessmentResult(rawResult);
 
@@ -161,6 +166,8 @@ export function ReportPage() {
           ))}
         </ul>
       </article>
+
+      <ContactDetailsCard contact={contactDetails} onChange={setContactDetails} />
 
       <div className="hidden min-h-0 flex-1 lg:block" />
     </ContentScreen>

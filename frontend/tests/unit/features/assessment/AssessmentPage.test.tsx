@@ -88,7 +88,7 @@ describe("AssessmentPage", () => {
     const user = userEvent.setup();
     renderAtEnergy();
 
-    const next = screen.getByRole("link", { name: "See my results" });
+    const next = screen.getByRole("link", { name: "Next: Your plans" });
     expect(next).toHaveAttribute("aria-disabled", "true");
 
     await user.type(billField(), "4800");
