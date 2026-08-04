@@ -36,6 +36,9 @@ interface GoogleMapOptions {
   streetViewControl?: boolean;
   mapTypeControl?: boolean;
   fullscreenControl?: boolean;
+  zoomControl?: boolean;
+  zoomControlOptions?: { position: number };
+  gestureHandling?: "auto" | "cooperative" | "greedy" | "none";
   /** Cursor over the tiles. Maps paints its own, so CSS alone cannot set it. */
   draggableCursor?: string;
 }
@@ -185,6 +188,7 @@ interface GoogleMapsApi {
     opts?: { opacity?: number; clickable?: boolean },
   ) => GoogleGroundOverlay;
   SymbolPath: { CIRCLE: number };
+  ControlPosition?: { RIGHT_BOTTOM: number };
   Size?: new (width: number, height: number) => GoogleSize;
   Point?: new (x: number, y: number) => GooglePoint;
   Geocoder: new () => GoogleGeocoder;

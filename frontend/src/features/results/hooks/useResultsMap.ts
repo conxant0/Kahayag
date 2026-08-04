@@ -75,6 +75,10 @@ export function useResultsMap(
     };
 
     if (!mapInstanceRef.current) {
+      // Zoom buttons + free wheel-zoom are desktop/tablet only: mobile keeps
+      // pinch-to-zoom and cooperative gestureHandling so page scroll still
+      // wins over the map on touch.
+      const isDesktopOrTablet = window.matchMedia("(min-width: 768px)").matches;
       mapInstanceRef.current = new window.google.maps.Map(container, {
         center,
         zoom: 20,
@@ -82,6 +86,15 @@ export function useResultsMap(
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
+        ...(isDesktopOrTablet
+          ? {
+              zoomControl: true,
+              zoomControlOptions: {
+                position: window.google.maps.ControlPosition?.RIGHT_BOTTOM ?? 0,
+              },
+              gestureHandling: "greedy" as const,
+            }
+          : {}),
       });
       new window.google.maps.Marker({
         map: mapInstanceRef.current,
