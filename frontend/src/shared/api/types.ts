@@ -122,3 +122,135 @@ export interface InvestmentProjectionResponse {
     annual_panel_degradation_ratio: string;
   };
 }
+
+export type SolverGoal = "auto" | "budget" | "backup" | "independence";
+export type BuildSource = "ai_suggested" | "custom" | "user" | "uploaded";
+export type ComponentSlot =
+  | "panel"
+  | "inverter"
+  | "battery"
+  | "protection"
+  | "structure"
+  | "electrical"
+  | "installation";
+
+export interface DesignComponent {
+  slot: ComponentSlot;
+  catalog_id: string | null;
+  brand: string;
+  model: string;
+  summary: string;
+  qty: number;
+  unit: string;
+  unit_price_php: number;
+  price_as_of: string | null;
+  line_total_php: number;
+  warranty_note: string;
+  badges: string[];
+  specs: Record<string, string | number>;
+}
+
+export interface RejectionReason {
+  combo_key: string;
+  code: string;
+  message: string;
+  details: Record<string, string | number>;
+}
+
+export interface SolverConstraintsSummary {
+  target_kwp: number;
+  max_panel_count: number;
+  usable_roof_area_m2: number;
+  budget_php: number | null;
+  require_battery: boolean;
+  min_battery_kwh: number | null;
+  goal: SolverGoal;
+}
+
+export interface ValidComboSummary {
+  combo_id: string;
+  panel_id: string;
+  inverter_id: string;
+  battery_id: string | null;
+  panel_count: number;
+  system_kwp: number;
+  dc_ac_ratio: number;
+  inverter_utilisation_pct: number;
+  fit_score: number;
+  rejection_log_ref: string;
+  estimated_cost_php: number;
+}
+
+export interface SolveResultSummary {
+  solve_id: string;
+  constraints: SolverConstraintsSummary;
+  valid: ValidComboSummary[];
+  rejections: RejectionReason[];
+}
+
+export interface DesignBuild {
+  id: string;
+  label: string;
+  tags: string[];
+  combo_id: string;
+  solve_id: string;
+  system_kwp: number;
+  panel_count: number;
+  inverter_kw: number;
+  battery_kwh: number | null;
+  monthly_savings_php: number;
+  annual_savings_php: number;
+  payback_years: number | null;
+  total_investment_php: number;
+  subtotal_php: number;
+  vat_php: number;
+  inverter_utilisation_pct: number;
+  fit_score: number;
+  co2_tonnes_avoided_yearly: number;
+  insight: string;
+  components: DesignComponent[];
+  source: BuildSource;
+}
+
+export interface AgentAuditEntry {
+  turn_id: string;
+  user_text: string;
+  tool_calls: Array<Record<string, unknown>>;
+  solve_ids: string[];
+  final_build_id: string | null;
+}
+
+export interface DesignSession {
+  property_ref: string;
+  assessment_fingerprint: string;
+  active_build_id: string;
+  builds: DesignBuild[];
+  last_solve: SolveResultSummary | null;
+  applied: boolean;
+  agent_audit: AgentAuditEntry[];
+}
+
+export interface QuotationLine {
+  item: string;
+  description: string;
+  brand: string;
+  uom: string;
+  qty: number;
+  unit_price_php: number;
+  amount_php: number;
+  price_as_of: string | null;
+}
+
+export interface QuotationDocument {
+  build_id: string;
+  quote_number: string;
+  quote_date: string;
+  validity_days: number;
+  lines: QuotationLine[];
+  subtotal_php: number;
+  vat_php: number;
+  total_php: number;
+  payment_terms: string;
+  warranty_summary: string;
+  is_draft: boolean;
+}

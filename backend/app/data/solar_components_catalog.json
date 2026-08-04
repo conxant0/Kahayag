@@ -1,0 +1,2187 @@
+{
+  "panels": [
+    {
+      "id": "panel_001",
+      "brand": "LONGi",
+      "model": "Hi-MO 6 LR5-54HTH-440M",
+      "type": "monocrystalline",
+      "wattage_w": 440,
+      "voc_v": 41.5,
+      "vmp_v": 34.8,
+      "isc_a": 13.5,
+      "imp_a": 12.65,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1909,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5800,
+        "max": 7200,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via Solgen, Solaric, and regional distributors"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_004",
+        "inv_005"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "LR5-54HTH-440M",
+      "distributor": "Solgen Trading, Solaric Corp.",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.longi.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_001.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_001_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_001_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_002",
+      "brand": "Jinko Solar",
+      "model": "Tiger Neo N-Type 550W",
+      "type": "monocrystalline_ntype",
+      "wattage_w": 550,
+      "voc_v": 49.9,
+      "vmp_v": 41.8,
+      "isc_a": 13.98,
+      "imp_a": 13.16,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.29,
+      "noct_c": 44.5,
+      "dimensions_mm": {
+        "length": 2278,
+        "width": 1134,
+        "depth": 35
+      },
+      "weight_kg": 27.5,
+      "cells": 144,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "99% year 1, linear to 87.4% year 25 (N-type, lower degradation)",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "used with non-certified string configuration"
+        ]
+      },
+      "price_php": {
+        "min": 7000,
+        "max": 8500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 30,
+        "note": "newer N-type line, occasional import delays"
+      },
+      "local_service_network": "moderate (growing PH distributor base)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_003",
+        "inv_006"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "TOPCon",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "silver anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 1.0,
+        "annual_pct": 0.4
+      },
+      "application": "residential",
+      "sku": "JKM550N-72HL4-V",
+      "distributor": "PHILERGY, Truelight Energy",
+      "availability_status": "in_stock",
+      "product_release_year": 2024,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.jinkosolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_002.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_002_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_002_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_003",
+      "brand": "Canadian Solar",
+      "model": "HiKu6 CS6R-445MS",
+      "type": "monocrystalline",
+      "wattage_w": 445,
+      "voc_v": 41.2,
+      "vmp_v": 34.5,
+      "isc_a": 13.72,
+      "imp_a": 12.89,
+      "efficiency_pct": 22.1,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1903,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.8,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84.8% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from typhoon-category wind beyond rated load"
+        ]
+      },
+      "price_php": {
+        "min": 5600,
+        "max": 7000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 14,
+        "note": "common Tier-1 choice in PH mid-market residential installs"
+      },
+      "local_service_network": "wide (long-established PH presence)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_004",
+        "inv_005",
+        "inv_007"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "Canada",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "CS6R-445MS",
+      "distributor": "Solaric Corp., Greenergy Solar",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.canadiansolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_003.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_003_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_003_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_004",
+      "brand": "Trina Solar",
+      "model": "Vertex S TSM-450DE09.08",
+      "type": "monocrystalline",
+      "wattage_w": 450,
+      "voc_v": 41.8,
+      "vmp_v": 35.1,
+      "isc_a": 13.82,
+      "imp_a": 12.82,
+      "efficiency_pct": 22.5,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 44,
+      "dimensions_mm": {
+        "length": 1762,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 21.8,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84.8% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "used with non-certified string configuration"
+        ]
+      },
+      "price_php": {
+        "min": 5900,
+        "max": 7300,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "compact Vertex S format popular for limited roof space in Metro Manila townhouses"
+      },
+      "local_service_network": "wide",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_004",
+        "inv_005",
+        "inv_008"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "TSM-450DE09.08",
+      "distributor": "Solgen Trading, Meralco MServe partners",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.trinasolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_004.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_004_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_004_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_005",
+      "brand": "JA Solar",
+      "model": "DeepBlue 4.0 JAM54S30-445/MR",
+      "type": "monocrystalline",
+      "wattage_w": 445,
+      "voc_v": 41.4,
+      "vmp_v": 34.7,
+      "isc_a": 13.68,
+      "imp_a": 12.83,
+      "efficiency_pct": 22.0,
+      "temperature_coefficient_pmax_pct_per_c": -0.35,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1903,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 12,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84.8% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5400,
+        "max": 6800,
+        "as_of": "2026-07-01",
+        "currency_note": "often priced slightly below LONGi/Trina in PH distributor bundles"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 28,
+        "note": "value-tier import; lead time varies by port (Manila vs Cebu)"
+      },
+      "local_service_network": "moderate",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_004",
+        "inv_005"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "silver anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "JAM54S30-445/MR",
+      "distributor": "Regional PH distributors",
+      "availability_status": "low_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.jasolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_005.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_005_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_005_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_006",
+      "brand": "Risen Energy",
+      "model": "RSM132-8-445M",
+      "type": "monocrystalline",
+      "wattage_w": 445,
+      "voc_v": 41.3,
+      "vmp_v": 34.6,
+      "isc_a": 13.65,
+      "imp_a": 12.86,
+      "efficiency_pct": 21.9,
+      "temperature_coefficient_pmax_pct_per_c": -0.36,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1903,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.6,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 12,
+        "performance_years": 25,
+        "performance_curve": "97% year 1, linear to 84.8% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5200,
+        "max": 6500,
+        "as_of": "2026-07-01",
+        "currency_note": "budget-tier pricing common in provincial PH installs"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 35,
+        "note": "longer lead time outside Luzon distributor hubs"
+      },
+      "local_service_network": "moderate (growing provincial distributor network)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_004",
+        "inv_007"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "silver anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "RSM132-8-445M",
+      "distributor": "Provincial solar retailers",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.risenenergy.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_006.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_006_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_006_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_007",
+      "brand": "Astronergy",
+      "model": "CHSM54M-HC-450",
+      "type": "monocrystalline",
+      "wattage_w": 450,
+      "voc_v": 41.6,
+      "vmp_v": 35.0,
+      "isc_a": 13.75,
+      "imp_a": 12.86,
+      "efficiency_pct": 22.2,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1903,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.7,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84.8% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5500,
+        "max": 6900,
+        "as_of": "2026-07-01",
+        "currency_note": "Chint Group brand; competitive in PH EPC contractor supply chains"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "available through Chint/CHSM regional distributors"
+      },
+      "local_service_network": "moderate",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_004",
+        "inv_005"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": true,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "commercial",
+      "sku": "CHSM54M-HC-450",
+      "distributor": "Chint Electric PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.astronergy.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_007.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_007_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_007_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_008",
+      "brand": "SunPower",
+      "model": "Maxeon 6 AC SPR-MAX6-425-E-AC",
+      "type": "monocrystalline_ibc",
+      "wattage_w": 425,
+      "voc_v": 68.2,
+      "vmp_v": 56.8,
+      "isc_a": 8.05,
+      "imp_a": 7.48,
+      "efficiency_pct": 22.8,
+      "temperature_coefficient_pmax_pct_per_c": -0.29,
+      "noct_c": 43,
+      "dimensions_mm": {
+        "length": 1046,
+        "width": 1879,
+        "depth": 40
+      },
+      "weight_kg": 21.5,
+      "cells": 66,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 4000,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 25,
+        "performance_years": 40,
+        "performance_curve": "98% year 1, linear to 92% year 25, 88% year 40",
+        "voids_warranty_if": [
+          "integrated microinverter pairing altered or bypassed",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 18000,
+        "max": 24000,
+        "as_of": "2026-07-01",
+        "currency_note": "premium import; rarely bundled in standard PH residential quotes"
+      },
+      "stock_lead_time_days": {
+        "min": 14,
+        "max": 45,
+        "note": "special-order through premium installers; limited local stock"
+      },
+      "local_service_network": "limited (premium installer channel only)",
+      "certified_compatible_inverters": [
+        "inv_009"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "IBC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1000,
+      "maximum_series_fuse_rating_a": 15,
+      "panel_color": "black",
+      "frame_color": "black",
+      "manufacturer_country": "USA",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.25
+      },
+      "application": "residential",
+      "sku": "SPR-MAX6-425-E-AC",
+      "distributor": "Premium installer channel only",
+      "availability_status": "low_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "Mexico",
+      "manufacturer_website": "https://www.maxeon.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_008.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_008_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_008_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    }
+  ],
+  "inverters": [
+    {
+      "id": "inv_001",
+      "brand": "Growatt",
+      "model": "MIN 5000TL-X",
+      "type": "grid_tie",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 500
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.8,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "installed outdoors without adequate ventilation/shading despite IP65 rating",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 28000,
+        "max": 34000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged, imported component"
+      },
+      "stock_lead_time_days": {
+        "min": 2,
+        "max": 14,
+        "note": "widely stocked in PH; common in 5 kWp residential packages"
+      },
+      "local_service_network": "wide (established PH distributor + service centers)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.2,
+      "startup_voltage_v": 50,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "ShinePhone / ShineServer",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "MIN5000TL-X",
+      "distributor": "Growatt PH authorized distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2021,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.growatt.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_001.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_001_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_001_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_002",
+      "brand": "Deye",
+      "model": "SUN-5K-SG04LP1-EU (Hybrid)",
+      "type": "hybrid",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7800,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 100,
+        "max": 500
+      },
+      "max_input_current_per_mppt_a": 13,
+      "cec_euro_efficiency_pct": 97.5,
+      "standby_power_draw_w": 3,
+      "ip_rating": "IP65",
+      "cooling_type": "fan-cooled",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_001",
+        "batt_002",
+        "batt_004"
+      ],
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "paired with non-certified battery (BMS communication mismatch)",
+          "input voltage/current exceeds rated MPPT range",
+          "fan/cooling vents blocked or not maintained, causing overheat damage"
+        ]
+      },
+      "price_php": {
+        "min": 55000,
+        "max": 65000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged, imported component"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "growing PH demand for backup-capable hybrid systems"
+      },
+      "local_service_network": "moderate (expanding PH presence 2025-2026)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 97.8,
+      "startup_voltage_v": 100,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": true,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Deye Cloud / SOLarman",
+      "backup_eps_capable": true,
+      "eps_output_w": 5000,
+      "generator_compatible": true,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": 35,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "SUN-5K-SG04LP1-EU",
+      "distributor": "Deye PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.deyeinverter.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_002.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_002_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_002_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_003",
+      "brand": "Huawei",
+      "model": "SUN2000-6KTL-M1",
+      "type": "grid_tie",
+      "rated_ac_output_w": 6000,
+      "max_dc_input_w": 9000,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 140,
+        "max": 560
+      },
+      "max_input_current_per_mppt_a": 12.5,
+      "cec_euro_efficiency_pct": 98.2,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP66",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 20,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "monitoring/firmware tampered with outside Huawei ecosystem tools",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 62000,
+        "max": 72000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged, imported component; premium ecosystem pricing"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 30,
+        "note": "premium tier, longer import lead time"
+      },
+      "local_service_network": "wide but ecosystem-locked (best support if all-Huawei setup)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.6,
+      "startup_voltage_v": 140,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": false,
+        "ethernet": true,
+        "bluetooth": false
+      },
+      "monitoring_platform": "FusionSolar",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "SUN2000-6KTL-M1",
+      "distributor": "Huawei FusionSolar partners",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://solar.huawei.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_003.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_003_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_003_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_004",
+      "brand": "GoodWe",
+      "model": "GW5000-DNS-30",
+      "type": "grid_tie",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 550
+      },
+      "max_input_current_per_mppt_a": 14,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "installed outdoors without adequate ventilation/shading despite IP65 rating",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 26000,
+        "max": 32000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; often undercuts Growatt in PH bundle pricing"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 14,
+        "note": "widely available; popular in Visayas distributor networks"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.3,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "SEMS Portal",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "GW5000-DNS-30",
+      "distributor": "GoodWe PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.goodwe.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_004.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_004_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_004_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_005",
+      "brand": "Solis",
+      "model": "S5-GR1P5K",
+      "type": "grid_tie",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 90,
+        "max": 560
+      },
+      "max_input_current_per_mppt_a": 13,
+      "cec_euro_efficiency_pct": 97.4,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "installed outdoors without adequate ventilation/shading despite IP65 rating",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 25000,
+        "max": 31000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; value-tier pricing in PH residential market"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "common in bundled turnkey quotes from provincial installers"
+      },
+      "local_service_network": "moderate",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 90,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "SolisCloud",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "S5-GR1P5K",
+      "distributor": "Solis PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.solisinverters.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_005.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_005_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_005_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_006",
+      "brand": "Sungrow",
+      "model": "SG5.0RS",
+      "type": "grid_tie",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 560
+      },
+      "max_input_current_per_mppt_a": 15,
+      "cec_euro_efficiency_pct": 97.9,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "installed outdoors without adequate ventilation/shading despite IP65 rating",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 30000,
+        "max": 36000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; Tier-1 brand with growing PH commercial/residential share"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "increasingly stocked via major PH distributors"
+      },
+      "local_service_network": "moderate (growing)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.4,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": true,
+        "bluetooth": false
+      },
+      "monitoring_platform": "iSolarCloud",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "SG5.0RS",
+      "distributor": "Sungrow PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.sungrowpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_006.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_006_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_006_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_007",
+      "brand": "Growatt",
+      "model": "SPH 5000 TL BL-UP (Hybrid)",
+      "type": "hybrid",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 100,
+        "max": 500
+      },
+      "max_input_current_per_mppt_a": 13,
+      "cec_euro_efficiency_pct": 97.3,
+      "standby_power_draw_w": 3,
+      "ip_rating": "IP65",
+      "cooling_type": "fan-cooled",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_002",
+        "batt_003"
+      ],
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "paired with non-certified battery (BMS communication mismatch)",
+          "input voltage/current exceeds rated MPPT range",
+          "fan/cooling vents blocked or not maintained, causing overheat damage"
+        ]
+      },
+      "price_php": {
+        "min": 52000,
+        "max": 62000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; Growatt ecosystem hybrid alternative to Deye"
+      },
+      "stock_lead_time_days": {
+        "min": 5,
+        "max": 21,
+        "note": "backup-capable option popular for brownout-prone Luzon areas"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 97.6,
+      "startup_voltage_v": 100,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "ShinePhone / ShineServer",
+      "backup_eps_capable": true,
+      "eps_output_w": 5000,
+      "generator_compatible": true,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": 38,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "SPH5000TL-BL-UP",
+      "distributor": "Growatt PH authorized distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.growatt.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_007.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_007_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_007_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_008",
+      "brand": "Fronius",
+      "model": "Primo 5.0-1",
+      "type": "grid_tie",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 1000
+      },
+      "max_input_current_per_mppt_a": 12,
+      "cec_euro_efficiency_pct": 98.1,
+      "standby_power_draw_w": 1,
+      "ip_rating": "IP65",
+      "cooling_type": "fan-cooled",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 20,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "installed outdoors without adequate ventilation/shading despite IP65 rating",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 85000,
+        "max": 98000,
+        "as_of": "2026-07-01",
+        "currency_note": "premium European import; rare in budget PH residential quotes"
+      },
+      "stock_lead_time_days": {
+        "min": 14,
+        "max": 45,
+        "note": "special-order; common in premium commercial/small C&I projects"
+      },
+      "local_service_network": "limited (authorized premium dealers)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.1,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 6,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": true,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Solar.web",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": 42,
+      "country_of_manufacture": "Austria",
+      "application": "residential",
+      "sku": "4.210.004",
+      "distributor": "Fronius authorized PH dealers",
+      "availability_status": "low_stock",
+      "product_release_year": 2020,
+      "country_of_origin": "Austria",
+      "manufacturer_website": "https://www.fronius.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_008.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_008_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_008_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_009",
+      "brand": "Enphase",
+      "model": "IQ8HC Microinverter",
+      "type": "microinverter",
+      "rated_ac_output_w": 384,
+      "max_dc_input_w": 460,
+      "mppt_count": 1,
+      "mppt_voltage_range_v": {
+        "min": 24,
+        "max": 58
+      },
+      "max_input_current_per_mppt_a": 14,
+      "cec_euro_efficiency_pct": 97.0,
+      "standby_power_draw_w": 0.5,
+      "ip_rating": "IP67",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_005"
+      ],
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 15,
+        "extendable_to_years": 25,
+        "voids_warranty_if": [
+          "paired with non-Enphase gateway or monitoring stack",
+          "input voltage/current exceeds rated per-module range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 14000,
+        "max": 18000,
+        "as_of": "2026-07-01",
+        "currency_note": "per-module pricing; total system cost scales with panel count"
+      },
+      "stock_lead_time_days": {
+        "min": 14,
+        "max": 35,
+        "note": "microinverter systems niche in PH; growing for complex/shaded roofs"
+      },
+      "local_service_network": "limited (certified Enphase installers)",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 97.5,
+      "startup_voltage_v": 22,
+      "max_pv_strings": 1,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": true
+      },
+      "monitoring_platform": "Enphase Enlighten",
+      "backup_eps_capable": true,
+      "eps_output_w": 384,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -40,
+        "max": 65
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "IQ8HC-72-M-US",
+      "distributor": "Enphase certified PH installers",
+      "availability_status": "low_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://enphase.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_009.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_009_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_009_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_010",
+      "brand": "Huawei",
+      "model": "SUN2000-5KTL-L1 (Hybrid)",
+      "type": "hybrid",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 140,
+        "max": 560
+      },
+      "max_input_current_per_mppt_a": 12.5,
+      "cec_euro_efficiency_pct": 98.0,
+      "standby_power_draw_w": 3,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_005"
+      ],
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 20,
+        "voids_warranty_if": [
+          "paired with non-certified LUNA battery module",
+          "input voltage/current exceeds rated MPPT range",
+          "monitoring/firmware tampered with outside Huawei ecosystem tools"
+        ]
+      },
+      "price_php": {
+        "min": 78000,
+        "max": 92000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; premium hybrid with ecosystem lock-in"
+      },
+      "stock_lead_time_days": {
+        "min": 10,
+        "max": 35,
+        "note": "Huawei LUNA ecosystem bundle common in premium residential quotes"
+      },
+      "local_service_network": "wide but ecosystem-locked",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.4,
+      "startup_voltage_v": 140,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": false,
+        "ethernet": true,
+        "bluetooth": false
+      },
+      "monitoring_platform": "FusionSolar",
+      "backup_eps_capable": true,
+      "eps_output_w": 5000,
+      "generator_compatible": true,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "SUN2000-5KTL-L1",
+      "distributor": "Huawei FusionSolar partners",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://solar.huawei.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_010.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_010_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_010_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    }
+  ],
+  "batteries": [
+    {
+      "id": "batt_001",
+      "brand": "Deye",
+      "model": "SE-G5.1 Pro LiFePO4",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 5.12,
+      "usable_capacity_kwh": 4.6,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 5.0,
+      "max_discharge_rate_kw": 5.0,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "charging restricted below 0C, not usually a PH concern"
+      },
+      "ip_rating": "IP65",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-certified inverter",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 95000,
+        "max": 115000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged, imported component"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 30,
+        "note": "battery import demand growing faster than supply in PH"
+      },
+      "local_service_network": "moderate",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 5.0,
+      "peak_output_power_kw": 7.0,
+      "round_trip_efficiency_pct": 95.0,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "Built-in BMS with cell balancing, overcharge/overdischarge protection, temperature monitoring"
+      },
+      "expandable_stackable": true,
+      "max_modules": 16,
+      "communication_protocols": [
+        "CAN",
+        "RS485"
+      ],
+      "dimensions_mm": {
+        "height": 670,
+        "width": 480,
+        "depth": 180
+      },
+      "weight_kg": 52,
+      "installation_type": "wall_mounted",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "Deye",
+        "Growatt",
+        "Solis"
+      ],
+      "sku": "SE-G5.1-Pro",
+      "distributor": "Deye PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.deyeinverter.com",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_001.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_001_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_001_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "batt_002",
+      "brand": "Pylontech",
+      "model": "US5000",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 4.8,
+      "usable_capacity_kwh": 4.32,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 2.4,
+      "max_discharge_rate_kw": 4.8,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "stackable up to 16 modules; common in PH hybrid retrofits"
+      },
+      "ip_rating": "IP65",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-certified inverter",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 88000,
+        "max": 105000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; per-module pricing, stack for higher capacity"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 28,
+        "note": "widely stocked relative to other battery brands in PH"
+      },
+      "local_service_network": "wide (most common battery brand in PH hybrid installs)",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 4.8,
+      "peak_output_power_kw": 5.5,
+      "round_trip_efficiency_pct": 94.5,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "Integrated BMS with CAN communication, cell-level monitoring, automatic shutdown on fault"
+      },
+      "expandable_stackable": true,
+      "max_modules": 16,
+      "communication_protocols": [
+        "CAN"
+      ],
+      "dimensions_mm": {
+        "height": 440,
+        "width": 420,
+        "depth": 89
+      },
+      "weight_kg": 41,
+      "installation_type": "rack_mounted",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "Growatt",
+        "Deye",
+        "GoodWe",
+        "Victron"
+      ],
+      "sku": "US5000",
+      "distributor": "Pylontech PH distributors, Greenergy Solar",
+      "availability_status": "in_stock",
+      "product_release_year": 2021,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.pylontech.com.cn",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_002.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_002_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_002_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "batt_003",
+      "brand": "Growatt",
+      "model": "ARK 5.1 LiFePO4",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 5.12,
+      "usable_capacity_kwh": 4.6,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 2.56,
+      "max_discharge_rate_kw": 2.56,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "designed for Growatt SPH hybrid inverters"
+      },
+      "ip_rating": "IP65",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-certified inverter",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 92000,
+        "max": 110000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; bundled with Growatt hybrid packages"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 30,
+        "note": "often sold as Growatt inverter + battery bundle"
+      },
+      "local_service_network": "moderate",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 2.56,
+      "peak_output_power_kw": 3.5,
+      "round_trip_efficiency_pct": 94.0,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "Growatt-native BMS with CAN bus integration for SPH hybrid inverters"
+      },
+      "expandable_stackable": true,
+      "max_modules": 8,
+      "communication_protocols": [
+        "CAN"
+      ],
+      "dimensions_mm": {
+        "height": 650,
+        "width": 450,
+        "depth": 150
+      },
+      "weight_kg": 48,
+      "installation_type": "wall_mounted",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "Growatt"
+      ],
+      "sku": "ARK-5.1",
+      "distributor": "Growatt PH authorized distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.growatt.com",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_003.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_003_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_003_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "batt_004",
+      "brand": "BYD",
+      "model": "Battery-Box Premium HVS 5.1",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 5.12,
+      "usable_capacity_kwh": 4.61,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 5.0,
+      "max_discharge_rate_kw": 5.0,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "modular HVS tower; premium tier in PH residential storage"
+      },
+      "ip_rating": "IP55",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-certified inverter",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 120000,
+        "max": 145000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; premium pricing vs Pylontech/Deye"
+      },
+      "stock_lead_time_days": {
+        "min": 14,
+        "max": 45,
+        "note": "special-order through premium installers"
+      },
+      "local_service_network": "limited (premium channel)",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 5.0,
+      "peak_output_power_kw": 7.5,
+      "round_trip_efficiency_pct": 96.0,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "BYD proprietary BMS with Modbus/CAN, cell-level diagnostics, fire suppression compatible"
+      },
+      "expandable_stackable": true,
+      "max_modules": 64,
+      "communication_protocols": [
+        "CAN",
+        "Modbus"
+      ],
+      "dimensions_mm": {
+        "height": 690,
+        "width": 585,
+        "depth": 298
+      },
+      "weight_kg": 68,
+      "installation_type": "floor_standing",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "BYD",
+        "Fronius",
+        "SMA",
+        "Deye"
+      ],
+      "sku": "HVS-5.1",
+      "distributor": "Premium installer channel",
+      "availability_status": "low_stock",
+      "product_release_year": 2020,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.byd.com",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_004.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_004_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_004_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "batt_005",
+      "brand": "Huawei",
+      "model": "LUNA2000-5-S0",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 5.0,
+      "usable_capacity_kwh": 4.5,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 2.5,
+      "max_discharge_rate_kw": 2.5,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "modular; stack up to 30 kWh in Huawei ecosystem"
+      },
+      "ip_rating": "IP66",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-Huawei inverter or gateway",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 110000,
+        "max": 135000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; ecosystem-locked to Huawei hybrid inverters"
+      },
+      "stock_lead_time_days": {
+        "min": 10,
+        "max": 35,
+        "note": "sold primarily as Huawei full-stack packages"
+      },
+      "local_service_network": "wide but ecosystem-locked",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 2.5,
+      "peak_output_power_kw": 3.5,
+      "round_trip_efficiency_pct": 95.5,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "Huawei SmartGuard BMS integrated with FusionSolar monitoring, module-level protection"
+      },
+      "expandable_stackable": true,
+      "max_modules": 6,
+      "communication_protocols": [
+        "CAN",
+        "RS485"
+      ],
+      "dimensions_mm": {
+        "height": 590,
+        "width": 255,
+        "depth": 150
+      },
+      "weight_kg": 48,
+      "installation_type": "wall_mounted",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "Huawei"
+      ],
+      "sku": "LUNA2000-5-S0",
+      "distributor": "Huawei FusionSolar partners",
+      "availability_status": "in_stock",
+      "product_release_year": 2022,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://solar.huawei.com",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_005.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_005_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_005_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "batt_006",
+      "brand": "Sunsynk",
+      "model": "5.12kWh LiFePO4",
+      "chemistry": "LiFePO4",
+      "capacity_kwh": 5.12,
+      "usable_capacity_kwh": 4.6,
+      "depth_of_discharge_pct": 90,
+      "voltage_v": 48,
+      "max_charge_rate_kw": 5.0,
+      "max_discharge_rate_kw": 5.0,
+      "cycle_life": 6000,
+      "calendar_life_years": 10,
+      "operating_temp_range_c": {
+        "min": 0,
+        "max": 50,
+        "note": "often rebranded/rebadged in regional PH distributor catalogs"
+      },
+      "ip_rating": "IP65",
+      "warranty": {
+        "years": 10,
+        "cycles": 6000,
+        "whichever_first": true,
+        "voids_warranty_if": [
+          "paired with non-certified inverter",
+          "operated outside rated temperature range",
+          "discharged beyond rated DoD repeatedly"
+        ]
+      },
+      "price_php": {
+        "min": 82000,
+        "max": 98000,
+        "as_of": "2026-07-01",
+        "currency_note": "USD-pegged; value-tier alternative to Pylontech"
+      },
+      "stock_lead_time_days": {
+        "min": 7,
+        "max": 28,
+        "note": "growing availability through online PH solar retailers"
+      },
+      "local_service_network": "moderate",
+      "source": "distributor_listing",
+      "max_continuous_output_power_kw": 5.0,
+      "peak_output_power_kw": 7.0,
+      "round_trip_efficiency_pct": 93.5,
+      "battery_management_system": {
+        "integrated": true,
+        "description": "Integrated BMS with RS485/CAN, basic cell balancing and thermal protection"
+      },
+      "expandable_stackable": true,
+      "max_modules": 16,
+      "communication_protocols": [
+        "CAN",
+        "RS485"
+      ],
+      "dimensions_mm": {
+        "height": 650,
+        "width": 450,
+        "depth": 170
+      },
+      "weight_kg": 50,
+      "installation_type": "wall_mounted",
+      "manufacturer_country": "China",
+      "recommended_inverter_brands": [
+        "Deye",
+        "Growatt",
+        "Sunsynk"
+      ],
+      "sku": "SS-5.12",
+      "distributor": "Online PH solar retailers",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.sunsynk.net",
+      "product_image": "https://assets.kahayag.dev/catalog/batteries/batt_006.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/batteries/batt_006_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/batteries/batt_006_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    }
+  ],
+  "compatibility_notes": [
+    {
+      "component_a": "panel_002",
+      "component_b": "inv_002",
+      "status": "compatible_with_warning",
+      "note": "2 panels in series (Voc 99.8V) fits MPPT range, but max input current per MPPT (13A) is close to panel Imp (13.16A) at full sun \u2014 consider single panel per string or check derating. Also close to warranty-void threshold on inverter."
+    },
+    {
+      "component_a": "panel_001",
+      "component_b": "inv_003",
+      "status": "compatible",
+      "note": "Good voltage headroom, no clipping risk at 1:1 panel-to-inverter capacity ratio."
+    },
+    {
+      "component_a": "panel_002",
+      "component_b": "inv_006",
+      "status": "compatible",
+      "note": "Sungrow's 15A MPPT limit provides comfortable headroom for 550W N-type strings; good match for high-output residential systems."
+    },
+    {
+      "component_a": "panel_003",
+      "component_b": "inv_004",
+      "status": "compatible",
+      "note": "445W panel pairs well with GoodWe 5kW; 11-panel array (~4.9 kWp) is a common PH residential sweet spot."
+    },
+    {
+      "component_a": "panel_004",
+      "component_b": "inv_001",
+      "status": "compatible",
+      "note": "Compact Trina Vertex S footprint suits limited townhouse roofs; voltage/current within Growatt MPPT limits at 2S configuration."
+    },
+    {
+      "component_a": "panel_005",
+      "component_b": "inv_005",
+      "status": "compatible",
+      "note": "Value-tier panel + value-tier inverter; typical bundled quote for 3\u20135 kWp provincial installs."
+    },
+    {
+      "component_a": "panel_006",
+      "component_b": "inv_004",
+      "status": "compatible",
+      "note": "Budget-friendly combination; verify distributor warranty support in Visayas/Mindanao before specifying."
+    },
+    {
+      "component_a": "panel_008",
+      "component_b": "inv_009",
+      "status": "compatible",
+      "note": "One microinverter per Maxeon AC module; premium shaded-roof solution, rarely cost-competitive in standard PH residential quotes."
+    },
+    {
+      "component_a": "panel_001",
+      "component_b": "inv_002",
+      "status": "compatible",
+      "note": "440W panel well within Deye hybrid MPPT limits; 2S string Voc ~83V with comfortable current margin."
+    },
+    {
+      "component_a": "panel_002",
+      "component_b": "inv_003",
+      "status": "compatible_with_warning",
+      "note": "Huawei 6kW inverter suits 550W panels, but 12.5A MPPT limit requires careful string sizing \u2014 max 1 panel per MPPT or verify Imp derating at elevated cell temps (PH noon conditions)."
+    },
+    {
+      "component_a": "inv_002",
+      "component_b": "batt_001",
+      "status": "compatible",
+      "note": "Deye hybrid + Deye battery is the native ecosystem pairing; BMS communication verified."
+    },
+    {
+      "component_a": "inv_007",
+      "component_b": "batt_002",
+      "status": "compatible",
+      "note": "Growatt SPH + Pylontech US5000 is the most common PH hybrid retrofit pairing; CAN/RS485 communication supported."
+    },
+    {
+      "component_a": "inv_007",
+      "component_b": "batt_003",
+      "status": "compatible",
+      "note": "Native Growatt ecosystem pairing; preferred for single-vendor warranty coverage."
+    },
+    {
+      "component_a": "inv_010",
+      "component_b": "batt_005",
+      "status": "compatible",
+      "note": "Huawei hybrid + LUNA2000 is the certified full-stack pairing; required for extended warranty."
+    },
+    {
+      "component_a": "inv_002",
+      "component_b": "batt_004",
+      "status": "compatible_with_warning",
+      "note": "BYD HVS works with Deye via CAN but requires certified integration profile; verify firmware compatibility before quoting."
+    },
+    {
+      "component_a": "inv_001",
+      "component_b": "batt_002",
+      "status": "incompatible",
+      "note": "Growatt MIN 5000TL-X is grid-tie only; no battery input. Requires separate hybrid inverter for storage."
+    },
+    {
+      "component_a": "panel_007",
+      "component_b": "inv_008",
+      "status": "compatible",
+      "note": "Premium Fronius pairing for quality-focused C&I or high-end residential; wide MPPT voltage range supports flexible string design."
+    },
+    {
+      "component_a": "panel_001",
+      "component_b": "inv_008",
+      "status": "compatible_with_warning",
+      "note": "Electrically compatible but cost ratio poor \u2014 Fronius premium pricing rarely justified with mid-tier LONGi panels in PH residential context."
+    }
+  ],
+  "schema_version": "2.0",
+  "catalog_metadata": {
+    "market": "Philippines",
+    "currency": "PHP",
+    "last_catalog_update": "2026-07-01",
+    "notes": "Synthetic reference data for development and testing. Prices and availability are illustrative."
+  },
+  "protections": [
+    {
+      "id": "prot_001",
+      "brand": "Generic",
+      "model": "Residential DC Protection Kit",
+      "category": "protection",
+      "description": "DC isolator, surge protection, and fusing for grid-tie residential",
+      "price_php": {
+        "min": 8500,
+        "max": 12000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "prot_002",
+      "brand": "Generic",
+      "model": "Hybrid Backup Protection Kit",
+      "category": "protection",
+      "description": "DC/AC protection for hybrid inverter with battery backup",
+      "price_php": {
+        "min": 12000,
+        "max": 18000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    }
+  ],
+  "mounting_kits": [
+    {
+      "id": "mount_001",
+      "brand": "Generic",
+      "model": "Tiled Roof Mount Kit (per kWp)",
+      "category": "mounting",
+      "description": "Rails, clamps, and roof hooks for tiled residential roofs",
+      "price_php_per_kwp": {
+        "min": 8000,
+        "max": 12000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 10
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "mount_002",
+      "brand": "Generic",
+      "model": "Metal Roof Mount Kit (per kWp)",
+      "category": "mounting",
+      "description": "Standing-seam or corrugated metal roof mounting",
+      "price_php_per_kwp": {
+        "min": 7000,
+        "max": 10000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 10
+      },
+      "unit": "kWp"
+    }
+  ],
+  "cabling": [
+    {
+      "id": "cable_001",
+      "brand": "Generic",
+      "model": "DC/AC Cabling & Conduit Package",
+      "category": "cabling",
+      "description": "PV wire, MC4 connectors, AC cable, and conduit for residential install",
+      "price_php_per_kwp": {
+        "min": 5000,
+        "max": 8000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "kWp"
+    }
+  ],
+  "misc_bom_items": [
+    {
+      "id": "misc_001",
+      "brand": "Generic",
+      "model": "Standard Installation Labour",
+      "category": "installation",
+      "description": "Labour, commissioning, and basic electrical work",
+      "price_php_per_kwp": {
+        "min": 15000,
+        "max": 22000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 1
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "misc_002",
+      "brand": "Generic",
+      "model": "Permits & Documentation",
+      "category": "installation",
+      "description": "Net metering paperwork and local permit assistance",
+      "price_php": {
+        "min": 5000,
+        "max": 15000,
+        "as_of": "2026-07-01"
+      },
+      "warranty": {
+        "years": 0
+      },
+      "unit": "lot"
+    }
+  ]
+}

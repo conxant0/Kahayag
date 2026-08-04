@@ -11,4 +11,9 @@ export const ENDPOINTS = {
   roofOutline: "/properties/roof-outline",
   approximateLocation: "/geolocation/approximate",
   reportsPdf: "/reports/pdf",
+  designsBootstrap: "/designs/bootstrap",
+  designsOptimise: "/designs/optimise",
+  designsMutate: "/designs/mutate",
+  designsRejections: (solveId: string) => `/designs/solves/${solveId}/rejections`,
+  designsQuotation: (buildId: string) => `/designs/quotation/${buildId}`,
 } as const;
