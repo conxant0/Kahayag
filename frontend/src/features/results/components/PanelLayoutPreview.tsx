@@ -27,6 +27,59 @@ function pointsForSvg(
     .join(" ");
 }
 
+function projectPoint(
+  point: GeoPoint,
+  latitude: number,
+  longitude: number,
+  width: number,
+  height: number,
+): { x: number; y: number } {
+  return {
+    x: ((point.longitude - longitude) / width) * 100,
+    y: ((latitude - point.latitude) / height) * 100,
+  };
+}
+
+// Bilinear interpolation across the panel's 4 projected corners, which are
+// an arbitrary (rotated) quadrilateral rather than an axis-aligned rect.
+// corners are ordered [top-left, top-right, bottom-right, bottom-left].
+function lerpQuad(
+  corners: readonly { x: number; y: number }[],
+  u: number,
+  v: number,
+): { x: number; y: number } {
+  const [p00, p10, p11, p01] = corners;
+  const x =
+    (1 - u) * (1 - v) * p00.x +
+    u * (1 - v) * p10.x +
+    u * v * p11.x +
+    (1 - u) * v * p01.x;
+  const y =
+    (1 - u) * (1 - v) * p00.y +
+    u * (1 - v) * p10.y +
+    u * v * p11.y +
+    (1 - u) * v * p01.y;
+  return { x, y };
+}
+
+// A few interior lines suggesting photovoltaic cells: 2 columns, 3 rows.
+function cellGridLines(corners: readonly { x: number; y: number }[]) {
+  const columnSplits = [1 / 2];
+  const rowSplits = [1 / 3, 2 / 3];
+  const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (const u of columnSplits) {
+    const a = lerpQuad(corners, u, 0);
+    const b = lerpQuad(corners, u, 1);
+    lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  }
+  for (const v of rowSplits) {
+    const a = lerpQuad(corners, 0, v);
+    const b = lerpQuad(corners, 1, v);
+    lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  }
+  return lines;
+}
+
 export function PanelLayoutPreview({
   roofCoordinates,
   panels,
@@ -118,26 +171,46 @@ export function PanelLayoutPreview({
               viewLatitudeSpan,
             )}
             fill="var(--color-cobalt-veil)"
+            fillOpacity="0.46"
             stroke="var(--color-cobalt)"
             strokeWidth="0.7"
           />
         ) : null}
-        {panels.map((panel, index) => (
-          <polygon
-            key={index}
-            points={pointsForSvg(
-              panel.corners,
+        {panels.map((panel, index) => {
+          const svgCorners = panel.corners.map((corner) =>
+            projectPoint(
+              corner,
               viewMaxLatitude,
               viewMinLongitude,
               viewLongitudeSpan,
               viewLatitudeSpan,
-            )}
-            fill="var(--color-sun)"
-            fillOpacity="0.78"
-            stroke="var(--color-ink)"
-            strokeWidth="0.28"
-          />
-        ))}
+            ),
+          );
+          return (
+            <g key={index}>
+              <polygon
+                points={svgCorners
+                  .map((c) => `${c.x.toFixed(2)},${c.y.toFixed(2)}`)
+                  .join(" ")}
+                fill="var(--color-ink)"
+                stroke="var(--color-ink)"
+                strokeWidth="0.28"
+              />
+              {cellGridLines(svgCorners).map((line, lineIndex) => (
+                <line
+                  key={lineIndex}
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke="var(--color-cobalt)"
+                  strokeWidth="0.12"
+                  strokeOpacity="0.85"
+                />
+              ))}
+            </g>
+          );
+        })}
       </svg>
       {heatmap ? (
         <div className="absolute right-3 bottom-3 rounded bg-paper/90 px-2 py-1.5 font-sans text-[10px] text-secondary">
