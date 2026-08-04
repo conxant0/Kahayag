@@ -17,6 +17,7 @@ export function ResultsMapPane({
   status,
   flux = null,
   mask = null,
+  fitPadding,
 }: {
   selectedProperty: SelectedProperty | null;
   roofCoordinates: readonly GeoPoint[];
@@ -24,6 +25,8 @@ export function ResultsMapPane({
   status?: string;
   flux?: GeoTiffRaster | null;
   mask?: GeoTiffRaster | null;
+  /** Frame padding around the roof when fitting; more shows more context. */
+  fitPadding?: number;
 }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const { googleStatus, fluxRange } = useResultsMap(
@@ -33,6 +36,7 @@ export function ResultsMapPane({
     panels,
     flux,
     mask,
+    fitPadding,
   );
 
   return (

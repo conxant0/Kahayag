@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import {
   createMemoryRouter,
   MemoryRouter,
   RouterProvider,
 } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -49,6 +51,20 @@ function seedSession() {
     .setResult(fixture as unknown as StoreAssessmentResult);
 }
 
+/**
+ * BriefPage pulls the quotation for a chosen design through react-query, so
+ * every render needs the client the hook expects — even with no design
+ * session, when the query stays disabled.
+ */
+function withQueryClient(children: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   useAssessmentStore.getState().reset();
@@ -59,9 +75,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     expect(
@@ -79,9 +97,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     // The fixture recommends standard-450.
@@ -98,9 +118,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     const specsBefore = screen.getByRole("region", {
@@ -125,9 +147,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     expect(screen.getByText(/^Roof layout ·/)).toBeInTheDocument();
@@ -145,9 +169,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     await user.click(
@@ -171,9 +197,11 @@ describe("BriefPage", () => {
     seedSession();
 
     render(
-      <MemoryRouter initialEntries={["/brief"]}>
-        <BriefPage />
-      </MemoryRouter>,
+      withQueryClient(
+        <MemoryRouter initialEntries={["/brief"]}>
+          <BriefPage />
+        </MemoryRouter>,
+      ),
     );
 
     await user.click(
@@ -194,7 +222,7 @@ describe("BriefPage", () => {
       { initialEntries: ["/brief"] },
     );
 
-    render(<RouterProvider router={router} />);
+    render(withQueryClient(<RouterProvider router={router} />));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/energy"));
   });

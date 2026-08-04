@@ -84,12 +84,19 @@ export function ResultsPage() {
   }, [roofCoordinates, result, cachedFlux?.flux]);
 
   if (!result) {
-    return <Navigate to={ROUTE_PATHS.energy} replace />;
+    // The result is memory-only; a refresh lands here without one. /loading
+    // recomputes it from the persisted inputs (its guard walks further back
+    // when those are missing too) instead of dumping the visitor on the
+    // bill screen.
+    return <Navigate to={ROUTE_PATHS.loading} replace />;
   }
 
   const panelCount = result.recommendation.panel_count;
   const shadingImpact = formatShadingImpact(result);
+  const hasBudget = result.inputs.budget_php != null;
 
+  // One list carries every headline fact. The monthly figure already owns the
+  // top of the rail, so it is deliberately not repeated here.
   const hairlineList = (
     <HairlineList className="pt-1.5">
       <HairlineRow label="Panels" value={`${panelCount} panels`} />
@@ -105,7 +112,7 @@ export function ResultsPage() {
       <HairlineRow label="Payback" value={formatPaybackYears(result)} />
       <HairlineRow label="Estimated cost" value={formatCostRange(result)} />
       <HairlineRow
-        label="Back per year"
+        label="Saved per year"
         value={`≈ ${formatPeso(result.financials.annual_savings_php)}`}
       />
     </HairlineList>
@@ -147,14 +154,16 @@ export function ResultsPage() {
         </>
       }
       beforeCta={
-        <>
-          <ButtonLink to={ROUTE_PATHS.invest} variant="secondary" fullWidth>
+        // One light row for the side journeys; the sun pill below stays the
+        // only full-weight action, per "yellow acts".
+        <div className="flex gap-2">
+          <ButtonLink to={ROUTE_PATHS.invest} variant="ghost" fullWidth>
             See your investment
           </ButtonLink>
-          <ButtonLink to={ROUTE_PATHS.editLayout} variant="secondary" fullWidth>
+          <ButtonLink to={ROUTE_PATHS.editLayout} variant="ghost" fullWidth>
             Edit layout
           </ButtonLink>
-        </>
+        </div>
       }
     >
       {/*
@@ -166,45 +175,47 @@ export function ResultsPage() {
         the default for a grid item.
       */}
       <div className="w-full lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        {/*
+          Four sections, one open. "Your system" is the only default-open block
+          and carries every headline fact once — the old layout opened two
+          lists at once and repeated the savings and cost figures across them.
+        */}
         <Accordion>
-          <AccordionItem title={`SIZING: ${panelCount} Panels`} as="h2">
-            <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
-              {result.recommendation.rationale}
-            </p>
-          </AccordionItem>
-
-          <AccordionItem title="Your panels" defaultOpen as="h2">
+          <AccordionItem title="Your system" defaultOpen as="h2">
             {hairlineList}
           </AccordionItem>
 
-          <AccordionItem title="Assessment result details" defaultOpen as="h2">
+          <AccordionItem title={`Why ${panelCount} panels`} as="h2">
+            <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
+              {result.recommendation.rationale}
+            </p>
             <HairlineList>
               <HairlineRow
-                label="Budget compatibility"
-                value={formatBudgetCompatibility(result)}
-                valueClassName={
-                  result.financials.budget_compatible
-                    ? "text-cobalt"
-                    : undefined
-                }
-              />
-              <HairlineRow
-                label="Monthly savings"
-                value={formatMonthlySavings(result)}
-              />
-              <HairlineRow
-                label="Limiting constraint"
+                label="Sized by"
                 value={formatLimitingConstraint(result)}
               />
-              <HairlineRow
-                label="Budget"
-                value={formatPeso(result.inputs.budget_php)}
-              />
+              {hasBudget ? (
+                <HairlineRow
+                  label="Your budget"
+                  value={formatPeso(result.inputs.budget_php)}
+                />
+              ) : null}
+              {hasBudget ? (
+                <HairlineRow
+                  label="Budget fit"
+                  value={formatBudgetCompatibility(result)}
+                  valueClassName={
+                    result.financials.budget_compatible
+                      ? "text-cobalt"
+                      : undefined
+                  }
+                />
+              ) : null}
             </HairlineList>
           </AccordionItem>
 
           {result.shading ? (
-            <AccordionItem title="Sunshine visualization" as="h2">
+            <AccordionItem title="Sunshine overlay" as="h2">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -230,7 +241,7 @@ export function ResultsPage() {
             </AccordionItem>
           ) : null}
 
-          <AccordionItem title="Assumptions" as="h2">
+          <AccordionItem title="Assumptions & limitations" as="h2">
             <HairlineList>
               <HairlineRow
                 label="Peak sun hours/day"
@@ -258,16 +269,6 @@ export function ResultsPage() {
               Potential exclusions:{" "}
               {result.assumptions.potential_exclusions.join(", ")}.
             </p>
-          </AccordionItem>
-
-          <AccordionItem
-            title={
-              result.is_provisional
-                ? "Preliminary assessment"
-                : "Limitations"
-            }
-            as="h2"
-          >
             {result.limitations.map((limitation) => (
               <p
                 key={limitation}

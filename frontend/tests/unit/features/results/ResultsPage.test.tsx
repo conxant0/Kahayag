@@ -78,24 +78,30 @@ describe("ResultsPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByText("₱1,892")).toHaveLength(2);
+    // The monthly figure appears exactly once — the headline owns it, and the
+    // detail lists no longer repeat it.
+    expect(screen.getAllByText("₱1,892")).toHaveLength(1);
     expect(screen.getByText("3.6 kW")).toBeInTheDocument();
     expect(screen.getByText("8 panels")).toBeInTheDocument();
     expect(screen.getByText("9.5 years")).toBeInTheDocument();
   });
 
-  it("redirects to energy when the stored result is missing", async () => {
+  it("redirects to loading when the stored result is missing", async () => {
     const router = createMemoryRouter(
       [
         { path: "/results", element: <ResultsPage /> },
-        { path: "/energy", element: <p>Energy</p> },
+        { path: "/loading", element: <p>Loading</p> },
       ],
       { initialEntries: ["/results"] },
     );
 
     render(<RouterProvider router={router} />);
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/energy"));
+    // /loading recomputes the memory-only result from persisted inputs; its
+    // own guard walks further back when those are missing too.
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/loading"),
+    );
   });
 
   it("keeps core results available when optional flux loading fails", async () => {

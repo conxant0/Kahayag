@@ -1,18 +1,22 @@
 from math import cos, log, pi, radians, tan
+from typing import NamedTuple
 
 import httpx
 
 from app.features.reports.schemas import GeoPoint
 
-# Esri World Imagery's export endpoint is keyless satellite tile service
-# (attribution required, shared rate limit). Swap for a paid provider
-# (Google/Mapbox static maps) if usage outgrows that limit.
+# Google Static Maps matches the satellite basemap the app itself renders,
+# so the PDF's photo agrees with what the homeowner traced on. It needs a
+# server-usable key (APP_GOOGLE_MAPS_API_KEY with the Static Maps API
+# enabled); without one, or when the call fails, Esri World Imagery's
+# keyless export endpoint fills in (attribution required, shared rate
+# limit).
+GOOGLE_STATIC_MAP_URL = "https://maps.googleapis.com/maps/api/staticmap"
 STATIC_MAP_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export"
 MAP_WIDTH = 640
 MAP_HEIGHT = 480
 MAP_ZOOM = 20
 _EARTH_RADIUS_M = 6378137
-_MERCATOR_RESOLUTION_M_PER_PX = (2 * pi * _EARTH_RADIUS_M) / (256 * 2**MAP_ZOOM)
 
 
 def map_center(points: tuple[GeoPoint, ...]) -> GeoPoint | None:
@@ -52,10 +56,13 @@ def _mercator_meters(point: GeoPoint) -> tuple[float, float]:
     return x, y
 
 
-def _bounding_box(center: GeoPoint) -> tuple[float, float, float, float]:
+def _bounding_box(
+    center: GeoPoint, zoom: int = MAP_ZOOM
+) -> tuple[float, float, float, float]:
+    resolution = (2 * pi * _EARTH_RADIUS_M) / (256 * 2**zoom)
     center_x, center_y = _mercator_meters(center)
-    half_width = MAP_WIDTH / 2 * _MERCATOR_RESOLUTION_M_PER_PX
-    half_height = MAP_HEIGHT / 2 * _MERCATOR_RESOLUTION_M_PER_PX
+    half_width = MAP_WIDTH / 2 * resolution
+    half_height = MAP_HEIGHT / 2 * resolution
     return (
         center_x - half_width,
         center_y - half_height,
@@ -64,24 +71,17 @@ def _bounding_box(center: GeoPoint) -> tuple[float, float, float, float]:
     )
 
 
-def fetch_static_map(roof_polygon: tuple[GeoPoint, ...]) -> bytes | None:
-    center = map_center(roof_polygon)
-    if center is None:
-        return None
-    xmin, ymin, xmax, ymax = _bounding_box(center)
+class StaticMapImage(NamedTuple):
+    image: bytes
+    attribution: str
+    # The Web Mercator zoom the image was rendered at. Overlay drawing must
+    # project with this same zoom or the roof lands in the wrong place.
+    zoom: int
+
+
+def _fetch_image(url: str, params: dict) -> bytes | None:
     try:
-        response = httpx.get(
-            STATIC_MAP_URL,
-            params={
-                "bbox": f"{xmin},{ymin},{xmax},{ymax}",
-                "bboxSR": 3857,
-                "imageSR": 3857,
-                "size": f"{MAP_WIDTH},{MAP_HEIGHT}",
-                "format": "png",
-                "f": "image",
-            },
-            timeout=10.0,
-        )
+        response = httpx.get(url, params=params, timeout=10.0)
     except httpx.HTTPError:
         return None
 
@@ -92,3 +92,47 @@ def fetch_static_map(roof_polygon: tuple[GeoPoint, ...]) -> bytes | None:
     ):
         return None
     return response.content
+
+
+def fetch_static_map(
+    roof_polygon: tuple[GeoPoint, ...],
+    *,
+    google_maps_api_key: str = "",
+) -> StaticMapImage | None:
+    center = map_center(roof_polygon)
+    if center is None:
+        return None
+
+    if google_maps_api_key:
+        image = _fetch_image(
+            GOOGLE_STATIC_MAP_URL,
+            {
+                "center": f"{center.latitude},{center.longitude}",
+                "zoom": MAP_ZOOM,
+                "size": f"{MAP_WIDTH}x{MAP_HEIGHT}",
+                "maptype": "satellite",
+                "key": google_maps_api_key,
+            },
+        )
+        if image is not None:
+            return StaticMapImage(image, "Imagery: Google", MAP_ZOOM)
+
+    # Esri's export rejects extents finer than the imagery available at the
+    # location — Cebu tops out below zoom 20 — so walk down until it serves
+    # one rather than giving up and printing the schematic fallback.
+    for zoom in (MAP_ZOOM, MAP_ZOOM - 1, MAP_ZOOM - 2):
+        xmin, ymin, xmax, ymax = _bounding_box(center, zoom)
+        image = _fetch_image(
+            STATIC_MAP_URL,
+            {
+                "bbox": f"{xmin},{ymin},{xmax},{ymax}",
+                "bboxSR": 3857,
+                "imageSR": 3857,
+                "size": f"{MAP_WIDTH},{MAP_HEIGHT}",
+                "format": "png",
+                "f": "image",
+            },
+        )
+        if image is not None:
+            return StaticMapImage(image, "Imagery: Esri World Imagery", zoom)
+    return None

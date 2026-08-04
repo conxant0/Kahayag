@@ -110,17 +110,21 @@ describe("RecommendationPage", () => {
     expect(screen.queryByText("Calculating projection…")).not.toBeInTheDocument();
   });
 
-  it("redirects to energy when the stored result is missing", async () => {
+  it("redirects to loading when the stored result is missing", async () => {
     const router = createMemoryRouter(
       [
         { path: "/invest", element: <RecommendationPage /> },
-        { path: "/energy", element: <p>Energy</p> },
+        { path: "/loading", element: <p>Loading</p> },
       ],
       { initialEntries: ["/invest"] },
     );
 
     render(<RouterProvider router={router} />);
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/energy"));
+    // /loading recomputes the memory-only result from persisted inputs; its
+    // own guard walks further back when those are missing too.
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/loading"),
+    );
   });
 });

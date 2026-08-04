@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { ContentScreen } from "../../shared/components/layout";
-import { ButtonLink, Rule } from "../../shared/components/ui";
+import { Rule } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import {
@@ -25,9 +25,14 @@ export function WhyPage() {
   );
 
   if (!result || !confidence) {
-    return <Navigate to={ROUTE_PATHS.energy} replace />;
+    // Memory-only result: recompute via /loading rather than dropping the
+    // visitor on the bill screen after a refresh.
+    return <Navigate to={ROUTE_PATHS.loading} replace />;
   }
 
+  // Deliberately no CTA: this page explains the estimate and hands the
+  // visitor back to the investment view. The brief is reached through the
+  // quotation flow, not from here.
   return (
     <ContentScreen
       eyebrow="The prediction engine"
@@ -38,7 +43,6 @@ export function WhyPage() {
           Why <span className="text-cobalt">{formatConfidenceHeading(confidence.overallPercent)}</span>?
         </>
       }
-      cta={<ButtonLink to={ROUTE_PATHS.brief} fullWidth>Get the report</ButtonLink>}
     >
       <p className="font-sans text-[17px] text-secondary lg:text-[18px]">
         {confidence.intro}

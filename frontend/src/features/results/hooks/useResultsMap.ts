@@ -80,6 +80,10 @@ export function useResultsMap(
   panels: readonly LayoutPanel[],
   flux: GeoTiffRaster | null = null,
   mask: GeoTiffRaster | null = null,
+  // How much of the frame stays around the roof when fitting. The results
+  // pane keeps the tight default; the brief's smaller figure passes more so
+  // the roof reads in its surroundings instead of filling the crop.
+  fitPadding = 32,
 ) {
   const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const googleStatus = useMapLoader(googleApiKey);
@@ -143,14 +147,14 @@ export function useResultsMap(
 
     const bounds = boundsOf(roofCoordinates);
     if (bounds) {
-      mapInstanceRef.current.fitBounds(bounds, 32);
+      mapInstanceRef.current.fitBounds(bounds, fitPadding);
     }
 
     window.google?.maps?.event?.trigger(mapInstanceRef.current, "resize");
     // Coordinates and panels are drawn in the effects below; this effect only
     // owns creating and framing the map.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProperty, googleStatus, mapContainerRef]);
+  }, [selectedProperty, googleStatus, mapContainerRef, fitPadding]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
