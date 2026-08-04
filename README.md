@@ -1,4 +1,7 @@
-# Kahayag Energy
+<p align="center">
+  <img src="frontend/public/assets/logo.svg" alt="Kahayag Energy logo" width="160" />
+</p>
+<h1 align="center">Kahayag Energy</h1>
 
 ## Project Overview & Objectives
 
