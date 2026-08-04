@@ -5,11 +5,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { QuotationPage } from "../../../../src/features/quotation/QuotationPage";
+import { quoteNumberForBuild } from "../../../../src/features/quotation/quotationViewModel";
 import { useDesignStore } from "../../../../src/state/designStore";
 
 vi.mock("../../../../src/features/design/useDesignActions", () => ({
   useDesignAgent: () => ({ mutate: vi.fn(), isPending: false, error: null }),
   useExplainDesign: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+}));
+
+vi.mock("../../../../src/shared/api/client", () => ({
+  apiPost: vi.fn().mockRejectedValue(new Error("offline")),
+  apiGet: vi.fn(),
+  apiPostBlob: vi.fn(),
 }));
 
 function renderQuotation(initialPath = "/quotation") {
@@ -65,12 +72,16 @@ describe("QuotationPage", () => {
 
     expect(await screen.findByText("Draft")).toBeInTheDocument();
     expect(
-      screen.getByText(`KH-${build.id.slice(0, 8).toUpperCase()}`),
+      screen.getByRole("heading", {
+        name: `#${quoteNumberForBuild(build.id)}`,
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText("VAT (12%)")).toBeInTheDocument();
     expect(screen.getByText("₱379,456")).toBeInTheDocument();
     expect(screen.getByText("Why this pays")).toBeInTheDocument();
     expect(screen.getByText("Payment terms")).toBeInTheDocument();
-    expect(screen.getByText(/50% upon contract signing/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/50% downpayment to lock the build/i),
+    ).toBeInTheDocument();
   });
 });

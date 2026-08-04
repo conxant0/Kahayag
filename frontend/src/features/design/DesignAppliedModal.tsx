@@ -1,37 +1,82 @@
 import { Button, ButtonLink } from "../../shared/components/ui";
 import { ROUTE_PATHS } from "../../app/routePaths";
+import { peso } from "../../shared/lib/currency";
+
+function CheckMark() {
+  return (
+    <svg
+      width={28}
+      height={28}
+      viewBox="0 0 28 28"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M7 14.5L12 19.5L21 9.5"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function DesignAppliedModal({
   open,
   onKeepEditing,
+  systemKwp,
+  totalInvestmentPhp,
 }: {
   open: boolean;
   onKeepEditing: () => void;
+  systemKwp?: number;
+  totalInvestmentPhp?: number;
 }) {
   if (!open) {
     return null;
   }
 
+  const sizeLabel =
+    typeof systemKwp === "number" ? `${systemKwp.toFixed(1)} kWp` : "system";
+  const pricedNote =
+    typeof totalInvestmentPhp === "number"
+      ? ` Priced at ${peso(totalInvestmentPhp)} against current vendor rates.`
+      : "";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="design-applied-title"
     >
-      <div className="w-full max-w-md rounded-lg border border-hairline bg-paper p-6 shadow-lg">
-        <h2 id="design-applied-title" className="font-serif text-2xl text-ink">
+      <div className="w-full max-w-[440px] rounded-[24px] border border-hairline bg-white p-8 shadow-[0_20px_40px_rgba(26,23,18,0.16)]">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-pill bg-sun text-ink">
+          <CheckMark />
+        </div>
+        <h2
+          id="design-applied-title"
+          className="mt-5 text-center font-serif text-[32px] font-medium leading-none text-ink"
+        >
           Design applied.
         </h2>
-        <p className="mt-2 font-sans text-sm text-secondary">
-          Your solver-backed build is ready to compare against alternatives.
+        <p className="mt-3 text-center font-sans text-[15px] leading-6 text-secondary">
+          Your {sizeLabel} build is saved to this property.{pricedNote} It is
+          ready to compare and quote.
         </p>
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="mt-7 flex flex-col gap-2">
           <ButtonLink to={ROUTE_PATHS.compare} fullWidth>
             See comparison
           </ButtonLink>
-          <Button variant="secondary" fullWidth onClick={onKeepEditing}>
-            Keep editing
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={onKeepEditing}
+            className="border-transparent bg-transparent text-secondary hover:border-transparent hover:text-ink"
+          >
+            Keep editing the design
           </Button>
         </div>
       </div>

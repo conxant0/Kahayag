@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { FlowLayout, DesignFlowStepper } from "../../shared/components/layout";
-import { Eyebrow, HairlineList, HairlineRow } from "../../shared/components/ui";
+import { Eyebrow } from "../../shared/components/ui";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
@@ -93,24 +93,26 @@ export function DesignPage() {
           )
         }
       >
-        <section aria-label="Summary tiles">
+        <section
+          aria-label="Summary tiles"
+          className="rounded-[16px] border border-hairline bg-white p-3"
+        >
           <Eyebrow>Active build</Eyebrow>
-          <HairlineList>
+          <ul className="mt-3 flex flex-col gap-3">
             {tiles.map((tile) => (
-              <HairlineRow
-                key={tile.label}
-                label={tile.label}
-                value={
-                  <>
-                    {tile.value}
-                    <span className="block text-sm font-normal text-secondary">
-                      {tile.detail}
-                    </span>
-                  </>
-                }
-              />
+              <li key={tile.label} className="flex flex-col gap-0.5">
+                <span className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
+                  {tile.label}
+                </span>
+                <span className="font-sans text-sm font-semibold text-ink">
+                  {tile.value}
+                </span>
+                <span className="font-sans text-[12px] text-secondary">
+                  {tile.detail}
+                </span>
+              </li>
             ))}
-          </HairlineList>
+          </ul>
         </section>
 
         <DesignSidebar
@@ -130,6 +132,8 @@ export function DesignPage() {
       <DesignAppliedModal
         open={showApplied}
         onKeepEditing={() => setShowApplied(false)}
+        systemKwp={activeBuild?.system_kwp}
+        totalInvestmentPhp={activeBuild?.total_investment_php}
       />
     </>
   );

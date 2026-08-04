@@ -42,7 +42,7 @@ describe("ComparePage", () => {
     expect(screen.getByText("BEST ALL-ROUND")).toBeInTheDocument();
     expect(screen.getAllByText("dc_ac_oversizing").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Technical specs" })[0]!);
+    fireEvent.click(screen.getByRole("tab", { name: "Technical specs" }));
     expect(screen.getAllByText("System size").length).toBeGreaterThan(0);
   });
 
@@ -59,7 +59,7 @@ describe("ComparePage", () => {
 
     render(<RouterProvider router={router} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Select" })[1]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Select this build" })[1]!);
 
     await waitFor(() =>
       expect(router.state.location.pathname).toBe("/quotation"),

@@ -7,9 +7,22 @@ export type CompareMetric = {
   value: string;
 };
 
+export type CompareSpecRow = {
+  label: string;
+  value: string;
+};
+
 export type CompareBuildView = {
   build: DesignBuild;
   isSuggested: boolean;
+  trait: string;
+  capacityLabel: string;
+  monthlySavingsLabel: string;
+  paybackLabel: string;
+  totalInvestmentLabel: string;
+  utilisationPct: number;
+  insight: string;
+  overviewSpecs: CompareSpecRow[];
   metrics: CompareMetric[];
   technicalRows: CompareMetric[];
 };
@@ -38,12 +51,73 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
     (build): build is DesignBuild => build !== undefined,
   );
 
-  return ordered.map((build) => ({
-    build,
-    isSuggested: build.id === suggested?.id,
-    metrics: overviewMetrics(build),
-    technicalRows: technicalMetrics(build),
-  }));
+  return ordered.map((build) => {
+    const isSuggested = build.id === suggested?.id;
+    return {
+      build,
+      isSuggested,
+      trait: primaryTrait(build, isSuggested),
+      capacityLabel: `${build.system_kwp.toFixed(1)} kWp`,
+      monthlySavingsLabel: peso(build.monthly_savings_php),
+      paybackLabel: build.payback_years
+        ? `${build.payback_years.toFixed(1)} years`
+        : "—",
+      totalInvestmentLabel: peso(build.total_investment_php),
+      utilisationPct: build.inverter_utilisation_pct,
+      insight: build.insight,
+      overviewSpecs: overviewSpecs(build),
+      metrics: overviewMetrics(build),
+      technicalRows: technicalMetrics(build),
+    };
+  });
+}
+
+function primaryTrait(build: DesignBuild, isSuggested: boolean): string {
+  const nonRibbon = build.tags.find(
+    (tag) => tag.toUpperCase() !== "BEST ALL-ROUND",
+  );
+  if (nonRibbon) {
+    return nonRibbon;
+  }
+  if (isSuggested) {
+    return "Highest performance";
+  }
+  return "Fastest payback";
+}
+
+function overviewSpecs(build: DesignBuild): CompareSpecRow[] {
+  const panel = build.components.find((component) => component.slot === "panel");
+  const inverter = build.components.find(
+    (component) => component.slot === "inverter",
+  );
+  const battery = build.components.find(
+    (component) => component.slot === "battery",
+  );
+  const panelWatts =
+    typeof panel?.specs.wattage_w === "number" ? panel.specs.wattage_w : null;
+
+  return [
+    {
+      label: "Panels",
+      value: panel
+        ? `${build.panel_count} × ${panelWatts ? `${panelWatts} W` : panel.model}`
+        : `${build.panel_count} panels`,
+    },
+    {
+      label: "Power inverter",
+      value: inverter
+        ? `${build.inverter_kw} kW · ${inverter.brand}`
+        : `${build.inverter_kw} kW`,
+    },
+    {
+      label: "Battery storage",
+      value: battery
+        ? `${build.battery_kwh ?? "—"} kWh ${battery.brand}`
+        : build.battery_kwh
+          ? `${build.battery_kwh} kWh`
+          : "None included",
+    },
+  ];
 }
 
 function overviewMetrics(build: DesignBuild): CompareMetric[] {
@@ -94,9 +168,10 @@ function technicalMetrics(build: DesignBuild): CompareMetric[] {
     },
     {
       label: "DC:AC ratio",
-      value: build.system_kwp > 0 && build.inverter_kw > 0
-        ? (build.system_kwp / build.inverter_kw).toFixed(2)
-        : "—",
+      value:
+        build.system_kwp > 0 && build.inverter_kw > 0
+          ? (build.system_kwp / build.inverter_kw).toFixed(2)
+          : "—",
     },
     {
       label: "Annual savings",
@@ -106,5 +181,7 @@ function technicalMetrics(build: DesignBuild): CompareMetric[] {
       label: "CO₂ avoided",
       value: `${build.co2_tonnes_avoided_yearly.toFixed(1)} t/yr`,
     },
+    { label: "Cost per watt", value: formatCostPerWatt(build) },
+    { label: "Fit score", value: build.fit_score.toFixed(1) },
   ];
 }

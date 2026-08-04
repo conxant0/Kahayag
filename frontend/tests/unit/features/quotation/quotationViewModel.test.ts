@@ -23,7 +23,7 @@ describe("quotationViewModel", () => {
   it("keeps a stable quote number for the session build", () => {
     const build = mockDesignSession.builds[0]!;
     expect(quoteNumberForBuild(build.id)).toBe(
-      `KH-${build.id.slice(0, 8).toUpperCase()}`,
+      `KE-2026-${build.id.slice(0, 4).toUpperCase()}`,
     );
   });
 });

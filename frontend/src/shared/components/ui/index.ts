@@ -12,6 +12,9 @@ export type { ChipProps } from "./Chip";
 export { Eyebrow } from "./Eyebrow";
 export type { EyebrowSize, EyebrowTone } from "./Eyebrow";
 
+export { SegmentedToggle } from "./SegmentedToggle";
+export type { SegmentedToggleOption } from "./SegmentedToggle";
+
 export { HairlineList, HairlineRow, Rule } from "./HairlineList";
 export type { HairlineRowSize } from "./HairlineList";
 
