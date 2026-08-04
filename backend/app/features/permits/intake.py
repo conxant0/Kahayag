@@ -17,7 +17,6 @@ from app.domain.permits.rules import (
     required_permits,
     resolve_track,
 )
-from app.features.design.quote_audit import extract_document_text
 from app.features.permits.schemas import (
     NetMeteringEligibilitySchema,
     PermitAssessmentResponseSchema,
@@ -26,6 +25,7 @@ from app.features.permits.schemas import (
     PermitRequirementSchema,
 )
 from app.integrations.ai.document_intake import DocumentIntakeClient
+from app.integrations.pdf.document_text import extract_document_text
 
 # Expected-keyword check per document slot (CLOSED-doc-slots.md): a cheap
 # guard against a file dropped in the wrong checklist row. Documents with no
