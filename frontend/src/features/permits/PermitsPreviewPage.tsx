@@ -158,10 +158,6 @@ export function PermitsPreviewPage() {
             <PermitChatSidebar
               applicant={applicant}
               onApplicantChange={setApplicant}
-              // This preview stays fixture-driven: the chat's `assessment` is
-              // real backend output against a different document catalog
-              // than this page's fixture, so it isn't applied here — only
-              // the wired D6 step (PermitsPage.tsx) renders it.
               onAssessmentChange={() => {}}
               propertyAddress={MOCK_PROPERTY_ADDRESS}
               systemKwp={baseAssessment.net_metering_eligibility.system_kwp}

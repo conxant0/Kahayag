@@ -192,6 +192,96 @@ def _cite(entry: dict[str, object], *, message: str) -> str:
     return reply
 
 
+def _consent_authorization_entry(
+    grounding: dict[str, object],
+) -> dict[str, object] | None:
+    for entry in grounding.get("documents", []):
+        if not isinstance(entry, dict):
+            continue
+        entry_id = str(entry.get("id", ""))
+        title = str(entry.get("title", "")).lower()
+        if entry_id == "obo_18_consent_and_authority" or (
+            "consent" in title and "authority" in title
+        ):
+            return entry
+    return None
+
+
+def _missing_document_titles(grounding: dict[str, object]) -> list[str]:
+    titles: list[str] = []
+    for entry in grounding.get("documents", []):
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("status") == "missing":
+            title = entry.get("title")
+            if title:
+                titles.append(str(title))
+    return titles
+
+
+def _answer_notarized_authorization(grounding: dict[str, object]) -> str:
+    entry = _consent_authorization_entry(grounding)
+    if entry is not None:
+        return _cite(
+            entry,
+            message=(
+                f"Yes — {entry.get('title')} is on your checklist because of "
+                "how you answered the registered-owner question."
+            ),
+        )
+    applicant = grounding.get("applicant")
+    if isinstance(applicant, dict) and applicant.get("delegates_filing_to_representative"):
+        return (
+            "You told us someone else is filing on your behalf. A notarized "
+            "authorization from the registered owner is usually required in "
+            "that situation — confirm the exact form with the OBO."
+        )
+    return (
+        "Not for your current answers — you are the registered owner and have "
+        "not indicated that someone else is filing for you, so a notarized "
+        "authorization is not on your checklist."
+    )
+
+
+def _answer_owner_mismatch_changes(grounding: dict[str, object]) -> str:
+    parts = [
+        "Three things change when you are not the registered owner:",
+        "the form records the registered owner's name,",
+    ]
+    entry = _consent_authorization_entry(grounding)
+    if entry is not None:
+        parts.append(
+            f"a {entry.get('title')} row is added to your document checklist,"
+        )
+    else:
+        parts.append(
+            "a notarized Consent and Authority from the owner is usually added,"
+        )
+    parts.append(
+        "and any uploaded documents are checked against the owner's name "
+        "instead of yours."
+    )
+    reply = " ".join(parts)
+    if entry is not None:
+        return _cite(entry, message=reply)
+    return reply
+
+
+def _answer_packet_progress(grounding: dict[str, object]) -> str:
+    summary = grounding.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        return summary
+    packet_status = grounding.get("packet_status")
+    if packet_status == "ready":
+        return "Your side of the paperwork is complete — every required document is uploaded."
+    missing = _missing_document_titles(grounding)
+    if missing:
+        joined = ", ".join(missing[:5])
+        suffix = "" if len(missing) <= 5 else f", and {len(missing) - 5} more"
+        return f"Still missing: {joined}{suffix}."
+    return f"Packet status is {packet_status}."
+
+
 class DisabledPermitChatClient:
     def plan_tool_calls(
         self,
@@ -291,6 +381,56 @@ class DisabledPermitChatClient:
         if "packet" in lowered and "status" in lowered:
             return f"Packet status is {grounding.get('packet_status')}."
 
+        if (
+            "notarized" in lowered
+            or "authorization" in lowered
+            or "consent and authority" in lowered
+        ):
+            return _answer_notarized_authorization(grounding)
+
+        if "registered owner" in lowered and any(
+            phrase in lowered
+            for phrase in (
+                "what change",
+                "what changes",
+                "what happen",
+                "what differ",
+                "what's different",
+            )
+        ):
+            return _answer_owner_mismatch_changes(grounding)
+
+        if any(
+            phrase in lowered
+            for phrase in (
+                "packet complete",
+                "is my packet",
+                "still missing",
+                "what documents",
+                "what do i still",
+                "what's left",
+                "whats left",
+            )
+        ):
+            return _answer_packet_progress(grounding)
+
+        if "delegate" in lowered or (
+            "installer" in lowered and any(word in lowered for word in ("file", "submit", "filing"))
+        ):
+            applicant = grounding.get("applicant")
+            if isinstance(applicant, dict) and applicant.get("is_registered_owner"):
+                return (
+                    "If your installer files on your behalf, you may need a "
+                    "notarized authorization from you as registered owner. Tell "
+                    "me that your installer is filing for you and I can record "
+                    "that answer."
+                )
+            return (
+                "Only the registered owner can delegate filing. If that is not "
+                "you, a notarized authorization from the owner is required "
+                "instead."
+            )
+
         finding, doc = _match_finding(lowered, grounding)
         if finding is not None and doc is not None:
             return _cite(doc, message=str(finding["message"]))
@@ -299,7 +439,13 @@ class DisabledPermitChatClient:
         if entry is not None:
             label = entry.get("title") or entry.get("name")
             basis = entry.get("legal_basis", "")
-            message = f"{label} is required under {basis}."
+            status = entry.get("status")
+            status_note = ""
+            if status == "missing":
+                status_note = " It is still missing from your packet."
+            elif status == "uploaded":
+                status_note = " You have already uploaded it."
+            message = f"{label} is required under {basis}.{status_note}"
             return _cite(entry, message=message)
 
         return (

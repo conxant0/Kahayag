@@ -115,7 +115,7 @@ describe("PermitChatSidebar", () => {
 
   it("does not push an applicant change when the reply left the answers alone", async () => {
     const user = userEvent.setup();
-    const { onApplicantChange } = renderSidebar();
+    const { onApplicantChange, onAssessmentChange } = renderSidebar();
 
     replyWith("A barangay clearance is required under OBO item 12.");
     await ask(user, "Why is the barangay clearance required?");
@@ -126,11 +126,12 @@ describe("PermitChatSidebar", () => {
       ).toBeInTheDocument(),
     );
     expect(onApplicantChange).not.toHaveBeenCalled();
+    expect(onAssessmentChange).toHaveBeenCalledTimes(1);
   });
 
   it("pushes an applicant change when the reply actually changed an answer", async () => {
     const user = userEvent.setup();
-    const { onApplicantChange } = renderSidebar();
+    const { onApplicantChange, onAssessmentChange } = renderSidebar();
 
     replyWith("Noted — you are not the registered owner.", {
       ...UNCHANGED_APPLICANT,
@@ -140,6 +141,7 @@ describe("PermitChatSidebar", () => {
     await ask(user, "I am not the registered owner, the owner is Maria Santos");
 
     await waitFor(() => expect(onApplicantChange).toHaveBeenCalledTimes(1));
+    expect(onAssessmentChange).toHaveBeenCalledTimes(1);
     expect(onApplicantChange).toHaveBeenCalledWith({
       solarInOriginalPermit: "not_sure",
       fullName: "Juan Dela Cruz",
@@ -155,7 +157,7 @@ describe("PermitChatSidebar", () => {
       ["obo_14_tct", new File(["x"], "title.pdf", { type: "application/pdf" })],
       ["obo_16_tax_clearance_lot", new File(["y"], "tax_clearance.pdf", { type: "application/pdf" })],
     ]);
-    renderSidebar({ uploads, buildId: "build-1" });
+    const { onAssessmentChange } = renderSidebar({ uploads, buildId: "build-1" });
 
     replyWith("Everything on your side is uploaded.");
     await ask(user, "Is my packet complete?");
@@ -165,5 +167,25 @@ describe("PermitChatSidebar", () => {
     expect(formData.getAll("slot_ids")).toEqual(["obo_14_tct", "obo_16_tax_clearance_lot"]);
     expect(formData.getAll("files")).toHaveLength(2);
     expect(JSON.parse(String(formData.get("request"))).build_id).toBe("build-1");
+    expect(onAssessmentChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("works before the applicant form has a name on file", async () => {
+    const user = userEvent.setup();
+    renderSidebar({
+      applicant: {
+        ...APPLICANT,
+        fullName: "",
+      },
+    });
+
+    replyWith("You are on the retrofit track.");
+    await user.click(screen.getByRole("button", { name: "What track am I on?" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("You are on the retrofit track.")).toBeInTheDocument(),
+    );
+    const formData = apiUploadForm.mock.calls[0]![1] as FormData;
+    expect(JSON.parse(String(formData.get("request"))).applicant.full_name).toBe("");
   });
 });

@@ -15,8 +15,8 @@ from app.domain.permits.rules import required_documents, required_permits
 from app.features.permits.intake import UploadedDocument, assess_permit_documents
 from app.features.permits.schemas import (
     ApplicantAnswersSchema,
+    PermitAssessmentResponseSchema,
     PermitChatResponseSchema,
-    PermitFindingSchema,
 )
 from app.integrations.ai.document_intake import DocumentIntakeClient
 from app.integrations.ai.permit_chat_agent import (
@@ -99,20 +99,30 @@ def _execute_tool(
 def _grounding_snapshot(
     *,
     applicant: ApplicantAnswers,
-    findings: tuple[PermitFindingSchema, ...],
-    track: str,
-    packet_status: str,
+    assessment: PermitAssessmentResponseSchema,
 ) -> dict[str, object]:
     catalog = load_catalog()
     docs = required_documents(applicant, catalog)
     permits = required_permits(applicant, catalog)
+    status_by_id = {doc.document_id: doc.status for doc in assessment.documents}
     return {
-        "track": track,
-        "packet_status": packet_status,
+        "track": assessment.track,
+        "packet_status": assessment.packet_status,
+        "summary": assessment.summary,
+        "applicant": {
+            "solar_in_original_permit": applicant.solar_in_original_permit,
+            "full_name": applicant.full_name,
+            "is_registered_owner": applicant.is_registered_owner,
+            "registered_owner_name": applicant.registered_owner_name,
+            "delegates_filing_to_representative": (
+                applicant.delegates_filing_to_representative
+            ),
+        },
         "documents": [
             {
                 "id": doc.id,
                 "title": doc.title,
+                "status": status_by_id.get(doc.id, "missing"),
                 "legal_basis": doc.legal_basis,
                 "source_url": doc.source_url,
                 "unverified": doc.unverified,
@@ -131,7 +141,7 @@ def _grounding_snapshot(
             }
             for permit in permits
         ],
-        "findings": [finding.model_dump() for finding in findings],
+        "findings": [finding.model_dump() for finding in assessment.findings],
     }
 
 
@@ -217,9 +227,7 @@ def run_permit_chat_turn(
     else:
         grounding = _grounding_snapshot(
             applicant=updated_applicant,
-            findings=assessment.findings,
-            track=assessment.track,
-            packet_status=assessment.packet_status,
+            assessment=assessment,
         )
         reply = chat_client.answer_question(user_text=user_text, grounding=grounding)
 

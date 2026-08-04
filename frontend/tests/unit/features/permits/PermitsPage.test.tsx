@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -90,7 +90,6 @@ describe("PermitsPage", () => {
 
     renderPermits();
 
-    await user.click(screen.getByRole("button", { name: "Edit details" }));
     await user.type(screen.getByLabelText("Your full name"), "Maria");
 
     expect(mockMutate).not.toHaveBeenCalled();
@@ -100,7 +99,7 @@ describe("PermitsPage", () => {
     await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
   });
 
-  it("stubs Submit to eGov and reveals start-over after acknowledgement", async () => {
+  it("stubs Submit and reveals start-over after acknowledgement", async () => {
     const user = userEvent.setup();
     mockMutate.mockImplementation((_vars, options) => {
       options?.onSuccess?.(mockPermitAssessmentComplete);
@@ -109,14 +108,15 @@ describe("PermitsPage", () => {
 
     const { router } = renderPermits();
 
-    await user.click(screen.getByRole("button", { name: "Edit details" }));
+    const applicantSection = screen.getByRole("region", { name: "Applicant details" });
     await user.type(screen.getByLabelText("Your full name"), "Maria Santos");
-    await user.click(screen.getByRole("button", { name: "Submit" }));
+    await user.click(within(applicantSection).getByRole("button", { name: "Submit" }));
 
-    const submitButton = await screen.findByRole("button", {
-      name: "Submit to eGov",
+    const handOffSection = await screen.findByRole("region", { name: "Packet status" });
+    const submitButton = within(handOffSection).getByRole("button", {
+      name: "Submit",
     });
-    expect(submitButton).toBeInTheDocument();
+    expect(submitButton).toBeEnabled();
 
     await user.click(submitButton);
 

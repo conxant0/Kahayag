@@ -206,6 +206,46 @@ def test_qa_on_uncovered_question_says_catalog_does_not_cover_it() -> None:
     assert "doesn't cover that question" in response.reply
 
 
+def test_disabled_fallback_answers_notarized_authorization_when_not_required() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Do I need a notarized authorization?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "not for your current answers" in response.reply.lower()
+
+
+def test_disabled_fallback_answers_owner_mismatch_question() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="I'm not the registered owner — what changes?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "registered owner" in response.reply.lower()
+    assert response.applicant.is_registered_owner is True
+
+
+def test_disabled_fallback_answers_missing_documents_question() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="What documents am I still missing?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "uploaded yet" in response.reply.lower()
+
+
 def test_disabled_fallback_answers_track_question() -> None:
     applicant = _retrofit_applicant()
     response = run_permit_chat_turn(

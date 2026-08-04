@@ -539,7 +539,7 @@ export function verdictBannerCopy(assessment: PermitAssessment): {
   const blockingCount = assessment.findings.filter(
     (finding) => finding.severity === "blocking",
   ).length;
-  const ready = assessment.packet_status === "ready" && blockingCount === 0;
+  const ready = canSubmitPacket(assessment);
 
   if (ready) {
     return {
@@ -557,6 +557,19 @@ export function verdictBannerCopy(assessment: PermitAssessment): {
         ? `${blockingCount} document${blockingCount === 1 ? "" : "s"} still ${blockingCount === 1 ? "needs" : "need"} your attention below. Once resolved, this only covers your side — your installer's architect and engineers still owe their own sealed plans and filings.`
         : "Some documents are still missing or need review below. Once resolved, this only covers your side — your installer's architect and engineers still owe their own sealed plans and filings.",
   };
+}
+
+/**
+ * Whether the homeowner's packet is complete enough to submit. Every required
+ * document must be uploaded with no blocking findings — the same gate the
+ * hand-off Submit button uses (CLOSED-egov-output.md: submission is still a
+ * stub, but the control only enables when the checklist is settled).
+ */
+export function canSubmitPacket(assessment: PermitAssessment): boolean {
+  const hasBlockingFinding = assessment.findings.some(
+    (finding) => finding.severity === "blocking",
+  );
+  return assessment.packet_status === "ready" && !hasBlockingFinding;
 }
 
 /**

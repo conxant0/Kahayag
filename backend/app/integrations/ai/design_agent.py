@@ -569,6 +569,308 @@ def _explain_components_overview(build: dict[str, object]) -> str:
     )
 
 
+def _routing_question(question: str) -> str:
+    """Use only the homeowner's words for keyword routing.
+
+    Quote-audit questions arrive with a grounded context prefix from the
+    frontend. Matching keywords in that prefix (e.g. "inverter" in audit
+    findings) must not override the actual question.
+    """
+    for line in reversed(question.strip().splitlines()):
+        stripped = line.strip()
+        if stripped.lower().startswith("question:"):
+            return stripped.split(":", 1)[1].strip()
+    return question.strip()
+
+
+def _is_quote_audit_context(question: str) -> bool:
+    lowered = question.strip().lower()
+    return "uploaded installer quote" in lowered or "quoted total:" in lowered
+
+
+def _parse_quote_context_amounts(question: str) -> tuple[float | None, float | None]:
+    quoted: float | None = None
+    benchmark: float | None = None
+    for line in question.splitlines():
+        stripped = line.strip()
+        lower = stripped.lower()
+        if lower.startswith("quoted total:"):
+            raw = stripped.split(":", 1)[1].strip().replace("PHP", "").replace(",", "").strip()
+            try:
+                quoted = float(raw)
+            except ValueError:
+                pass
+        if lower.startswith("our benchmark total:"):
+            raw = stripped.split(":", 1)[1].strip().replace("PHP", "").replace(",", "").strip()
+            try:
+                benchmark = float(raw)
+            except ValueError:
+                pass
+    return quoted, benchmark
+
+
+def _explain_fit_score(build: dict[str, object]) -> str:
+    fit = build.get("fit_score")
+    kwp = build.get("system_kwp")
+    utilisation = build.get("inverter_utilisation_pct")
+    if fit is None:
+        return (
+            "Fit score isn't available for this build yet. It blends roof utilisation, "
+            "equipment compatibility, and financial outcomes once the solver finishes."
+        )
+    util_clause = (
+        f" Inverter utilisation is about {utilisation}% on this {kwp} kWp layout."
+        if utilisation is not None and kwp is not None
+        else ""
+    )
+    return (
+        f"Fit score {float(fit):.1f} is the solver's all-round grade for this build — "
+        f"higher means better balance of generation, cost, and equipment match.{util_clause}"
+    )
+
+
+def _explain_rate_rise_for_question(build: dict[str, object], routing: str) -> str:
+    monthly = build.get("monthly_savings_php")
+    annual = build.get("annual_savings_php")
+    payback = build.get("payback_years")
+    rise_match = re.search(r"(\d+(?:\.\d+)?)\s*%", routing)
+    pct = float(rise_match.group(1)) if rise_match else 5.0
+    faster = f" Roughly a {pct:.0f}% rate rise would shorten payback proportionally."
+    return (
+        f"Higher VECO rates make solar savings worth more over time. This build saves about "
+        f"₱{float(monthly):,.0f}/month (₱{float(annual):,.0f}/year) at today's tariff, with "
+        f"about {payback} years payback.{faster} Figures use the tariff baked into the solver — "
+        f"not a forecast."
+    )
+
+
+def _explain_panel_count_question(build: dict[str, object], routing: str) -> str | None:
+    lowered = routing.lower()
+    if "panel" not in lowered:
+        return None
+    if _is_panel_choice_question(routing):
+        return None
+
+    count_intent = (
+        re.search(r"\b(?:need|require|how many|do i need|should i use)\b.*\bpanel", lowered)
+        is not None
+        or (
+            re.search(r"\b\d+\s*panels?\b", lowered) is not None
+            and "why" not in lowered
+            and "why not" not in lowered
+        )
+    )
+    if not count_intent:
+        return None
+
+    panel_count = build.get("panel_count")
+    kwp = build.get("system_kwp")
+    asked_match = re.search(r"\b(\d+)\s*panels?\b", lowered)
+    if asked_match and panel_count is not None:
+        asked = int(asked_match.group(1))
+        if asked != int(panel_count):
+            return (
+                f"The solver sized this roof at {panel_count} panels ({kwp} kWp), not {asked}. "
+                f"Panel count follows usable roof area and your usage profile — open Design to "
+                f"try a different count and re-run the solver."
+            )
+    return (
+        f"This design uses {panel_count} panels ({kwp} kWp), matched to your traced roof and "
+        f"monthly usage. That count balances output, inverter loading, and installed cost."
+    )
+
+
+def _explain_quote_negotiation(
+    question: str,
+    routing: str,
+    build: dict[str, object],
+) -> str:
+    quoted, benchmark = _parse_quote_context_amounts(question)
+    kwp = build.get("system_kwp")
+    if quoted is not None and benchmark is not None:
+        delta = quoted - benchmark
+        if delta > 0:
+            return (
+                f"The installer quoted ₱{quoted:,.0f} against our ₱{benchmark:,.0f} benchmark "
+                f"(₱{delta:,.0f} higher). Use that gap in negotiation — ask which labour, "
+                f"permits, warranties, and brands are included, and whether each line matches "
+                f"what we'd specify for your {kwp} kWp roof."
+            )
+        if delta < 0:
+            return (
+                f"The installer quoted ₱{quoted:,.0f}, which is ₱{abs(delta):,.0f} below our "
+                f"₱{benchmark:,.0f} benchmark. Confirm what's included — cheaper quotes sometimes "
+                f"omit labour, protection gear, or net-metering support."
+            )
+        return (
+            f"The quoted ₱{quoted:,.0f} lines up with our benchmark. Still confirm line items, "
+            f"warranties, and timeline before signing."
+        )
+
+    if any(token in routing.lower() for token in ("negotiate", "benchmark", "price gap", "price difference")):
+        return (
+            "Use the quoted total and our benchmark on this page as anchors. Ask the installer "
+            "to itemize panels, inverter, labour, permits, and warranties — then compare each "
+            "line to what's in your AI design."
+        )
+    return (
+        "Compare the installer quote line-by-line with our estimate on this page. Focus on "
+        "equipment brands, labour, permits, and what's missing before you negotiate."
+    )
+
+
+def _is_off_topic_question(routing: str) -> bool:
+    lowered = routing.strip().lower()
+    if not lowered:
+        return False
+    solar_tokens = (
+        "panel",
+        "inverter",
+        "battery",
+        "solar",
+        "kwp",
+        "payback",
+        "savings",
+        "grid",
+        "veco",
+        "fit score",
+        "quote",
+        "benchmark",
+        "install",
+        "roof",
+        "storage",
+        "night",
+        "blackout",
+        "net meter",
+        "negotiate",
+        "tariff",
+        "bill",
+        "watt",
+        "backup",
+        "reject",
+        "component",
+        "equipment",
+        "design",
+        "upload",
+    )
+    if any(token in lowered for token in solar_tokens):
+        return False
+    if "?" not in routing and len(lowered.split()) > 6:
+        return False
+    return len(lowered.split()) <= 6
+
+
+def _explain_off_topic(routing: str) -> str:
+    cleaned = routing.strip().rstrip("?")
+    return (
+        f"I can only explain this solar design and quotation — not \"{cleaned}\". "
+        f"Try asking about panel count, savings, payback, equipment choices, or how "
+        f"this quote compares to our benchmark."
+    )
+
+
+def _route_explain_question(
+    question: str,
+    snapshot: dict[str, object],
+    build: dict[str, object],
+) -> str:
+    routing = _routing_question(question)
+    lowered = routing.lower()
+    payback = build.get("payback_years")
+    investment = build.get("total_investment_php")
+
+    if _is_off_topic_question(routing):
+        return _explain_off_topic(routing)
+
+    if any(token in lowered for token in ("reject", "rejected", "invalid")):
+        rejections = snapshot.get("rejections")
+        if isinstance(rejections, list) and rejections:
+            reasons = []
+            for row in rejections[:3]:
+                if isinstance(row, dict) and row.get("message"):
+                    reasons.append(str(row["message"]))
+            if reasons:
+                return (
+                    "Some combinations didn't make the cut — for example "
+                    + "; ".join(reasons)
+                    + ". The active build passed those checks."
+                )
+        return "I don't have rejection details for the latest solve yet."
+
+    if _is_nighttime_question(lowered):
+        return _explain_nighttime_operation(build)
+
+    if _is_outage_question(lowered):
+        battery = build.get("battery_kwh")
+        if battery:
+            return (
+                f"Your {battery} kWh battery can keep essentials running during "
+                f"a short outage, depending on what you run. For longer blackouts "
+                f"you may still need to limit high-draw appliances."
+            )
+        return _explain_outage_without_battery(build)
+
+    if "payback" in lowered:
+        return _explain_payback(build)
+
+    if "fit score" in lowered or "fit_score" in lowered:
+        return _explain_fit_score(build)
+
+    if any(
+        token in lowered
+        for token in ("veco", "rate rise", "rates rise", "tariff", "electricity rate")
+    ):
+        return _explain_rate_rise_for_question(build, routing)
+
+    if _is_quote_audit_context(question) or any(
+        token in lowered
+        for token in ("negotiate", "benchmark", "price gap", "price difference", "installer quote")
+    ):
+        return _explain_quote_negotiation(question, routing, build)
+
+    panel_count_reply = _explain_panel_count_question(build, routing)
+    if panel_count_reply is not None:
+        return panel_count_reply
+
+    if "inverter" in lowered:
+        return _explain_inverter_choice(build)
+
+    if _is_panel_choice_question(routing) or _is_components_overview_question(routing):
+        if (
+            _is_components_overview_question(routing)
+            and "panel" not in lowered
+            and not _mentioned_panel_tokens(routing)
+        ):
+            return _explain_components_overview(build)
+        return _explain_panel_choice(build, snapshot, routing)
+
+    if _is_general_battery_question(lowered):
+        return _explain_grid_tied_without_battery(build)
+
+    if any(
+        token in lowered
+        for token in ("energy store", "battery", "storage", "not included")
+    ):
+        battery = build.get("battery_kwh")
+        if battery is None:
+            return _explain_missing_battery_in_build(build, snapshot)
+        return (
+            f"This design includes {battery} kWh of battery storage for backup "
+            f"and evening use. Payback is about {payback} years on "
+            f"₱{float(investment):,.0f}."
+        )
+
+    if any(token in lowered for token in ("savings", "monthly bill", "my bill")):
+        monthly = build.get("monthly_savings_php")
+        return (
+            f"Estimated savings are about ₱{float(monthly):,.0f}/month based on "
+            f"your usage and this system's size. Payback on the "
+            f"₱{float(investment):,.0f} investment is roughly {payback} years."
+        )
+
+    return _explain_conversational_fallback(build, routing)
+
+
 def _explain_conversational_fallback(build: dict[str, object], question: str = "") -> str:
     lowered = question.strip().lower()
     kwp = build.get("system_kwp")
@@ -706,78 +1008,7 @@ class DisabledDesignAgentClient:
                 "design before asking for an explanation."
             )
 
-        lowered = question.strip().lower()
-        payback = build.get("payback_years")
-        investment = build.get("total_investment_php")
-
-        if any(token in lowered for token in ("reject", "rejected", "invalid")):
-            rejections = snapshot.get("rejections")
-            if isinstance(rejections, list) and rejections:
-                reasons = []
-                for row in rejections[:3]:
-                    if isinstance(row, dict) and row.get("message"):
-                        reasons.append(str(row["message"]))
-                if reasons:
-                    return (
-                        "Some combinations didn't make the cut — for example "
-                        + "; ".join(reasons)
-                        + ". The active build passed those checks."
-                    )
-            return "I don't have rejection details for the latest solve yet."
-
-        if _is_nighttime_question(lowered):
-            return _explain_nighttime_operation(build)
-
-        if _is_outage_question(lowered):
-            battery = build.get("battery_kwh")
-            if battery:
-                return (
-                    f"Your {battery} kWh battery can keep essentials running during "
-                    f"a short outage, depending on what you run. For longer blackouts "
-                    f"you may still need to limit high-draw appliances."
-                )
-            return _explain_outage_without_battery(build)
-
-        if "payback" in lowered:
-            return _explain_payback(build)
-
-        if "inverter" in lowered:
-            return _explain_inverter_choice(build)
-
-        if _is_panel_choice_question(question) or _is_components_overview_question(question):
-            if (
-                _is_components_overview_question(question)
-                and "panel" not in lowered
-                and not _mentioned_panel_tokens(question)
-            ):
-                return _explain_components_overview(build)
-            return _explain_panel_choice(build, snapshot, question)
-
-        if _is_general_battery_question(lowered):
-            return _explain_grid_tied_without_battery(build)
-
-        if any(
-            token in lowered
-            for token in ("energy store", "battery", "storage", "not included")
-        ):
-            battery = build.get("battery_kwh")
-            if battery is None:
-                return _explain_missing_battery_in_build(build, snapshot)
-            return (
-                f"This design includes {battery} kWh of battery storage for backup "
-                f"and evening use. Payback is about {payback} years on "
-                f"₱{float(investment):,.0f}."
-            )
-
-        if any(token in lowered for token in ("savings", "monthly bill", "my bill")):
-            monthly = build.get("monthly_savings_php")
-            return (
-                f"Estimated savings are about ₱{float(monthly):,.0f}/month based on "
-                f"your usage and this system's size. Payback on the "
-                f"₱{float(investment):,.0f} investment is roughly {payback} years."
-            )
-
-        return _explain_conversational_fallback(build, question)
+        return _route_explain_question(question, snapshot, build)
 
     def generate_turn_reply(
         self,

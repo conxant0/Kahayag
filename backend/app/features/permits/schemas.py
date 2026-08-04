@@ -23,7 +23,8 @@ PacketStatus = Literal["ready", "incomplete"]
 
 class ApplicantAnswersSchema(ContractModel):
     solar_in_original_permit: SolarInOriginalPermitAnswer
-    full_name: str = Field(min_length=1)
+    # Empty until the homeowner submits the form or the chat records a name.
+    full_name: str = ""
     is_registered_owner: StrictBool
     registered_owner_name: str | None = None
     # Optional, defaults False for backward compatibility with callers

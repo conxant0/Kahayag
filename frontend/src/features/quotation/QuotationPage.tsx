@@ -338,7 +338,11 @@ export function QuotationPage() {
           </article>
 
           <aside className="flex flex-col gap-4">
-            <AskEngineSidebar />
+            <AskEngineSidebar
+              mode={mode}
+              activeBuild={activeBuild}
+              activeQuote={activeQuote}
+            />
             <WhatHappensNext />
           </aside>
         </div>
