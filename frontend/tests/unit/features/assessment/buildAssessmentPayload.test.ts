@@ -51,7 +51,7 @@ describe("buildAssessmentPayload", () => {
     const payload = buildAssessmentPayload({
       selectedProperty: PROPERTY,
       roofPolygon: ROOF,
-      energyInputs: energy(),
+      energyInputs: energy({ electricityRatePhpPerKwh: 11.5 }),
     });
 
     expect(payload).toEqual({
@@ -64,21 +64,36 @@ describe("buildAssessmentPayload", () => {
       roof: { area_m2: "48.00", usable_area_m2: "48.00" },
       inputs: {
         monthly_bill_php: 4800,
-        monthly_consumption_kwh: "400.00",
-        electricity_rate_php_per_kwh: "12.00",
+        electricity_rate_php_per_kwh: "11.50",
         panel_category_id: "standard-450",
       },
     });
   });
 
-  it("uses the default rate when the session carries no override", () => {
+  it("leaves the tariff to the backend when nobody overrode it", () => {
     const payload = buildAssessmentPayload({
       selectedProperty: PROPERTY,
       roofPolygon: ROOF,
       energyInputs: energy(),
     });
 
-    expect(payload.inputs.electricity_rate_php_per_kwh).toBe("12.00");
+    // Sending 12.00 here would be the frontend asserting a rate the homeowner
+    // never confirmed, and the backend would report `uses_default_tariff: false`
+    // for it — the one disclosure the calculations guide requires.
+    expect(payload.inputs).not.toHaveProperty("electricity_rate_php_per_kwh");
+  });
+
+  it("never claims consumption was measured when only a bill was given", () => {
+    const payload = buildAssessmentPayload({
+      selectedProperty: PROPERTY,
+      roofPolygon: ROOF,
+      energyInputs: energy({ electricityRatePhpPerKwh: 11.5 }),
+    });
+
+    // A kWh figure divided out here would come back as
+    // `consumption_source: "direct"`. This journey only ever asks for a bill.
+    expect(payload.inputs).not.toHaveProperty("monthly_consumption_kwh");
+    expect(payload.inputs.monthly_bill_php).toBe(4800);
   });
 
   it("rejects a missing property rather than standing in a demo one", () => {
@@ -111,7 +126,7 @@ describe("buildAssessmentPayload", () => {
     ).toThrow(/monthly electricity bill/i);
   });
 
-  it("rejects a non-positive electricity rate", () => {
+  it("rejects a non-positive electricity rate that was actually entered", () => {
     expect(() =>
       buildAssessmentPayload({
         selectedProperty: PROPERTY,

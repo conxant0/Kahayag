@@ -4,7 +4,6 @@ import type {
   RoofPolygon,
   SelectedProperty,
 } from "../../state/assessmentStore";
-import { DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH } from "../../state/assessmentStore";
 import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../roof/roofUtils";
 
 /**
@@ -13,6 +12,10 @@ import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../roof/roofUtils";
  * Decimals travel as strings: the backend parses them with `Decimal`, and a
  * JSON float would round on the way there. The money fields are integers,
  * matching the backend's `StrictInt` — pesos are not quoted anywhere.
+ *
+ * `monthly_consumption_kwh` is absent by design rather than missing: this
+ * journey asks for a bill, never for kilowatt-hours, and the field is how the
+ * backend is told that consumption was measured rather than derived.
  */
 export type AssessmentRequest = {
   property: {
@@ -27,8 +30,7 @@ export type AssessmentRequest = {
   };
   inputs: {
     monthly_bill_php: number;
-    monthly_consumption_kwh: string;
-    electricity_rate_php_per_kwh: string;
+    electricity_rate_php_per_kwh?: string;
     budget_php?: number;
     panel_category_id: string;
   };
@@ -78,14 +80,13 @@ export function buildAssessmentPayload({
 
   const monthlyBillPhp = energyInputs?.monthlyBillPhp ?? null;
   const electricityRatePhpPerKwh =
-    energyInputs?.electricityRatePhpPerKwh ??
-    DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH;
+    energyInputs?.electricityRatePhpPerKwh ?? null;
 
   if (monthlyBillPhp == null || monthlyBillPhp <= 0) {
     throw new Error("Enter a monthly electricity bill before continuing.");
   }
 
-  if (electricityRatePhpPerKwh <= 0) {
+  if (electricityRatePhpPerKwh != null && electricityRatePhpPerKwh <= 0) {
     throw new Error("Electricity rate must be greater than zero.");
   }
 
@@ -93,8 +94,6 @@ export function buildAssessmentPayload({
     roofPolygon.areaSquareMeters,
     MIN_VALID_ROOF_AREA_SQUARE_METERS,
   );
-
-  const monthlyConsumptionKwh = monthlyBillPhp / electricityRatePhpPerKwh;
 
   const payload: AssessmentRequest = {
     property: {
@@ -110,13 +109,25 @@ export function buildAssessmentPayload({
       area_m2: formatDecimal(roofAreaSquareMeters),
       usable_area_m2: formatDecimal(roofAreaSquareMeters),
     },
+    // The bill goes up alone. Dividing it by a rate here and sending the
+    // quotient would have the backend record the demand as directly supplied
+    // and the tariff as the homeowner's own — `consumption_source: "direct"`,
+    // `uses_default_tariff: false` — when both were derived from a rate nobody
+    // typed. The report has to disclose which of those it used, so the division
+    // stays where the disclosure is.
     inputs: {
       monthly_bill_php: Math.round(monthlyBillPhp),
-      monthly_consumption_kwh: formatDecimal(monthlyConsumptionKwh),
-      electricity_rate_php_per_kwh: formatDecimal(electricityRatePhpPerKwh),
       panel_category_id: "standard-450",
     },
   };
+
+  // Sent only when the homeowner actually overrode it. Absent, the backend
+  // applies its own default tariff and says so through `uses_default_tariff`.
+  if (electricityRatePhpPerKwh != null) {
+    payload.inputs.electricity_rate_php_per_kwh = formatDecimal(
+      electricityRatePhpPerKwh,
+    );
+  }
 
   // Omitted rather than sent as null: a budget nobody entered is not a ceiling
   // of zero, and the backend treats the absent field as "no ceiling".

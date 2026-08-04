@@ -10,7 +10,15 @@ import { readJson, removeJson, writeJson } from "../integrations/storage";
  */
 export const ASSESSMENT_SESSION_STORAGE_KEY = "kahayag-assessment-session";
 
-/** Meralco's residential rate, rounded. The energy step lets it be overridden. */
+/**
+ * Meralco's residential rate, rounded — for display and for the live preview
+ * only.
+ *
+ * It is not a session value. A rate nobody typed is left null all the way to
+ * the request, so the backend applies its own default and discloses that it
+ * did; writing 12 in here would make every assessment look like the homeowner
+ * had confirmed their tariff.
+ */
 export const DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH = 12;
 
 /** A polygon needs three corners before it encloses any area at all. */
@@ -74,7 +82,9 @@ export type RoofPolygon = {
 
 export type EnergyInputs = {
   monthlyBillPhp: number | null;
-  electricityRatePhpPerKwh: number;
+  /** Optional. Null means "nobody said", which the backend answers with its
+   *  own default tariff and reports as such — never a figure invented here. */
+  electricityRatePhpPerKwh: number | null;
   /** Optional. Absent means "no ceiling", never a silent default figure. */
   budgetPhp: number | null;
 };
@@ -91,7 +101,7 @@ export type CompletedAssessment = Readonly<Record<string, unknown>>;
 
 export const DEFAULT_ENERGY_INPUTS: EnergyInputs = Object.freeze({
   monthlyBillPhp: null,
-  electricityRatePhpPerKwh: DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH,
+  electricityRatePhpPerKwh: null,
   budgetPhp: null,
 });
 
@@ -196,19 +206,17 @@ function parseRoofPolygon(value: unknown): RoofPolygon | null {
 
 /**
  * Unlike the other two, this never returns null — the energy step always has a
- * shape to render, and a missing or nonsensical rate falls back to the default
- * rather than leaving the field undefined.
+ * shape to render. Every field inside it can still be null, which is how an
+ * answer nobody gave is told apart from one that was.
  */
 function parseEnergyInputs(value: unknown): EnergyInputs {
   if (!isRecord(value)) {
     return { ...DEFAULT_ENERGY_INPUTS };
   }
 
-  const rate = positiveOrNull(value.electricityRatePhpPerKwh);
-
   return {
     monthlyBillPhp: positiveOrNull(value.monthlyBillPhp),
-    electricityRatePhpPerKwh: rate ?? DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH,
+    electricityRatePhpPerKwh: positiveOrNull(value.electricityRatePhpPerKwh),
     budgetPhp: positiveOrNull(value.budgetPhp),
   };
 }

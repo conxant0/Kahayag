@@ -18,6 +18,11 @@ function parsePositive(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+/** An unset rate shows an empty field against the default as placeholder. */
+function rateDraftOf(rate: number | null): string {
+  return rate == null ? "" : String(rate);
+}
+
 /**
  * The two answers most homeowners do not have, kept out of the way.
  *
@@ -33,20 +38,23 @@ export function RefineInputs({
   onChange,
 }: {
   budgetPhp: number | null;
-  electricityRatePhpPerKwh: number;
+  electricityRatePhpPerKwh: number | null;
   onChange: (changes: {
     budgetPhp?: number | null;
-    electricityRatePhpPerKwh?: number;
+    electricityRatePhpPerKwh?: number | null;
   }) => void;
 }) {
   const budgetFieldId = useId();
   const rateFieldId = useId();
 
-  // The rate is held as a draft while it is being typed: "1" on the way to
-  // "12.5" is a positive number the store would happily accept and recompute
-  // every figure from. It commits when it parses and reconciles on blur.
+  // The rate is held as a draft while it is being typed and committed when the
+  // field is left. Every prefix of a rate is also a rate: "1" on the way to
+  // "12.5" is a positive number, and nothing in "1" says whether the homeowner
+  // is finished. Committing per keystroke would walk the store through ₱1 and
+  // ₱12 — recomputing every figure on the screen from each — so the store is
+  // told once, when the answer is done.
   const [rateDraft, setRateDraft] = useState(() =>
-    String(electricityRatePhpPerKwh),
+    rateDraftOf(electricityRatePhpPerKwh),
   );
   const [lastSeenRate, setLastSeenRate] = useState(electricityRatePhpPerKwh);
 
@@ -54,12 +62,12 @@ export function RefineInputs({
   // follow rather than keep showing what was typed into the old session.
   //
   // Adjusted during render rather than in an effect, and only when the draft
-  // does not already mean this value — otherwise typing "12.50" would commit
-  // 12.5, come back as the string "12.5", and eat the keystroke.
+  // does not already mean this value — otherwise committing "12.50" would come
+  // back as the string "12.5" and rewrite the field under the cursor.
   if (lastSeenRate !== electricityRatePhpPerKwh) {
     setLastSeenRate(electricityRatePhpPerKwh);
     if (parsePositive(rateDraft) !== electricityRatePhpPerKwh) {
-      setRateDraft(String(electricityRatePhpPerKwh));
+      setRateDraft(rateDraftOf(electricityRatePhpPerKwh));
     }
   }
 
@@ -74,17 +82,26 @@ export function RefineInputs({
     onChange({ budgetPhp: nextDigits ? Number(nextDigits) : null });
   };
 
-  const updateRate = (nextValue: string) => {
-    setRateDraft(nextValue);
-    const parsed = parsePositive(nextValue);
-    if (parsed !== null) {
-      onChange({ electricityRatePhpPerKwh: parsed });
-    }
-  };
+  const commitRate = () => {
+    const parsed = parsePositive(rateDraft);
 
-  const reconcileRate = () => {
-    if (parsePositive(rateDraft) === null) {
-      setRateDraft(String(electricityRatePhpPerKwh));
+    // An emptied field is "use the published rate", the same shape as an empty
+    // budget meaning no ceiling. A bare "." is the same nothing, reached from
+    // the other direction.
+    if (parsed == null) {
+      setRateDraft("");
+      if (electricityRatePhpPerKwh != null) {
+        onChange({ electricityRatePhpPerKwh: null });
+      }
+      return;
+    }
+
+    // Tidied to what was actually committed, so "9." does not sit in the field
+    // looking like an answer the store never received.
+    setRateDraft(String(parsed));
+
+    if (parsed !== electricityRatePhpPerKwh) {
+      onChange({ electricityRatePhpPerKwh: parsed });
     }
   };
 
@@ -137,13 +154,14 @@ export function RefineInputs({
             inputMode="decimal"
             autoComplete="off"
             value={rateDraft}
-            onChange={(event) => updateRate(rateDigitsOf(event.target.value))}
-            onBlur={reconcileRate}
+            onChange={(event) => setRateDraft(rateDigitsOf(event.target.value))}
+            onBlur={commitRate}
+            placeholder={String(DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH)}
             className={fieldClassName}
           />
           <p className="font-sans text-xs text-tertiary-ink">
-            Defaults to ₱{DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH}. Your bill shows
-            the rate you actually pay.
+            Leave empty for ₱{DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH}. Your bill
+            shows the rate you actually pay.
           </p>
         </div>
       </div>

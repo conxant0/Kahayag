@@ -1,12 +1,15 @@
-// Mirrors backend/app/domain/solar/* for the step-3 live preview.
+// Mirrors backend/app/domain/solar/{assumptions,resource,recommendations}.py
+// for the step-3 live preview.
 // Uses the nationwide planning fallback (same as the backend when Solar API data
 // is unavailable). Final results may refine once location-specific sunshine loads.
 //
-// The numbers below are a copy of the domain's assumptions, and that is the
-// point of the boundary: this screen must show something the instant a digit is
-// typed, and a round trip per keystroke is not that. The backend stays
-// authoritative — every figure the homeowner keeps comes from `POST
-// /assessments`, never from here.
+// This is the preview exception to Hard Rule 1 in AGENTS.md, and the only file
+// that holds it. The constants below are a deliberate copy of the domain's
+// published assumptions, not a second opinion on them: the screen must show
+// something the instant a digit is typed, and a round trip per keystroke is not
+// that. Nothing computed here is persisted, submitted, or shown as the result —
+// every figure the homeowner keeps comes from `POST /assessments`. If these
+// constants and the domain's ever disagree, the domain is right.
 import { DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH } from "../../state/assessmentStore";
 import type { RoofPolygon } from "../../state/assessmentStore";
 import { MIN_VALID_ROOF_AREA_SQUARE_METERS } from "../roof/roofUtils";
@@ -106,7 +109,7 @@ function calculatePaybackYears(
 
 export function computeLiveEstimate({
   monthlyBillPhp,
-  electricityRatePhpPerKwh = DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH,
+  electricityRatePhpPerKwh = null,
   roofAreaSquareMeters,
   budgetPhp = null,
   panelWattageW = STANDARD_PANEL_WATTAGE_W,
@@ -114,23 +117,28 @@ export function computeLiveEstimate({
   performanceRatio = PERFORMANCE_RATIO,
 }: {
   monthlyBillPhp: number | null;
-  electricityRatePhpPerKwh?: number;
+  electricityRatePhpPerKwh?: number | null;
   roofAreaSquareMeters: number;
   budgetPhp?: number | null;
   panelWattageW?: number;
   annualSunshineHoursPerKwp?: number;
   performanceRatio?: number;
 }): LiveEstimate | null {
+  // The published rate stands in until the homeowner gives their own — the same
+  // fallback the backend applies to a request that carries no tariff, so the
+  // preview and the result are reading off the same number.
+  const rate = electricityRatePhpPerKwh ?? DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH;
+
   if (monthlyBillPhp == null || monthlyBillPhp <= 0) {
     return null;
   }
 
-  if (electricityRatePhpPerKwh <= 0) {
+  if (rate <= 0) {
     return null;
   }
 
   const annualYieldPerKwpKwh = annualSunshineHoursPerKwp * performanceRatio;
-  const monthlyConsumptionKwh = monthlyBillPhp / electricityRatePhpPerKwh;
+  const monthlyConsumptionKwh = monthlyBillPhp / rate;
   const annualConsumptionKwh = monthlyConsumptionKwh * 12;
   const consumptionLimitedSystemSizeKwp =
     annualConsumptionKwh / annualYieldPerKwpKwh;
@@ -155,9 +163,7 @@ export function computeLiveEstimate({
     annualGenerationKwh,
     annualConsumptionKwh,
   );
-  const annualSavingsPhp = Math.floor(
-    billableGenerationKwh * electricityRatePhpPerKwh,
-  );
+  const annualSavingsPhp = Math.floor(billableGenerationKwh * rate);
   const baseCostPhp = Math.floor(systemCapacityKwp * COST_BASE_PHP_PER_KWP);
 
   return {

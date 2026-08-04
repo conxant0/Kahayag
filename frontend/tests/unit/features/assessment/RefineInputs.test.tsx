@@ -64,19 +64,31 @@ describe("RefineInputs", () => {
     expect(onChange).toHaveBeenLastCalledWith({ budgetPhp: null });
   });
 
-  it("holds a half-typed rate back instead of recomputing from it", async () => {
+  it("commits nothing while the rate is still being typed", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
     await open(user);
 
-    await user.clear(rateField());
-    await user.type(rateField(), "9.");
+    await user.type(rateField(), "12.5");
 
-    // "9" alone is a positive number the store would accept, so it commits;
-    // the trailing point is not a value at all and must not.
-    expect(rateField()).toHaveValue("9.");
-    expect(onChange).toHaveBeenLastCalledWith({ electricityRatePhpPerKwh: 9 });
+    // Every prefix here — "1", "12", "12." — is a number the store would take
+    // and recompute the whole screen from. ₱1/kWh was never an answer.
+    expect(rateField()).toHaveValue("12.5");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("commits the finished rate when the field is left", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    await open(user);
+
+    await user.type(rateField(), "12.5");
+    await user.tab();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith({ electricityRatePhpPerKwh: 12.5 });
   });
 
   it("does not eat a trailing zero on the way to a centavo rate", async () => {
@@ -84,21 +96,45 @@ describe("RefineInputs", () => {
     render(<Harness />);
     await open(user);
 
-    await user.clear(rateField());
     await user.type(rateField(), "12.50");
 
     expect(rateField()).toHaveValue("12.50");
   });
 
-  it("puts the committed rate back when the field is left unusable", async () => {
+  it("tidies a half-typed rate to the value that was committed", async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
     await open(user);
 
+    await user.type(rateField(), "9.");
+    await user.tab();
+
+    // The trailing point is not part of any answer, and leaving it on screen
+    // would suggest the store holds something it does not.
+    expect(onChange).toHaveBeenCalledWith({ electricityRatePhpPerKwh: 9 });
+    expect(rateField()).toHaveValue("9");
+  });
+
+  it("reads an emptied rate as the published one rather than as zero", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    await open(user);
+
+    await user.type(rateField(), "9");
+    await user.tab();
     await user.clear(rateField());
     await user.tab();
 
-    expect(rateField()).toHaveValue(
+    // Null, not 12: the backend applies the default itself and discloses that
+    // it did, which it cannot do if the frontend fills the figure in first.
+    expect(onChange).toHaveBeenLastCalledWith({
+      electricityRatePhpPerKwh: null,
+    });
+    expect(rateField()).toHaveValue("");
+    expect(rateField()).toHaveAttribute(
+      "placeholder",
       String(DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH),
     );
   });
@@ -115,18 +151,16 @@ describe("RefineInputs", () => {
     await open(user);
     expect(rateField()).toHaveValue("9");
 
-    // What a reset looks like from here: the store goes back to the default
-    // and the field has to stop showing the old session's answer.
+    // What a reset looks like from here: the store goes back to holding no
+    // override and the field has to stop showing the old session's answer.
     rerender(
       <RefineInputs
         budgetPhp={null}
-        electricityRatePhpPerKwh={DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH}
+        electricityRatePhpPerKwh={null}
         onChange={() => {}}
       />,
     );
 
-    expect(rateField()).toHaveValue(
-      String(DEFAULT_ELECTRICITY_RATE_PHP_PER_KWH),
-    );
+    expect(rateField()).toHaveValue("");
   });
 });
