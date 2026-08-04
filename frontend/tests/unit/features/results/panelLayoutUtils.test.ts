@@ -6,6 +6,7 @@ import {
 } from "../../../../src/features/results/panelLayoutUtils";
 import { resolveLayoutContext } from "../../../../src/features/results/layoutContext";
 import { assessmentFixture as fixture } from "../../../fixtures/assessmentFixture";
+import { roofPolygonFixture } from "../../../fixtures/roofPolygonFixture";
 import type { GeoPoint } from "../../../../src/shared/api/types";
 import type { GeoTiffRaster } from "../../../../src/integrations/solar/geoTiffLoader";
 
@@ -253,7 +254,10 @@ describe("resolveLayoutContext", () => {
   it("uses the response recommendation and traced roof for the editor", () => {
     const context = resolveLayoutContext({
       result: fixture,
-      roofPolygon: { coordinates: cebuRoof, areaSquareMeters: 40 },
+      roofPolygon: roofPolygonFixture({
+        coordinates: cebuRoof,
+        areaSquareMeters: 40,
+      }),
     });
 
     expect(context.currentPanelCount).toBe(8);
