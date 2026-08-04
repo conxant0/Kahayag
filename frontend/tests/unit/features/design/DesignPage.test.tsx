@@ -69,9 +69,12 @@ describe("DesignPage", () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(screen.getByText("Step 4 of 5 · AI design")).toBeInTheDocument();
+    expect(screen.getByLabelText("Assessment progress")).toBeInTheDocument();
+    expect(screen.getByLabelText("Active build summary")).toBeInTheDocument();
     expect(screen.getByText("Energy capture")).toBeInTheDocument();
     expect(screen.getByText("Power converter")).toBeInTheDocument();
+    expect(screen.queryByText("Active build")).not.toBeInTheDocument();
     expect(screen.getByText("AI auto-optimise")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply design" })).toBeInTheDocument();
   });
 });

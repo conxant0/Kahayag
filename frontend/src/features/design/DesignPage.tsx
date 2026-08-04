@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { FlowLayout, DesignFlowStepper } from "../../shared/components/layout";
-import { Eyebrow } from "../../shared/components/ui";
+import { DesignFlowStepper } from "../../shared/components/layout";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
 import { DesignAppliedModal } from "./DesignAppliedModal";
 import { DesignSidebar } from "./DesignSidebar";
+import { DesignSummaryBar } from "./DesignSummaryBar";
 import { SystemCanvas } from "./SystemCanvas";
-import { formatBuildInvestment, getActiveBuild, summaryTiles } from "./designViewModel";
+import { getActiveBuild, summaryTiles } from "./designViewModel";
 import { useBootstrapDesign } from "./useDesignActions";
 
 export function DesignPage() {
@@ -53,81 +53,60 @@ export function DesignPage() {
   }
 
   const loading = bootstrap.isPending && !designSession;
+  const actionsDisabled = !designSession || loading;
+
+  const handleApply = () => {
+    applyDesign();
+    setShowApplied(true);
+  };
 
   return (
     <>
-      <FlowLayout
-        step="Step 4 of 5 · AI design"
-        title={
-          <>
-            Refine your <em className="font-normal italic">system design.</em>
-          </>
-        }
-        backHref={ROUTE_PATHS.results}
-        backLabel="Back to results"
-        nextLabel="Apply design"
-        nextDisabled={!designSession || loading}
-        onNext={() => {
-          applyDesign();
-          setShowApplied(true);
-        }}
-        railClassName="lg:gap-4"
-        lead={
-          <>
-            <DesignFlowStepper activeStep={4} />
-            {activeBuild ? (
-              <p className="font-sans text-sm text-secondary">
-                {activeBuild.label} · {formatBuildInvestment(activeBuild)} · fit{" "}
-                {activeBuild.fit_score.toFixed(0)}
-              </p>
-            ) : null}
-          </>
-        }
-        pane={
-          loading ? (
-            <div className="flex h-full items-center justify-center font-sans text-secondary">
-              Running the design solver…
-            </div>
-          ) : (
-            <SystemCanvas build={activeBuild} session={designSession} />
-          )
-        }
-      >
-        <section
-          aria-label="Summary tiles"
-          className="rounded-[16px] border border-hairline bg-white p-3"
-        >
-          <Eyebrow>Active build</Eyebrow>
-          <ul className="mt-3 flex flex-col gap-3">
-            {tiles.map((tile) => (
-              <li key={tile.label} className="flex flex-col gap-0.5">
-                <span className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
-                  {tile.label}
-                </span>
-                <span className="font-sans text-sm font-semibold text-ink">
-                  {tile.value}
-                </span>
-                <span className="font-sans text-[12px] text-secondary">
-                  {tile.detail}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <main id="main" className="flex h-svh flex-col bg-paper">
+        <header className="shrink-0 border-b border-hairline bg-paper px-4 pt-4 pb-3 lg:px-8 lg:pt-6">
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4">
+            <Link
+              to={ROUTE_PATHS.results}
+              className="w-fit font-sans text-sm font-semibold text-cobalt hover:underline"
+            >
+              ← Back to results
+            </Link>
 
-        <DesignSidebar
-          onApplied={() => {
-            applyDesign();
-            setShowApplied(true);
-          }}
+            <div className="flex justify-center overflow-x-auto">
+              <DesignFlowStepper activeStep={4} />
+            </div>
+          </div>
+        </header>
+
+        <DesignSummaryBar
+          tiles={tiles}
+          applyDisabled={actionsDisabled}
+          saveDisabled={actionsDisabled}
+          onApply={handleApply}
         />
 
-        {bootstrap.error ? (
-          <p className="font-sans text-sm text-red-700" role="alert">
-            {bootstrap.error.message}
-          </p>
-        ) : null}
-      </FlowLayout>
+        <div className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col lg:grid lg:grid-cols-[22rem_1fr]">
+          <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-b border-hairline px-4 py-5 lg:border-r lg:border-b-0 lg:px-6 lg:py-6">
+            <DesignSidebar />
+
+            {bootstrap.error ? (
+              <p className="font-sans text-sm text-ember" role="alert">
+                {bootstrap.error.message}
+              </p>
+            ) : null}
+          </aside>
+
+          <section className="flex min-h-0 flex-1 flex-col px-4 py-5 lg:px-8 lg:py-6">
+            {loading ? (
+              <div className="flex h-full items-center justify-center font-sans text-secondary">
+                Running the design solver…
+              </div>
+            ) : (
+              <SystemCanvas build={activeBuild} session={designSession} />
+            )}
+          </section>
+        </div>
+      </main>
 
       <DesignAppliedModal
         open={showApplied}

@@ -37,11 +37,7 @@ function WandIcon() {
   );
 }
 
-export function DesignSidebar({
-  onApplied,
-}: {
-  onApplied: () => void;
-}) {
+export function DesignSidebar() {
   const [tab, setTab] = useState<SidebarTab>("design");
   const [customRequest, setCustomRequest] = useState("");
   const [askReply, setAskReply] = useState<string | null>(null);
@@ -159,25 +155,6 @@ export function DesignSidebar({
           {(optimise.error ?? agent.error ?? explain.error)?.message}
         </p>
       ) : null}
-
-      <div className="flex flex-col gap-2 border-t border-hairline pt-4">
-        <Button
-          variant="ghost"
-          fullWidth
-          disabled={busy}
-          className="h-12 border-hairline bg-white text-ink"
-        >
-          Save design
-        </Button>
-        <Button
-          fullWidth
-          disabled={busy}
-          onClick={onApplied}
-          className="bg-ink text-paper hover:bg-ink hover:shadow-none"
-        >
-          Apply design
-        </Button>
-      </div>
     </div>
   );
 }
