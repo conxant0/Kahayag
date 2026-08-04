@@ -456,8 +456,9 @@ export type DocumentDisplayStatus = DocumentSlotStatus | "flagged";
 
 /**
  * "Flagged" is not a wire status — it is an uploaded document with an
- * open warning or blocking finding against it, surfaced so the row does not
- * read as settled just because a file landed in the slot.
+ * open warning or blocking finding against it, or one intake has not
+ * independently verified, surfaced so the row does not read as settled
+ * just because a file landed in the slot.
  */
 export function documentDisplayStatus(
   document: PermitDocumentChecklistItem,
@@ -471,7 +472,7 @@ export function documentDisplayStatus(
       finding.document_id === document.document_id &&
       (finding.severity === "warning" || finding.severity === "blocking"),
   );
-  return hasOpenFinding ? "flagged" : "uploaded";
+  return hasOpenFinding || document.unverified ? "flagged" : "uploaded";
 }
 
 export function findingsForDocument(
