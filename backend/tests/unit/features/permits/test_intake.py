@@ -239,3 +239,21 @@ def test_fully_uploaded_and_matching_documents_pass_without_blocking_findings() 
     assert all(doc.status == "uploaded" for doc in result.documents)
     assert not [f for f in result.findings if f.category in ("presence", "unreadable")]
     assert result.packet_status == "ready"
+
+
+def test_checklist_items_carry_steps_prerequisites_and_issuing_agency() -> None:
+    """The assessment response is where the frontend gets step/prerequisite
+    copy — it must not fall back to any locally-held frontend text."""
+    result = assess_permit_documents(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        client=CLIENT,
+    )
+    tax_clearance = next(
+        doc for doc in result.documents if doc.document_id == "obo_16_tax_clearance_lot"
+    )
+    assert tax_clearance.steps
+    assert tax_clearance.issuing_agency
+    assert tax_clearance.prerequisites == ("obo_15_tax_declaration_lot",)

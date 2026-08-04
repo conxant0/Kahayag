@@ -155,6 +155,9 @@ def assess_permit_documents(
                     status="missing",
                     expires=doc.expires,
                     unverified=doc.unverified,
+                    issuing_agency=doc.issuing_agency,
+                    steps=doc.steps,
+                    prerequisites=doc.prerequisites,
                 )
             )
             continue
@@ -181,6 +184,9 @@ def assess_permit_documents(
                     status="needs_review",
                     expires=doc.expires,
                     unverified=doc.unverified,
+                    issuing_agency=doc.issuing_agency,
+                    steps=doc.steps,
+                    prerequisites=doc.prerequisites,
                 )
             )
             continue
@@ -192,6 +198,9 @@ def assess_permit_documents(
                 status="uploaded",
                 expires=doc.expires,
                 unverified=doc.unverified,
+                issuing_agency=doc.issuing_agency,
+                steps=doc.steps,
+                prerequisites=doc.prerequisites,
             )
         )
 
