@@ -45,10 +45,16 @@ interface GoogleMap {
   setCenter(latLng: GoogleLatLngLiteral): void;
   setZoom(zoom: number): void;
   setMapTypeId(mapTypeId: string): void;
+  fitBounds(bounds: GoogleLatLngBounds, padding?: number): void;
   addListener(
     eventName: string,
     handler: (event: GoogleMapMouseEvent) => void,
   ): GoogleMapsEventListener | undefined;
+}
+
+/** Built up with `extend`, then handed to `Map.fitBounds`. */
+interface GoogleLatLngBounds {
+  extend(point: GoogleLatLngLiteral): GoogleLatLngBounds;
 }
 
 interface GoogleSize {
@@ -123,6 +129,7 @@ type GoogleLatLngInstance = GoogleLatLng;
 
 interface GooglePolygonOptions {
   map: GoogleMap | null;
+  paths?: GoogleLatLngLiteral[];
   strokeColor?: string;
   strokeOpacity?: number;
   strokeWeight?: number;
@@ -133,8 +140,21 @@ interface GooglePolygonOptions {
   zIndex?: number;
 }
 
+interface GoogleLatLngBoundsLiteral {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+/** The sunshine raster, painted to a canvas and dropped over the tiles. */
+interface GoogleGroundOverlay {
+  setMap(map: GoogleMap | null): void;
+}
+
 interface GooglePolygon {
   getPath(): GoogleMVCArray;
+  setPath(path: GoogleLatLngLiteral[]): void;
   setOptions(options: Partial<GooglePolygonOptions>): void;
   setMap(map: GoogleMap | null): void;
   setEditable(editable: boolean): void;
@@ -158,6 +178,12 @@ interface GoogleMapsApi {
   Animation?: { DROP?: number; BOUNCE?: number };
   Polygon: new (options: GooglePolygonOptions) => GooglePolygon;
   LatLng: new (latitude: number, longitude: number) => GoogleLatLngInstance;
+  LatLngBounds?: new () => GoogleLatLngBounds;
+  GroundOverlay?: new (
+    url: string,
+    bounds: GoogleLatLngBoundsLiteral,
+    opts?: { opacity?: number; clickable?: boolean },
+  ) => GoogleGroundOverlay;
   SymbolPath: { CIRCLE: number };
   Size?: new (width: number, height: number) => GoogleSize;
   Point?: new (x: number, y: number) => GooglePoint;

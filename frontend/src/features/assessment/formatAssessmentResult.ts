@@ -121,6 +121,37 @@ export function formatShadingImpact(
   return labels[shading.shading_impact] ?? shading.shading_impact;
 }
 
+const LIMITING_CONSTRAINT_LABELS: Record<string, string> = {
+  demand: "Electricity use",
+  budget: "Budget",
+  roof_area: "Roof area",
+};
+
+export function formatLimitingConstraint(
+  result: AssessmentResult | null,
+): string {
+  const constraint = result?.recommendation?.limiting_constraint;
+  if (!constraint) {
+    return "—";
+  }
+  return LIMITING_CONSTRAINT_LABELS[constraint] ?? constraint;
+}
+
+const SOLAR_RESOURCE_LABELS: Record<string, string> = {
+  google_solar_api: "Location-specific (Google Solar)",
+  nationwide_fallback: "Nationwide fallback",
+};
+
+export function formatSolarResourceSource(
+  result: AssessmentResult | null,
+): string {
+  const source = result?.assumptions?.solar_resource_source;
+  if (!source) {
+    return "—";
+  }
+  return SOLAR_RESOURCE_LABELS[source] ?? source;
+}
+
 export function formatConfidenceLabel(result: AssessmentResult | null): string {
   const shading = result?.shading;
   if (shading?.sunshine_retention_ratio != null) {

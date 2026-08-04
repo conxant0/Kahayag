@@ -6,11 +6,13 @@ import {
   formatAnnualGeneration,
   formatBudgetCompatibility,
   formatCostRange,
+  formatLimitingConstraint,
   formatMonthlySavings,
   formatOffset,
   formatPaybackYears,
   formatPeso,
   formatShadingImpact,
+  formatSolarResourceSource,
   formatSystemCapacity,
   readAssessmentResult,
 } from "../assessment/formatAssessmentResult";
@@ -20,13 +22,20 @@ import {
   ButtonLink,
   HairlineList,
   HairlineRow,
+  InfoPill,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useFluxCacheStore } from "../../state/fluxCacheStore";
 import { computeFluxCacheKey } from "./fluxCacheKey";
 import { layoutPanelsInPolygon } from "./panelLayoutUtils";
 import { preloadFluxLayersForAssessment } from "./preloadFluxLayers";
-import { PanelLayoutPreview } from "./components/PanelLayoutPreview";
+import { ResultsMapPane } from "./components/ResultsMapPane";
+
+const SIZING_HEADLINES: Record<string, string> = {
+  demand: "Sized to your electricity use",
+  budget: "Sized to your budget",
+  roof_area: "Sized to your roof's maximum",
+};
 
 export function ResultsPage() {
   const rawResult = useAssessmentStore((state) => state.result);
@@ -95,7 +104,8 @@ export function ResultsPage() {
       nextHref={ROUTE_PATHS.invest}
       nextLabel="See your investment"
       pane={
-        <PanelLayoutPreview
+        <ResultsMapPane
+          selectedProperty={selectedProperty}
           roofCoordinates={roofCoordinates}
           panels={panels}
           status={result.is_provisional ? "Preliminary estimate" : undefined}
@@ -112,9 +122,15 @@ export function ResultsPage() {
           <p className="font-sans text-sm font-medium text-tertiary-ink">
             saved every month
           </p>
-          <p className="font-serif text-lg text-secondary italic">
-            {result.recommendation.rationale}
-          </p>
+          <div className="flex flex-col gap-2 rounded-map border border-hairline p-4">
+            <InfoPill className="w-fit">
+              {SIZING_HEADLINES[result.recommendation.limiting_constraint] ??
+                "How this was sized"}
+            </InfoPill>
+            <p className="font-sans text-[15px] leading-relaxed text-secondary">
+              {result.recommendation.rationale}
+            </p>
+          </div>
           <HairlineList className="pt-1.5">
             <HairlineRow label="Panels" value={`${panelCount} panels`} />
             <HairlineRow
@@ -148,7 +164,7 @@ export function ResultsPage() {
       }
     >
       <section
-        className="flex w-full flex-col gap-3"
+        className="flex w-full flex-col gap-4"
         aria-label="Assessment result"
       >
         <HairlineList>
@@ -165,7 +181,7 @@ export function ResultsPage() {
           />
           <HairlineRow
             label="Limiting constraint"
-            value={result.recommendation.limiting_constraint}
+            value={formatLimitingConstraint(result)}
           />
           <HairlineRow
             label="Budget"
@@ -176,7 +192,7 @@ export function ResultsPage() {
 
       {result.shading ? (
         <section
-          className="flex w-full flex-col gap-2"
+          className="flex w-full flex-col gap-2.5"
           aria-label="Sunshine visualization"
         >
           <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
@@ -205,7 +221,7 @@ export function ResultsPage() {
         </section>
       ) : null}
 
-      <section className="flex w-full flex-col gap-3" aria-label="Assumptions">
+      <section className="flex w-full flex-col gap-4" aria-label="Assumptions">
         <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
           Assumptions
         </h2>
@@ -220,28 +236,31 @@ export function ResultsPage() {
           />
           <HairlineRow
             label="Solar resource"
-            value={result.assumptions.solar_resource_source}
+            value={formatSolarResourceSource(result)}
           />
           <HairlineRow
             label="Panel dimensions"
             value={`${result.assumptions.panel_width_m} × ${result.assumptions.panel_height_m} m`}
           />
         </HairlineList>
-        <p className="font-sans text-sm text-secondary">
+        <p className="font-sans text-sm leading-relaxed text-secondary">
           Cost includes {result.assumptions.cost_inclusions.join(", ")}.
         </p>
-        <p className="font-sans text-sm text-secondary">
+        <p className="font-sans text-sm leading-relaxed text-secondary">
           Potential exclusions:{" "}
           {result.assumptions.potential_exclusions.join(", ")}.
         </p>
       </section>
 
-      <section className="flex w-full flex-col gap-2" aria-label="Limitations">
+      <section className="flex w-full flex-col gap-2.5" aria-label="Limitations">
         <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
           {result.is_provisional ? "Preliminary assessment" : "Limitations"}
         </h2>
         {result.limitations.map((limitation) => (
-          <p key={limitation} className="font-sans text-sm text-secondary">
+          <p
+            key={limitation}
+            className="font-sans text-sm leading-relaxed text-secondary"
+          >
             {limitation}
           </p>
         ))}
