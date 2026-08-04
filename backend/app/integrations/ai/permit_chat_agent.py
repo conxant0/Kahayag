@@ -51,18 +51,12 @@ class PermitChatClient(Protocol):
 
 
 _TRACK_ANSWER_PATTERN = re.compile(r"\boriginal (?:building )?permit\b", re.IGNORECASE)
-# "my name is"/"call me" are unambiguous declarations. Bare "i am <X>" is not
-# — it also opens clauses like "i am not the registered owner" or "i am the
-# owner" — so it gets its own pattern below, gated by a stopword check.
+# "my name is"/"call me" are unambiguous name declarations. Bare "i am <X>"
+# is deliberately NOT captured as a name: it also opens ordinary sentences
+# like "i am not the registered owner", "i am filing this myself", "i am the
+# owner", "i am not sure" — any noun/verb phrase, not just names — and no
+# fixed stopword list can keep pace with ordinary English shaped that way.
 _NAME_PATTERN = re.compile(r"(?:my name is|call me)\s+([A-Za-z.'\- ]{2,60})", re.IGNORECASE)
-_I_AM_NAME_PATTERN = re.compile(
-    r"\bi am\s+([A-Za-z][A-Za-z.'\-]*(?:\s+[A-Za-z][A-Za-z.'\-]*){0,3})", re.IGNORECASE
-)
-# Words that mean "i am <word>" is an assertion about track/ownership/status,
-# not a person's name, so _I_AM_NAME_PATTERN must not capture it as one.
-_I_AM_NAME_STOPWORDS = frozenset(
-    {"the", "a", "an", "not", "still", "on", "in", "registered", "owner", "sure"}
-)
 _OWNER_NAME_PATTERN = re.compile(
     r"owner(?:'s)? name is\s+([A-Za-z.'\- ]{2,60})", re.IGNORECASE
 )
@@ -75,20 +69,6 @@ _DELEGATION_PATTERN = re.compile(
     r"|\bfile\w*\s+(?:on my behalf|for me)\b",
     re.IGNORECASE,
 )
-
-
-def _extract_i_am_name(user_text: str) -> str | None:
-    """"i am <candidate>" only counts as a name if <candidate> doesn't open
-    with a stopword — otherwise it's "i am not the registered owner", "i am
-    on the streamlined track", etc., not a person's name."""
-    match = _I_AM_NAME_PATTERN.search(user_text)
-    if not match:
-        return None
-    candidate = match.group(1).strip()
-    words = candidate.split()
-    if not words or words[0].lower() in _I_AM_NAME_STOPWORDS:
-        return None
-    return candidate
 
 
 def _is_declarative_owner_statement(lowered: str) -> bool:
@@ -244,12 +224,6 @@ class DisabledPermitChatClient:
                     "set_applicant_name", {"full_name": name_match.group(1).strip()}
                 )
             )
-        else:
-            i_am_name = _extract_i_am_name(user_text)
-            if i_am_name:
-                calls.append(
-                    PlannedPermitToolCall("set_applicant_name", {"full_name": i_am_name})
-                )
 
         is_owner_assertion = _is_declarative_owner_statement(lowered)
         if is_owner_assertion and (

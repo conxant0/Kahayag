@@ -352,6 +352,29 @@ def test_declarative_phrasings_still_update_applicant() -> None:
     assert owner_response.applicant.registered_owner_name == "Maria Santos"
 
 
+def test_bare_i_am_sentences_do_not_set_a_bogus_full_name() -> None:
+    """Regression: the disabled-chat fallback used to treat any "i am <X>"
+    clause as a name declaration, so "I am filing this myself" produced
+    full_name == "Filing This Myself". Only explicit declarations ("my name
+    is", "call me") may set full_name."""
+    for user_text in (
+        "I am filing this myself",
+        "I am not sure",
+        "I am the owner",
+    ):
+        applicant = _retrofit_applicant()
+        response = run_permit_chat_turn(
+            applicant=applicant,
+            build=BUILD,
+            property_address=ADDRESS,
+            uploads=(),
+            user_text=user_text,
+            chat_client=CHAT_CLIENT,
+            intake_client=CLIENT,
+        )
+        assert response.applicant.full_name == applicant.full_name, user_text
+
+
 def test_no_op_tool_call_does_not_produce_updated_reply() -> None:
     """Setting a value that already matches the current applicant is dropped
     from the tool audit, so the turn falls through to Q&A instead of
