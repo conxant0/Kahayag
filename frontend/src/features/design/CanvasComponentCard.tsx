@@ -10,6 +10,11 @@ function formatStatLabel(key: string): string {
   return key.replace(/_/g, " ").toUpperCase();
 }
 
+/**
+ * Stat pairs come from the component's own catalog data — a missing warranty
+ * renders no warranty stat rather than an invented figure. The domain
+ * supplies the facts; this card only formats them.
+ */
 function statEntries(component: DesignComponent): Array<{ label: string; value: string }> {
   const entries = Object.entries(component.specs).slice(0, 2).map(([key, value]) => ({
     label: formatStatLabel(key),
@@ -29,8 +34,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
             ? `${component.specs.wattage_w} Wp`
             : `${component.qty} pcs`,
       },
-      { label: "Warranty", value: component.warranty_note || "25 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   if (component.slot === "inverter") {
@@ -45,8 +50,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
         label: "Capacity",
         value: ratedKw ? `${ratedKw} kW` : `${component.qty || 1} unit`,
       },
-      { label: "Warranty", value: component.warranty_note || "10 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   if (component.slot === "battery" && component.qty > 0) {
@@ -58,8 +63,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
           : null;
     return [
       { label: "Capacity", value: kwh ? `${kwh} kWh` : "—" },
-      { label: "Warranty", value: component.warranty_note || "10 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   return entries;
@@ -206,10 +211,12 @@ export function CanvasComponentCard({
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            className="font-sans text-[11px] font-semibold text-cobalt hover:underline"
+            className="flex items-center gap-1 font-sans text-[12px] font-semibold text-cobalt hover:underline"
             onClick={() => setShowDetails((open) => !open)}
+            aria-expanded={showDetails}
           >
-            {showDetails ? "Hide" : "Details"}
+            {showDetails ? "Hide details" : "View details"}
+            <span aria-hidden="true">ⓘ</span>
           </button>
           {swappable ? (
             <button

@@ -39,18 +39,6 @@ export function formatInvestmentRange(build: DesignBuild): string {
     : pesoRange(build.total_investment_low_php, build.total_investment_high_php);
 }
 
-export function costPerWatt(build: DesignBuild): number {
-  const watts = build.system_kwp * 1000;
-  if (watts <= 0) {
-    return 0;
-  }
-  return build.total_investment_php / watts;
-}
-
-export function formatCostPerWatt(build: DesignBuild): string {
-  return `₱${costPerWatt(build).toFixed(0)}/W`;
-}
-
 export function compareBuilds(session: DesignSession): CompareBuildView[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
@@ -134,8 +122,7 @@ function overviewSpecs(build: DesignBuild): CompareSpecRow[] {
 
 function overviewMetrics(build: DesignBuild): CompareMetric[] {
   return [
-    { label: "Total cost", value: formatInvestmentRange(build) },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
+    { label: "Total cost", value: peso(build.total_investment_php) },
     {
       label: "Payback",
       value: build.payback_years ? `${build.payback_years.toFixed(1)} years` : "—",
@@ -193,7 +180,6 @@ function technicalMetrics(build: DesignBuild): CompareMetric[] {
       label: "CO₂ avoided",
       value: `${build.co2_tonnes_avoided_yearly.toFixed(1)} t/yr`,
     },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
     { label: "Fit score", value: build.fit_score.toFixed(1) },
   ];
 }

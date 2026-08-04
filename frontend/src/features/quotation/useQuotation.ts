@@ -1,4 +1,8 @@
-// Fetches a structured quotation for the active build, falling back to BOM lines.
+// Fetches the structured quotation for the active build from the backend.
+// No client-side fallback on failure: a quotation is a contractual document
+// the domain composes (quote number, dates, terms) — fabricating one in the
+// browser would violate the "domain computes" rule and mint quote numbers no
+// backend record matches. Failures surface as errors instead.
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -7,10 +11,7 @@ import { ENDPOINTS } from "../../shared/api/endpoints";
 import type { QuotationDocument, QuoteAuditResponse } from "../../shared/api/types";
 import { useDesignStore } from "../../state/designStore";
 import { getActiveBuild } from "../design/designViewModel";
-import {
-  buildQuotationFromBuild,
-  buildQuotationFromQuoteAudit,
-} from "./quotationViewModel";
+import { buildQuotationFromQuoteAudit } from "./quotationViewModel";
 
 export function useQuotation(buildId: string | null) {
   const designSession = useDesignStore((state) => state.designSession);
@@ -27,14 +28,10 @@ export function useQuotation(buildId: string | null) {
         throw new Error("Selected build was not found.");
       }
 
-      try {
-        return await apiPost<QuotationDocument>(
-          ENDPOINTS.designsQuotation(buildId),
-          { build_id: buildId, session: designSession },
-        );
-      } catch {
-        return buildQuotationFromBuild(build);
-      }
+      return apiPost<QuotationDocument>(ENDPOINTS.designsQuotation(buildId), {
+        build_id: buildId,
+        session: designSession,
+      });
     },
     enabled: Boolean(designSession && buildId),
   });

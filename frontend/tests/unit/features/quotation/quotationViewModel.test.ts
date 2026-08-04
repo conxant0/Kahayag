@@ -2,54 +2,48 @@ import { describe, expect, it } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
 import {
-  buildQuotationFromBuild,
   buildQuotationFromQuoteAudit,
   formatQuoteTotal,
-  quoteNumberForBuild,
+  quoteMetrics,
   quoteTotalLabel,
+  quoteValidUntil,
+  termsLines,
 } from "../../../../src/features/quotation/quotationViewModel";
 
 describe("quotationViewModel", () => {
-  it("builds line items and totals from the active build BOM", () => {
+  it("formats quote metrics from domain-provided build figures", () => {
     const build = mockDesignSession.builds[0]!;
-    const quote = buildQuotationFromBuild(build);
+    const metrics = quoteMetrics(build);
 
-    expect(quote.lines).toHaveLength(build.components.length);
-    expect(quote.subtotal_php).toBe(build.subtotal_php);
-    expect(quote.vat_php).toBe(build.vat_php);
-    expect(quote.total_php).toBe(build.total_investment_php);
-    expect(quote.total_low_php).toBe(build.total_investment_low_php);
-    expect(quote.total_high_php).toBe(build.total_investment_high_php);
-    expect(quote.lines.reduce((sum, line) => sum + line.amount_php, 0)).toBe(
-      build.subtotal_php,
-    );
+    expect(metrics.map((metric) => metric.label)).toEqual([
+      "System capacity",
+      "Annual savings",
+      "Payback period",
+      "Eco impact",
+    ]);
+    expect(
+      metrics.find((metric) => metric.label === "System capacity")?.value,
+    ).toBe(`${build.system_kwp.toFixed(1)} kWp`);
   });
 
-  it("keeps a range when low and high totals differ", () => {
-    const build = mockDesignSession.builds[0]!;
-    const quote = buildQuotationFromBuild(build);
-
-    expect(formatQuoteTotal(quote)).toBe("₱354,928–₱524,636");
-    expect(quoteTotalLabel(quote)).toBe("Estimated total range");
+  it("splits backend terms strings into display bullets", () => {
+    expect(
+      termsLines("50% upon contract signing, 40% upon delivery, 10% upon commissioning"),
+    ).toEqual([
+      "50% upon contract signing",
+      "40% upon delivery",
+      "10% upon commissioning",
+    ]);
+    expect(
+      termsLines("Component warranties per manufacturer; installation workmanship 1 year."),
+    ).toEqual([
+      "Component warranties per manufacturer",
+      "installation workmanship 1 year.",
+    ]);
   });
 
-  it("keeps a stable quote number for the session build", () => {
-    const build = mockDesignSession.builds[0]!;
-    expect(quoteNumberForBuild(build.id)).toBe(
-      `KE-2026-${build.id.slice(0, 4).toUpperCase()}`,
-    );
-  });
-
-  it("falls back to total_php when investment range fields are missing", () => {
-    const build = mockDesignSession.builds[0]!;
-    const quote = {
-      ...buildQuotationFromBuild(build),
-      total_low_php: Number.NaN,
-      total_high_php: Number.NaN,
-    };
-
-    expect(formatQuoteTotal(quote)).toBe("₱439,782");
-    expect(quoteTotalLabel(quote)).toBe("Quoted total");
+  it("computes the validity end date from the backend quote date", () => {
+    expect(quoteValidUntil("2026-08-04", 30)).toBe("2026-09-03");
   });
 
   it("builds a quotation document from an uploaded quote audit", () => {

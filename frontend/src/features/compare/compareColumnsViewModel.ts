@@ -4,7 +4,6 @@ import { peso } from "../../shared/lib/currency";
 import { quoteAuditId, quoteAuditLabel } from "./quoteAuditIds";
 import {
   compareBuilds,
-  formatCostPerWatt,
   formatInvestmentRange,
   type CompareBuildView,
 } from "./compareViewModel";
@@ -103,8 +102,6 @@ function buildSpecValue(column: CompareColumn, label: string): string {
       return column.buildView.paybackLabel;
     case "Total cost":
       return formatInvestmentRange(build);
-    case "Cost per watt":
-      return formatCostPerWatt(build);
     case "Inverter utilisation":
       return `${build.inverter_utilisation_pct.toFixed(0)}%`;
     case "CO₂ avoided":
@@ -162,12 +159,6 @@ function quoteSpecValue(column: CompareColumn, label: string): string {
       return typeof quote.extracted_total_php === "number"
         ? peso(quote.extracted_total_php)
         : "—";
-    case "Cost per watt":
-      return typeof quote.extracted_total_php === "number" &&
-        typeof quote.extracted_system_kwp === "number" &&
-        quote.extracted_system_kwp > 0
-        ? `₱${(quote.extracted_total_php / (quote.extracted_system_kwp * 1000)).toFixed(0)}/W`
-        : "—";
     case "Parts subtotal":
       return partsTotal > 0 ? peso(partsTotal) : "—";
     default:
@@ -186,7 +177,6 @@ const COMPARISON_ROW_LABELS = [
   "Annual savings",
   "Payback",
   "Total cost",
-  "Cost per watt",
   "Inverter utilisation",
   "CO₂ avoided",
   "Fit score",

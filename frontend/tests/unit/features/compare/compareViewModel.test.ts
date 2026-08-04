@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { peso } from "../../../../src/shared/lib/currency";
 import {
   compareBuilds,
-  costPerWatt,
-  formatCostPerWatt,
   formatInvestmentRange,
 } from "../../../../src/features/compare/compareViewModel";
 
@@ -19,11 +18,13 @@ describe("compareViewModel", () => {
 
   it("computes distinct overview metrics per build", () => {
     const views = compareBuilds(mockDesignSession);
+    const suggested = mockDesignSession.builds[0]!;
+    const custom = mockDesignSession.builds[1]!;
     expect(views[0]?.metrics.find((row) => row.label === "Total cost")?.value).toBe(
-      "₱354,928–₱524,636",
+      peso(suggested.total_investment_php),
     );
     expect(views[1]?.metrics.find((row) => row.label === "Total cost")?.value).toBe(
-      "₱356,048–₱525,756",
+      peso(custom.total_investment_php),
     );
   });
 
@@ -37,9 +38,13 @@ describe("compareViewModel", () => {
     expect(formatInvestmentRange(build)).toBe("₱6.8M–₱9.4M");
   });
 
-  it("formats cost per watt from domain totals", () => {
-    const build = mockDesignSession.builds[0]!;
-    expect(costPerWatt(build)).toBeCloseTo(build.total_investment_php / 5850, 2);
-    expect(formatCostPerWatt(build)).toBe("₱75/W");
+  it("shows no client-computed figures among the metrics", () => {
+    const views = compareBuilds(mockDesignSession);
+    for (const view of views) {
+      expect(view.metrics.map((row) => row.label)).not.toContain("Cost per watt");
+      expect(view.technicalRows.map((row) => row.label)).not.toContain(
+        "Cost per watt",
+      );
+    }
   });
 });

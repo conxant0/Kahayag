@@ -1,4 +1,6 @@
-// Builds quotation documents from solver-backed build BOM lines.
+// Derives display values for the quotation page. Solver-backed quotation
+// documents come from the backend (`POST /designs/{id}/quotation`). Uploaded
+// installer quotes are assembled locally from quote audit extraction only.
 import type {
   DesignBuild,
   DesignComponent,
@@ -6,20 +8,6 @@ import type {
   QuoteAuditResponse,
 } from "../../shared/api/types";
 import { peso, pesoRange } from "../../shared/lib/currency";
-
-export const QUOTE_VALIDITY_DAYS = 30;
-export const PAYMENT_TERMS_LINES = [
-  "50% downpayment to lock the build and schedule the survey",
-  "40% on equipment delivery to site",
-  "10% on testing and commissioning",
-] as const;
-export const PAYMENT_TERMS = PAYMENT_TERMS_LINES.join("; ");
-export const WARRANTY_LINES = [
-  "25-year panel performance warranty",
-  "10-year inverter warranty",
-  "5-year workmanship warranty",
-] as const;
-export const WARRANTY_SUMMARY = WARRANTY_LINES.join("; ");
 
 export const NEXT_STEPS = [
   {
@@ -40,6 +28,21 @@ export const NEXT_STEPS = [
   },
 ] as const;
 
+/** Splits the backend's single-string terms into display bullets. Pure
+ * formatting — the words themselves are the domain's. */
+export function termsLines(terms: string): string[] {
+  return terms
+    .split(/[;,]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+const UPLOADED_QUOTE_VALIDITY_DAYS = 30;
+const UPLOADED_QUOTE_PAYMENT_TERMS =
+  "50% downpayment to lock the build and schedule the survey; 40% on equipment delivery to site; 10% on testing and commissioning";
+const UPLOADED_QUOTE_WARRANTY_SUMMARY =
+  "25-year panel performance warranty; 10-year inverter warranty; 5-year workmanship warranty";
+
 const SLOT_ITEM_LABELS: Record<string, string> = {
   inverter: "Inverter",
   panel: "Panels",
@@ -52,44 +55,13 @@ const SLOT_ITEM_LABELS: Record<string, string> = {
   labor: "Installation",
 };
 
-export function quoteNumberForBuild(buildId: string): string {
-  return `KE-2026-${buildId.slice(0, 4).toUpperCase()}`;
-}
-
 export function quoteNumberForUploadedQuote(filename: string): string {
   const slug = filename.replace(/\.[^.]+$/, "").slice(0, 8).toUpperCase();
   return `UP-${slug || "QUOTE"}`;
 }
 
-export function lineItemLabel(component: DesignComponent): string {
+function lineItemLabel(component: DesignComponent): string {
   return SLOT_ITEM_LABELS[component.slot] ?? component.summary;
-}
-
-export function buildQuotationFromBuild(build: DesignBuild): QuotationDocument {
-  return {
-    build_id: build.id,
-    quote_number: quoteNumberForBuild(build.id),
-    quote_date: new Date().toISOString().slice(0, 10),
-    validity_days: QUOTE_VALIDITY_DAYS,
-    lines: build.components.map((component) => ({
-      item: lineItemLabel(component),
-      description: component.summary || `${component.brand} ${component.model}`,
-      brand: component.brand,
-      uom: component.unit,
-      qty: component.qty,
-      unit_price_php: component.unit_price_php,
-      amount_php: component.line_total_php,
-      price_as_of: component.price_as_of,
-    })),
-    subtotal_php: build.subtotal_php,
-    vat_php: build.vat_php,
-    total_php: build.total_investment_php,
-    total_low_php: build.total_investment_low_php,
-    total_high_php: build.total_investment_high_php,
-    payment_terms: PAYMENT_TERMS,
-    warranty_summary: WARRANTY_SUMMARY,
-    is_draft: true,
-  };
 }
 
 export function buildQuotationFromQuoteAudit(
@@ -109,7 +81,7 @@ export function buildQuotationFromQuoteAudit(
     build_id: `quote:${result.filename}`,
     quote_number: quoteNumberForUploadedQuote(result.filename),
     quote_date: new Date().toISOString().slice(0, 10),
-    validity_days: QUOTE_VALIDITY_DAYS,
+    validity_days: UPLOADED_QUOTE_VALIDITY_DAYS,
     lines: result.diagram_components.map((component) => ({
       item: lineItemLabel(component),
       description: component.summary || `${component.brand} ${component.model}`,
@@ -125,8 +97,8 @@ export function buildQuotationFromQuoteAudit(
     total_php: total,
     total_low_php: total,
     total_high_php: total,
-    payment_terms: PAYMENT_TERMS,
-    warranty_summary: WARRANTY_SUMMARY,
+    payment_terms: UPLOADED_QUOTE_PAYMENT_TERMS,
+    warranty_summary: UPLOADED_QUOTE_WARRANTY_SUMMARY,
     is_draft: true,
   };
 }
@@ -158,8 +130,10 @@ export function quoteTotalLabel(quote: QuotationDocument): string {
 }
 
 export function quoteValidUntil(quoteDate: string, validityDays: number): string {
-  const start = new Date(`${quoteDate}T00:00:00`);
-  start.setDate(start.getDate() + validityDays);
+  // All-UTC arithmetic: parsing local midnight and printing via toISOString
+  // lands a day early in any timezone ahead of UTC — including PH (+8).
+  const start = new Date(`${quoteDate}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + validityDays);
   return start.toISOString().slice(0, 10);
 }
 

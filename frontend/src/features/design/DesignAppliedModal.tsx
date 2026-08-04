@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import { Button, ButtonLink } from "../../shared/components/ui";
 import { ROUTE_PATHS } from "../../app/routePaths";
 
@@ -33,6 +35,24 @@ export function DesignAppliedModal({
   systemKwp?: number;
   totalInvestmentLabel?: string;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Move focus into the dialog on open and hand it back on close — without
+  // this, keyboard focus stays on the obscured page behind the overlay and
+  // Escape has nothing to act on.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const previous = document.activeElement;
+    dialogRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    return () => {
+      if (previous instanceof HTMLElement) {
+        previous.focus();
+      }
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
@@ -49,8 +69,16 @@ export function DesignAppliedModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="design-applied-title"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          onKeepEditing();
+        }
+      }}
     >
-      <div className="w-full max-w-[440px] rounded-[24px] border border-hairline bg-white p-8 shadow-[0_20px_40px_rgba(26,23,18,0.16)]">
+      <div
+        ref={dialogRef}
+        className="w-full max-w-[440px] rounded-[24px] border border-hairline bg-white p-8 shadow-[0_20px_40px_rgba(26,23,18,0.16)]"
+      >
         <div className="mx-auto flex size-16 items-center justify-center rounded-pill bg-sun text-ink">
           <CheckMark />
         </div>

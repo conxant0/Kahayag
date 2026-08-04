@@ -372,9 +372,13 @@ export function DesignChat() {
                       </p>
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
+                        {/* Disabled on any in-flight mutation, not just the
+                            agent's — both requests would carry the same
+                            pre-mutation session and the loser's change would
+                            be silently overwritten. */}
                         <button
                           type="button"
-                          disabled={agent.isPending}
+                          disabled={busy}
                           onClick={() => confirmChange(message)}
                           className="rounded-pill bg-ink px-3.5 py-1.5 font-sans text-[12px] font-semibold text-paper disabled:opacity-45"
                         >
@@ -382,7 +386,7 @@ export function DesignChat() {
                         </button>
                         <button
                           type="button"
-                          disabled={agent.isPending}
+                          disabled={busy}
                           onClick={() => cancelChange(message)}
                           className="rounded-pill border border-hairline px-3.5 py-1.5 font-sans text-[12px] text-secondary hover:text-ink disabled:opacity-45"
                         >

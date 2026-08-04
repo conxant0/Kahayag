@@ -118,7 +118,9 @@ class DesignSessionSchema(ContractModel):
     property_ref: str
     assessment_fingerprint: str
     active_build_id: str
-    builds: tuple[DesignBuildSchema, ...]
+    # A session with no builds has nothing to mutate, optimise, or benchmark —
+    # rejecting it at the schema (422) beats an IndexError (500) downstream.
+    builds: tuple[DesignBuildSchema, ...] = Field(min_length=1)
     last_solve: SolveResultSchema | None = None
     applied: StrictBool = False
     agent_audit: tuple[AgentAuditEntrySchema, ...] = ()
