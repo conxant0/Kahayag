@@ -3,6 +3,7 @@
 from app.integrations.ai.quote_auditor import (
     merge_quote_facts,
     regex_extract_quote_facts,
+    regex_extract_quote_lines,
 )
 
 
@@ -16,6 +17,9 @@ def test_regex_extracts_grand_total_quote() -> None:
     facts = regex_extract_quote_facts(text)
     assert facts["total_php"] == 1_165_700
     assert facts["panel_count"] == 12
+    lines = regex_extract_quote_lines(text)
+    assert any(line.get("slot") == "panel" for line in lines)
+    assert any(line.get("slot") == "battery" for line in lines)
 
 
 def test_regex_extracts_total_bill_and_wattage() -> None:

@@ -7,6 +7,7 @@ import { peso } from "../../shared/lib/currency";
 import { useDesignStore } from "../../state/designStore";
 import { getActiveBuild } from "../design/designViewModel";
 import { AskEngineSidebar } from "./AskEngineSidebar";
+import { QuotationBuildPicker } from "./QuotationBuildPicker";
 import { WhatHappensNext } from "./WhatHappensNext";
 import {
   PAYMENT_TERMS_LINES,
@@ -14,9 +15,12 @@ import {
   formatIssuedDate,
   formatQuoteTotal,
   quoteMetrics,
+  quoteMetricsFromAudit,
+  quoteTotalLabel,
+  uploadedQuoteWhyThisPaysCopy,
   whyThisPaysCopy,
 } from "./quotationViewModel";
-import { useQuotation } from "./useQuotation";
+import { useActiveQuotation } from "./useQuotation";
 
 function DownloadIcon() {
   return (
@@ -48,9 +52,17 @@ function DownloadIcon() {
 export function QuotationPage() {
   const designSession = useDesignStore((state) => state.designSession);
   const activeBuild = getActiveBuild(designSession);
-  const { data: quote, isLoading, error } = useQuotation(activeBuild?.id ?? null);
+  const { data: quote, isLoading, error, mode, activeQuote } = useActiveQuotation();
 
-  if (!designSession || !activeBuild) {
+  if (!designSession) {
+    return <Navigate to={ROUTE_PATHS.compare} replace />;
+  }
+
+  if (mode === "build" && !activeBuild) {
+    return <Navigate to={ROUTE_PATHS.compare} replace />;
+  }
+
+  if (mode === "quote" && !activeQuote) {
     return <Navigate to={ROUTE_PATHS.compare} replace />;
   }
 
@@ -58,7 +70,18 @@ export function QuotationPage() {
     window.print();
   };
 
-  const metrics = quoteMetrics(activeBuild);
+  const metrics =
+    mode === "quote" && activeQuote
+      ? quoteMetricsFromAudit(activeQuote)
+      : activeBuild
+        ? quoteMetrics(activeBuild)
+        : [];
+  const whyThisPays =
+    mode === "quote" && activeQuote
+      ? uploadedQuoteWhyThisPaysCopy(activeQuote)
+      : activeBuild
+        ? whyThisPaysCopy(activeBuild)
+        : "";
 
   return (
     <div className="flex min-h-svh flex-col bg-[#f4f1ea]">
@@ -67,6 +90,8 @@ export function QuotationPage() {
         className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 pt-6 pb-28 lg:gap-8 lg:px-10 lg:pt-10 lg:pb-16"
       >
         <DesignFlowStepper activeStep={5} />
+
+        {mode === "build" ? <QuotationBuildPicker /> : null}
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
           <article className="quotation-document rounded-[20px] border border-hairline bg-white p-5 shadow-[0_8px_24px_rgba(26,23,18,0.04)] lg:p-8">
@@ -82,9 +107,15 @@ export function QuotationPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-pill bg-cobalt-wash px-3 py-1 font-sans text-[11px] font-semibold text-cobalt">
-                  AI-benchmarked against 3 local vendors
-                </span>
+                {mode === "quote" ? (
+                  <span className="rounded-pill bg-cobalt-wash px-3 py-1 font-sans text-[11px] font-semibold text-cobalt">
+                    Uploaded installer quote
+                  </span>
+                ) : (
+                  <span className="rounded-pill bg-cobalt-wash px-3 py-1 font-sans text-[11px] font-semibold text-cobalt">
+                    AI-benchmarked against 3 local vendors
+                  </span>
+                )}
                 {quote?.is_draft ? (
                   <span className="rounded-pill border border-hairline px-3 py-1 font-sans text-[11px] font-semibold tracking-wide text-secondary uppercase">
                     Draft
@@ -264,7 +295,7 @@ export function QuotationPage() {
                     </div>
                     <div className="mt-3 flex items-end justify-between gap-3 border-t border-hairline pt-3">
                       <span className="font-sans text-sm font-semibold text-ink">
-                        Estimated total range
+                        {quoteTotalLabel(quote)}
                       </span>
                       <span className="text-right font-serif text-[28px] font-medium leading-tight text-ink">
                         {formatQuoteTotal(quote)}
@@ -293,7 +324,7 @@ export function QuotationPage() {
                     Why this pays
                   </p>
                   <p className="mt-1 font-serif text-[15px] leading-6 text-ink italic">
-                    {whyThisPaysCopy(activeBuild)}
+                    {whyThisPays}
                   </p>
                 </aside>
               </>

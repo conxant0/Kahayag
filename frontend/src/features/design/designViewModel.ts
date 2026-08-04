@@ -4,9 +4,11 @@ import type {
   DesignBuild,
   DesignComponent,
   DesignSession,
+  QuoteAuditResponse,
   RejectionReason,
   SolverGoal,
 } from "../../shared/api/types";
+import { quoteAuditId, quoteAuditLabel } from "../compare/quoteAuditIds";
 import { pesoRange } from "../../shared/lib/currency";
 
 const SLOT_ORDER: ComponentSlot[] = [
@@ -71,6 +73,64 @@ export function getActiveBuild(session: DesignSession | null): DesignBuild | nul
   );
 }
 
+export const QUOTE_DIAGRAM_SOURCE_PREFIX = "quote:";
+
+export function isQuoteDiagramSource(value: string): boolean {
+  return value.startsWith(QUOTE_DIAGRAM_SOURCE_PREFIX);
+}
+
+export type DiagramSourceOption = {
+  value: string;
+  label: string;
+  description: string;
+  kind: "build" | "quote";
+};
+
+function compareOrderedBuilds(session: DesignSession): DesignBuild[] {
+  const suggested =
+    session.builds.find((build) => build.source === "ai_suggested") ??
+    [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
+  const alternate =
+    session.builds.find((build) => build.source === "custom") ??
+    session.builds.find((build) => build.id !== suggested?.id);
+
+  return [suggested, alternate].filter(
+    (build): build is DesignBuild => build !== undefined,
+  );
+}
+
+export function diagramSourceOptions(
+  session: DesignSession | null,
+  quoteResults: QuoteAuditResponse[],
+): DiagramSourceOption[] {
+  if (!session) {
+    return [];
+  }
+
+  const options: DiagramSourceOption[] = compareOrderedBuilds(session).map(
+    (build) => ({
+      value: build.id,
+      label: build.label,
+      description: `${build.system_kwp.toFixed(1)} kWp · Solver build`,
+      kind: "build",
+    }),
+  );
+
+  quoteResults.forEach((quoteResult, index) => {
+    if (quoteResult.diagram_components.length === 0) {
+      return;
+    }
+    options.push({
+      value: quoteAuditId(quoteResult, index),
+      label: quoteAuditLabel(quoteResult, index),
+      description: "From uploaded quote",
+      kind: "quote",
+    });
+  });
+
+  return options;
+}
+
 export type DesignSummaryTile = {
   label: string;
   value: string;
@@ -98,10 +158,13 @@ export function summaryTiles(build: DesignBuild | null): DesignSummaryTile[] {
 }
 
 export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
-  if (!build) {
-    return [];
-  }
-  const bySlot = new Map(build.components.map((c) => [c.slot, c]));
+  return canvasSlotsFromComponents(build?.components ?? []);
+}
+
+export function canvasSlotsFromComponents(
+  components: DesignComponent[],
+): DesignComponent[] {
+  const bySlot = new Map(components.map((c) => [c.slot, c]));
   return SLOT_ORDER.map(
     (slot) =>
       bySlot.get(slot) ?? {
@@ -122,17 +185,15 @@ export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
   );
 }
 
-export function canvasSlotHeader(slot: ComponentSlot): string {
-  return CANVAS_SLOT_HEADERS[slot] ?? slot;
+export function canvasBomGroups(build: DesignBuild | null): CanvasBomGroup[] {
+  return canvasBomGroupsFromComponents(build?.components ?? []);
 }
 
-export function canvasBomGroups(build: DesignBuild | null): CanvasBomGroup[] {
-  if (!build) {
-    return [];
-  }
-
+export function canvasBomGroupsFromComponents(
+  components: DesignComponent[],
+): CanvasBomGroup[] {
   const groups = new Map<ComponentSlot, DesignComponent[]>();
-  for (const component of build.components) {
+  for (const component of components) {
     if (component.slot === "panel" || component.slot === "inverter") {
       continue;
     }
@@ -146,6 +207,10 @@ export function canvasBomGroups(build: DesignBuild | null): CanvasBomGroup[] {
     label: CANVAS_SLOT_HEADERS[slot],
     components: groups.get(slot) ?? [],
   }));
+}
+
+export function canvasSlotHeader(slot: ComponentSlot): string {
+  return CANVAS_SLOT_HEADERS[slot] ?? slot;
 }
 
 export function rejectionsForCombo(

@@ -160,6 +160,8 @@ class QuotationDocument:
     subtotal_php: float
     vat_php: float
     total_php: float
+    total_low_php: float
+    total_high_php: float
     payment_terms: str
     warranty_summary: str
     is_draft: bool = True

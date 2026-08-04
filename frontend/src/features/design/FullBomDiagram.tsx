@@ -41,6 +41,39 @@ function FlowConnector({ label }: { label?: string }) {
   );
 }
 
+function WireLabel({
+  x,
+  y,
+  label,
+}: {
+  x: number;
+  y: number;
+  label: string;
+}) {
+  return (
+    <g>
+      <rect
+        x={x - 14}
+        y={y - 9}
+        width={28}
+        height={16}
+        rx={8}
+        fill="white"
+        stroke="#cfe8dc"
+      />
+      <text
+        x={x}
+        y={y + 3}
+        textAnchor="middle"
+        className="fill-[#2f6f58] font-sans text-[8px] font-bold uppercase"
+        style={{ fontSize: 8, letterSpacing: "0.8px" }}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
 function DiagramBomMiniCard({ component }: { component: DesignComponent }) {
   return (
     <article className="flex items-center gap-2.5 rounded-[12px] border border-hairline bg-white p-2 shadow-[0_2px_8px_rgba(26,23,18,0.04)]">
@@ -135,8 +168,6 @@ function FullBomWiringOverlay({
   bosRef,
   gridRef,
   homeRef,
-  batteryRef,
-  hasBattery,
   layoutKey,
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -145,12 +176,13 @@ function FullBomWiringOverlay({
   bosRef: RefObject<HTMLDivElement | null>;
   gridRef: RefObject<HTMLDivElement | null>;
   homeRef: RefObject<HTMLDivElement | null>;
-  batteryRef: RefObject<HTMLDivElement | null>;
-  hasBattery: boolean;
   layoutKey: string;
 }) {
   const [paths, setPaths] = useState<string[]>([]);
   const [dots, setDots] = useState<Array<{ x: number; y: number }>>([]);
+  const [labels, setLabels] = useState<Array<{ x: number; y: number; text: string }>>(
+    [],
+  );
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
@@ -161,7 +193,6 @@ function FullBomWiringOverlay({
       const bos = bosRef.current;
       const grid = gridRef.current;
       const home = homeRef.current;
-      const battery = batteryRef.current;
       if (!container || !panel || !inverter || !bos || !grid || !home) {
         return;
       }
@@ -185,26 +216,30 @@ function FullBomWiringOverlay({
       });
 
       const panelPoint = edgeRight(panel.getBoundingClientRect());
+      const inverterRect = inverter.getBoundingClientRect();
       const inverterPoint = {
-        left: edgeLeft(inverter.getBoundingClientRect()),
-        right: edgeRight(inverter.getBoundingClientRect()),
-        y: center(inverter.getBoundingClientRect()).y,
+        left: edgeLeft(inverterRect),
+        right: edgeRight(inverterRect),
+        y: center(inverterRect).y,
       };
+      const bosRect = bos.getBoundingClientRect();
       const bosPoint = {
-        left: edgeLeft(bos.getBoundingClientRect()),
-        right: edgeRight(bos.getBoundingClientRect()),
-        y: center(bos.getBoundingClientRect()).y,
+        left: edgeLeft(bosRect),
+        right: edgeRight(bosRect),
+        y: center(bosRect).y,
       };
       const gridPoint = edgeLeft(grid.getBoundingClientRect());
       const homePoint = edgeLeft(home.getBoundingClientRect());
-      const hubX =
-        inverterPoint.right.x + (bosPoint.left.x - inverterPoint.right.x) * 0.45;
+      const outputJunctionX =
+        bosPoint.right.x + (gridPoint.x - bosPoint.right.x) * 0.42;
 
       const nextPaths = [
         `M ${panelPoint.x} ${panelPoint.y} H ${inverterPoint.left.x}`,
-        `M ${inverterPoint.right.x} ${inverterPoint.y} H ${hubX} V ${bosPoint.y} H ${bosPoint.left.x}`,
-        `M ${bosPoint.right.x} ${gridPoint.y} H ${gridPoint.x}`,
-        `M ${bosPoint.right.x} ${homePoint.y} H ${homePoint.x}`,
+        `M ${inverterPoint.right.x} ${inverterPoint.y} H ${bosPoint.left.x}`,
+        `M ${bosPoint.right.x} ${bosPoint.y} H ${outputJunctionX}`,
+        `M ${outputJunctionX} ${gridPoint.y} V ${homePoint.y}`,
+        `M ${outputJunctionX} ${gridPoint.y} H ${gridPoint.x}`,
+        `M ${outputJunctionX} ${homePoint.y} H ${homePoint.x}`,
       ];
 
       const nextDots = [
@@ -212,23 +247,30 @@ function FullBomWiringOverlay({
         { x: inverterPoint.left.x, y: inverterPoint.y },
         { x: inverterPoint.right.x, y: inverterPoint.y },
         { x: bosPoint.left.x, y: bosPoint.y },
-        { x: bosPoint.right.x, y: gridPoint.y },
-        { x: bosPoint.right.x, y: homePoint.y },
+        { x: bosPoint.right.x, y: bosPoint.y },
+        { x: outputJunctionX, y: gridPoint.y },
+        { x: outputJunctionX, y: homePoint.y },
         gridPoint,
         homePoint,
       ];
 
-      if (hasBattery && battery) {
-        const batteryPoint = edgeLeft(battery.getBoundingClientRect());
-        nextPaths.push(
-          `M ${hubX} ${inverterPoint.y} V ${batteryPoint.y} H ${batteryPoint.x}`,
-        );
-        nextDots.push(batteryPoint);
-      }
+      const nextLabels = [
+        {
+          x: (panelPoint.x + inverterPoint.left.x) / 2,
+          y: panelPoint.y - 12,
+          text: "DC",
+        },
+        {
+          x: (inverterPoint.right.x + bosPoint.left.x) / 2,
+          y: inverterPoint.y - 12,
+          text: "AC",
+        },
+      ];
 
       setSize({ width: box.width, height: box.height });
       setPaths(nextPaths);
       setDots(nextDots);
+      setLabels(nextLabels);
     };
 
     measure();
@@ -250,10 +292,8 @@ function FullBomWiringOverlay({
     };
   }, [
     bosRef,
-    batteryRef,
     containerRef,
     gridRef,
-    hasBattery,
     homeRef,
     inverterRef,
     layoutKey,
@@ -294,6 +334,9 @@ function FullBomWiringOverlay({
           strokeWidth="2"
         />
       ))}
+      {labels.map((label) => (
+        <WireLabel key={label.text} x={label.x} y={label.y} label={label.text} />
+      ))}
     </svg>
   );
 }
@@ -305,13 +348,15 @@ export function FullBomDiagram({
   bomGroups,
   layoutKey,
   onOpenPicker,
+  readOnly = false,
 }: {
   panel: DesignComponent;
   inverter: DesignComponent;
   battery: DesignComponent;
   bomGroups: CanvasBomGroup[];
   layoutKey: string;
-  onOpenPicker: (slot: CatalogPickerSlot, mode: "swap" | "add") => void;
+  onOpenPicker?: (slot: CatalogPickerSlot, mode: "swap" | "add") => void;
+  readOnly?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -319,14 +364,14 @@ export function FullBomDiagram({
   const bosRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const homeRef = useRef<HTMLDivElement>(null);
-  const batteryRef = useRef<HTMLDivElement>(null);
   const hasBattery = battery.qty > 0;
+  const openPicker = readOnly ? undefined : onOpenPicker;
 
   return (
     <div className="relative mx-auto w-fit">
       <div
         ref={containerRef}
-        className="relative hidden items-start gap-0 lg:flex"
+        className="relative hidden items-start gap-8 lg:flex"
         aria-label="Full system wiring diagram"
       >
         <FullBomWiringOverlay
@@ -336,8 +381,6 @@ export function FullBomDiagram({
           bosRef={bosRef}
           gridRef={gridRef}
           homeRef={homeRef}
-          batteryRef={batteryRef}
-          hasBattery={hasBattery}
           layoutKey={layoutKey}
         />
 
@@ -345,28 +388,24 @@ export function FullBomDiagram({
           <CanvasComponentCard
             component={panel}
             showProductImage
-            onSwap={() => onOpenPicker("panel", "swap")}
+            onSwap={openPicker ? () => openPicker("panel", "swap") : undefined}
           />
           <p className="mt-1 text-center font-sans text-[9px] font-semibold tracking-[0.8px] text-[#2f6f58] uppercase">
             {canvasSlotHeader("panel")}
           </p>
         </div>
 
-        <FlowConnector label="DC" />
-
         <div ref={inverterRef} className="relative z-10 shrink-0">
           <CanvasComponentCard
             component={inverter}
             highlighted
             showProductImage
-            onSwap={() => onOpenPicker("inverter", "swap")}
+            onSwap={openPicker ? () => openPicker("inverter", "swap") : undefined}
           />
           <p className="mt-1 text-center font-sans text-[9px] font-semibold tracking-[0.8px] text-[#2f6f58] uppercase">
             {canvasSlotHeader("inverter")}
           </p>
         </div>
-
-        <FlowConnector label="AC" />
 
         <div
           ref={bosRef}
@@ -384,19 +423,19 @@ export function FullBomDiagram({
             ))}
           </div>
           {hasBattery ? (
-            <div ref={batteryRef}>
+            <div>
               <CanvasComponentCard
                 component={battery}
                 showProductImage
-                onSwap={() => onOpenPicker("battery", "swap")}
+                onSwap={openPicker ? () => openPicker("battery", "swap") : undefined}
               />
             </div>
+          ) : readOnly ? (
+            <CanvasComponentCard component={battery} showProductImage />
           ) : (
-            <AddComponentCard onAdd={() => onOpenPicker("battery", "add")} />
+            <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
           )}
         </div>
-
-        <FlowConnector />
 
         <div className="relative z-10 flex shrink-0 flex-col gap-3 self-center">
           <DestinationCard
@@ -418,14 +457,14 @@ export function FullBomDiagram({
         <CanvasComponentCard
           component={panel}
           showProductImage
-          onSwap={() => onOpenPicker("panel", "swap")}
+          onSwap={openPicker ? () => openPicker("panel", "swap") : undefined}
         />
         <FlowConnector label="DC" />
         <CanvasComponentCard
           component={inverter}
           highlighted
           showProductImage
-          onSwap={() => onOpenPicker("inverter", "swap")}
+          onSwap={openPicker ? () => openPicker("inverter", "swap") : undefined}
         />
         <FlowConnector label="AC" />
         <div className="flex w-full max-w-[19rem] flex-col gap-3 rounded-[16px] border-2 border-dashed border-[#b9dccf] bg-[#f7fbf8] p-3">
@@ -439,10 +478,12 @@ export function FullBomDiagram({
             <CanvasComponentCard
               component={battery}
               showProductImage
-              onSwap={() => onOpenPicker("battery", "swap")}
+              onSwap={openPicker ? () => openPicker("battery", "swap") : undefined}
             />
+          ) : readOnly ? (
+            <CanvasComponentCard component={battery} showProductImage />
           ) : (
-            <AddComponentCard onAdd={() => onOpenPicker("battery", "add")} />
+            <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
           )}
         </div>
         <FlowConnector />

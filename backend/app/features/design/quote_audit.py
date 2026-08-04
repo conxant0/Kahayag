@@ -6,6 +6,10 @@ from app.features.design.schemas import (
     QuoteAuditFindingSchema,
     QuoteAuditResponseSchema,
 )
+from app.features.design.quote_diagram import (
+    build_quote_diagram_components,
+    to_component_schema,
+)
 from app.integrations.ai.quote_auditor import QuoteAuditorClient
 from app.integrations.quote_parsing.document_reader import (
     QuoteImageTranscriber,
@@ -113,6 +117,14 @@ def audit_uploaded_quote(
     )
 
     extracted = client.extract_quote_facts(document_text=document_text)
+    quote_lines = client.extract_quote_lines(document_text=document_text)
+    diagram_components = tuple(
+        to_component_schema(component)
+        for component in build_quote_diagram_components(
+            extracted=extracted,
+            raw_lines=quote_lines,
+        )
+    )
     findings = tuple(_deterministic_findings(extracted=extracted, benchmark=benchmark))
     benchmark_facts = {
         "total_investment_php": benchmark.total_investment_php,
@@ -137,4 +149,5 @@ def audit_uploaded_quote(
         benchmark_system_kwp=benchmark.system_kwp,
         findings=findings,
         summary=summary,
+        diagram_components=diagram_components,
     )

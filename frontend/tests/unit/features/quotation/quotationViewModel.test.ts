@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
 import {
   buildQuotationFromBuild,
+  buildQuotationFromQuoteAudit,
+  formatQuoteTotal,
   quoteNumberForBuild,
+  quoteTotalLabel,
 } from "../../../../src/features/quotation/quotationViewModel";
 
 describe("quotationViewModel", () => {
@@ -22,10 +25,51 @@ describe("quotationViewModel", () => {
     );
   });
 
+  it("keeps a range when low and high totals differ", () => {
+    const build = mockDesignSession.builds[0]!;
+    const quote = buildQuotationFromBuild(build);
+
+    expect(formatQuoteTotal(quote)).toBe("₱354,928–₱524,636");
+    expect(quoteTotalLabel(quote)).toBe("Estimated total range");
+  });
+
   it("keeps a stable quote number for the session build", () => {
     const build = mockDesignSession.builds[0]!;
     expect(quoteNumberForBuild(build.id)).toBe(
       `KE-2026-${build.id.slice(0, 4).toUpperCase()}`,
     );
+  });
+
+  it("falls back to total_php when investment range fields are missing", () => {
+    const build = mockDesignSession.builds[0]!;
+    const quote = {
+      ...buildQuotationFromBuild(build),
+      total_low_php: Number.NaN,
+      total_high_php: Number.NaN,
+    };
+
+    expect(formatQuoteTotal(quote)).toBe("₱439,782");
+    expect(quoteTotalLabel(quote)).toBe("Quoted total");
+  });
+
+  it("builds a quotation document from an uploaded quote audit", () => {
+    const components = mockDesignSession.builds[0]!.components.slice(0, 2);
+    const quote = buildQuotationFromQuoteAudit({
+      filename: "installer.pdf",
+      extracted_total_php: 465_000,
+      extracted_system_kwp: 5.2,
+      extracted_panel_count: 12,
+      benchmark_total_php: 440_000,
+      benchmark_system_kwp: 5.85,
+      findings: [],
+      summary: "Uploaded quote summary.",
+      diagram_components: components,
+    });
+
+    expect(quote.quote_number).toBe("UP-INSTALLE");
+    expect(quote.lines).toHaveLength(components.length);
+    expect(quote.total_php).toBe(465_000);
+    expect(formatQuoteTotal(quote)).toBe("₱465,000");
+    expect(quoteTotalLabel(quote)).toBe("Quoted total");
   });
 });

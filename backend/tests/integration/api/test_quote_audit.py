@@ -87,6 +87,9 @@ def test_quote_audit_parses_table_style_grand_total(
     assert body["extracted_total_php"] == 1_165_700
     assert body["extracted_system_kwp"] == 3.87
     assert body["extracted_panel_count"] == 6
+    assert body["diagram_components"]
+    assert any(item["slot"] == "panel" for item in body["diagram_components"])
+    assert any(item["slot"] == "inverter" for item in body["diagram_components"])
 
 
 def test_mutate_reruns_solver_with_panel_delta(

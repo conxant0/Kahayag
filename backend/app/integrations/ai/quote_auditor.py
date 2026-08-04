@@ -48,6 +48,14 @@ _SUMMARY_PROMPT = (
     "in the user message. Do not invent prices, capacities, or payback figures."
 )
 
+_EXTRACT_LINES_PROMPT = (
+    "Extract installer quote line items from the document text. Return JSON with key "
+    '"lines": an array of objects with keys slot (panel|inverter|battery|protection|'
+    "structure|electrical|installation), brand, model, qty, unit, line_total_php, "
+    "and summary. Use only values explicitly stated in the quote. Use null when "
+    "unknown. Do not invent equipment that is not listed."
+)
+
 _IMAGE_TRANSCRIBE_PROMPT = (
     "Transcribe this installer quotation image exactly. Preserve all table rows, "
     "descriptions, quantities, unit prices, totals, currency labels (PHP, PKR, ₱), "
@@ -193,6 +201,75 @@ def regex_extract_quote_facts(text: str) -> dict[str, float | int | None]:
     }
 
 
+def classify_quote_line(description: str) -> str:
+    lowered = description.lower()
+    if any(word in lowered for word in ("panel", "module", "pv")):
+        return "panel"
+    if "inverter" in lowered:
+        return "inverter"
+    if any(word in lowered for word in ("battery", "lithium", "storage")):
+        return "battery"
+    if any(word in lowered for word in ("mount", "rail", "structure")):
+        return "structure"
+    if any(word in lowered for word in ("cable", "wire", "conduit")):
+        return "electrical"
+    if any(word in lowered for word in ("breaker", "spd", "surge", "protection")):
+        return "protection"
+    if any(word in lowered for word in ("install", "labour", "labor", "permit")):
+        return "installation"
+    return "installation"
+
+
+def regex_extract_quote_lines(text: str) -> list[dict[str, object]]:
+    lines: list[dict[str, object]] = []
+    row_pattern = re.compile(
+        r"^\s*\d+\s+"
+        r"(?P<desc>.+?)\s+"
+        r"(?P<qty>\d+)\s+"
+        r"(?P<unit_price>[\d,]+)\s+"
+        r"(?P<line_total>[\d,]+)\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    for match in row_pattern.finditer(text):
+        desc = match.group("desc").strip()
+        qty = int(match.group("qty"))
+        line_total = _parse_amount(match.group("line_total"))
+        parts = desc.split()
+        brand = parts[1] if len(parts) > 1 else "Quoted"
+        model = parts[2] if len(parts) > 2 else desc
+        lines.append(
+            {
+                "slot": classify_quote_line(desc),
+                "brand": brand,
+                "model": model,
+                "qty": qty,
+                "unit": "pcs",
+                "line_total_php": line_total,
+                "summary": desc,
+            },
+        )
+
+    inverter_match = re.search(
+        r"(?P<brand>\w+)\s+(?P<model>[\w-]+)?\s*(?:Hybrid\s+)?Inverter",
+        text,
+        re.IGNORECASE,
+    )
+    if inverter_match and not any(line.get("slot") == "inverter" for line in lines):
+        lines.append(
+            {
+                "slot": "inverter",
+                "brand": inverter_match.group("brand"),
+                "model": inverter_match.group("model") or "Inverter",
+                "qty": 1,
+                "unit": "pcs",
+                "line_total_php": None,
+                "summary": inverter_match.group(0),
+            },
+        )
+
+    return lines
+
+
 def merge_quote_facts(
     primary: dict[str, float | int | None],
     fallback: dict[str, float | int | None],
@@ -220,6 +297,8 @@ def merge_quote_facts(
 class QuoteAuditorClient(Protocol):
     def extract_quote_facts(self, *, document_text: str) -> dict[str, float | int | None]: ...
 
+    def extract_quote_lines(self, *, document_text: str) -> list[dict[str, object]]: ...
+
     def transcribe_image(self, *, content: bytes, mime_type: str) -> str: ...
 
     def summarize_audit(
@@ -234,6 +313,9 @@ class QuoteAuditorClient(Protocol):
 class DisabledQuoteAuditorClient:
     def extract_quote_facts(self, *, document_text: str) -> dict[str, float | int | None]:
         return regex_extract_quote_facts(document_text)
+
+    def extract_quote_lines(self, *, document_text: str) -> list[dict[str, object]]:
+        return regex_extract_quote_lines(document_text)
 
     def transcribe_image(self, *, content: bytes, mime_type: str) -> str:
         return ""
@@ -293,6 +375,34 @@ class GroqQuoteAuditorClient:
             return merge_quote_facts(ai_facts, regex_facts)
         except (httpx.HTTPError, KeyError, TypeError, ValueError, json.JSONDecodeError):
             return regex_facts
+
+    def extract_quote_lines(self, *, document_text: str) -> list[dict[str, object]]:
+        regex_lines = regex_extract_quote_lines(document_text)
+        if not document_text.strip():
+            return regex_lines
+        try:
+            response = httpx.post(
+                GROQ_CHAT_COMPLETIONS_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self._model,
+                    "response_format": {"type": "json_object"},
+                    "messages": [
+                        {"role": "system", "content": _EXTRACT_LINES_PROMPT},
+                        {"role": "user", "content": document_text[:12000]},
+                    ],
+                },
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            payload = json.loads(response.json()["choices"][0]["message"]["content"])
+            raw_lines = payload.get("lines")
+            if not isinstance(raw_lines, list):
+                return regex_lines
+            ai_lines = [line for line in raw_lines if isinstance(line, dict)]
+            return ai_lines or regex_lines
+        except (httpx.HTTPError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+            return regex_lines
 
     def transcribe_image(self, *, content: bytes, mime_type: str) -> str:
         encoded = base64.standard_b64encode(content).decode("ascii")

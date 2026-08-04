@@ -277,6 +277,7 @@ export interface QuoteAuditResponse {
   benchmark_system_kwp: number;
   findings: QuoteAuditFinding[];
   summary: string;
+  diagram_components: DesignComponent[];
 }
 
 export interface MutateDesignPayload {

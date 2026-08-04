@@ -1,20 +1,27 @@
-import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import type {
   CatalogOption,
   CatalogPickerSlot,
   DesignBuild,
   DesignSession,
+  QuoteAuditResponse,
 } from "../../shared/api/types";
+import { parseQuoteAuditId, quoteAuditId } from "../compare/quoteAuditIds";
 import { SegmentedToggle } from "../../shared/components/ui";
 import {
   CANVAS_VIEW_OPTIONS,
   canvasBomGroups,
+  canvasBomGroupsFromComponents,
   canvasSlots,
+  canvasSlotsFromComponents,
+  diagramSourceOptions,
+  isQuoteDiagramSource,
   type CanvasViewMode,
 } from "./designViewModel";
 import { AddComponentCard, CanvasComponentCard } from "./CanvasComponentCard";
 import { ComponentPickerModal } from "./ComponentPickerModal";
+import { DiagramSourcePicker } from "./DiagramSourcePicker";
 import { FullBomDiagram } from "./FullBomDiagram";
 import { useMutateDesign } from "./useDesignActions";
 
@@ -157,27 +164,106 @@ function BranchGap({
   );
 }
 
+type CanvasSource = string;
+
 export function SystemCanvas({
   build,
+  session,
+  quoteResults = [],
 }: {
   build: DesignBuild | null;
   session: DesignSession | null;
+  quoteResults?: QuoteAuditResponse[];
 }) {
+  const diagramQuotes = useMemo(
+    () =>
+      quoteResults.filter((quoteResult) => quoteResult.diagram_components.length > 0),
+    [quoteResults],
+  );
+  const sourceOptions = useMemo(
+    () => diagramSourceOptions(session, quoteResults),
+    [session, quoteResults],
+  );
+  const defaultSource =
+    session?.active_build_id ?? build?.id ?? sourceOptions[0]?.value ?? "";
+  const [canvasSource, setCanvasSource] = useState<CanvasSource>(defaultSource);
   const [zoom, setZoom] = useState(1);
   const [viewMode, setViewMode] = useState<CanvasViewMode>("simplified");
   const [picker, setPicker] = useState<PickerState | null>(null);
   const mutate = useMutateDesign();
-  const slots = useMemo(() => canvasSlots(build), [build]);
-  const bomGroups = useMemo(() => canvasBomGroups(build), [build]);
+  const previousQuoteCount = useRef(0);
+  const selectedQuote = useMemo(
+    () => parseQuoteAuditId(canvasSource, quoteResults),
+    [canvasSource, quoteResults],
+  );
+  const showingQuote =
+    selectedQuote !== null && selectedQuote.diagram_components.length > 0;
+  const activeQuoteComponents = selectedQuote?.diagram_components ?? [];
+  const previewBuild = useMemo(
+    () =>
+      showingQuote
+        ? null
+        : (session?.builds.find((candidate) => candidate.id === canvasSource) ??
+          build),
+    [showingQuote, session?.builds, canvasSource, build],
+  );
+  const designSlots = useMemo(() => canvasSlots(previewBuild), [previewBuild]);
+  const designBomGroups = useMemo(
+    () => canvasBomGroups(previewBuild),
+    [previewBuild],
+  );
+  const quoteSlots = useMemo(
+    () => canvasSlotsFromComponents(activeQuoteComponents),
+    [activeQuoteComponents],
+  );
+  const quoteBomGroups = useMemo(
+    () => canvasBomGroupsFromComponents(activeQuoteComponents),
+    [activeQuoteComponents],
+  );
+  const readOnly =
+    showingQuote ||
+    (previewBuild !== null &&
+      previewBuild.id !== (session?.active_build_id ?? build?.id));
+  const slots = showingQuote ? quoteSlots : designSlots;
+  const bomGroups = showingQuote ? quoteBomGroups : designBomGroups;
   const [panel, inverter, protection, battery] = slots;
+
+  useEffect(() => {
+    if (
+      diagramQuotes.length > previousQuoteCount.current &&
+      diagramQuotes.length > 0
+    ) {
+      const latestQuote = diagramQuotes[diagramQuotes.length - 1]!;
+      const latestIndex = quoteResults.indexOf(latestQuote);
+      if (latestIndex >= 0) {
+        setCanvasSource(quoteAuditId(latestQuote, latestIndex));
+      }
+    }
+    if (
+      isQuoteDiagramSource(canvasSource) &&
+      !sourceOptions.some((option) => option.value === canvasSource)
+    ) {
+      setCanvasSource(defaultSource);
+    }
+    previousQuoteCount.current = diagramQuotes.length;
+  }, [canvasSource, defaultSource, diagramQuotes, quoteResults, sourceOptions]);
+
+  useEffect(() => {
+    if (!sourceOptions.some((option) => option.value === canvasSource)) {
+      setCanvasSource(defaultSource);
+    }
+  }, [sourceOptions, canvasSource, defaultSource]);
 
   const inverterRef = useRef<HTMLDivElement>(null);
   const protectionRef = useRef<HTMLDivElement>(null);
   const batteryRef = useRef<HTMLDivElement>(null);
 
   const layoutKey = [
+    canvasSource,
     panel?.catalog_id,
+    panel?.model,
     inverter?.catalog_id,
+    inverter?.model,
     battery?.catalog_id,
     battery?.qty,
     zoom,
@@ -214,20 +300,29 @@ export function SystemCanvas({
 
   return (
     <>
-      <div className="relative h-full min-h-[32rem] overflow-hidden rounded-[20px] border border-hairline bg-[#f7f4ed]">
+      <div className="relative flex h-full min-h-[32rem] flex-col overflow-hidden rounded-[20px] border border-hairline bg-[#f7f4ed]">
         <div
-          className="absolute inset-0"
+          className="pointer-events-none absolute inset-0"
           style={{
             backgroundImage: "radial-gradient(circle, #d4cec0 1px, transparent 1px)",
             backgroundSize: "22px 22px",
           }}
         />
 
-        <div className="absolute top-4 left-4 z-10">
+        <div className="relative z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-hairline bg-[#f2eee4]/95 px-4 py-3 backdrop-blur-sm">
+          {sourceOptions.length > 1 ? (
+            <DiagramSourcePicker
+              value={canvasSource}
+              options={sourceOptions}
+              onChange={setCanvasSource}
+            />
+          ) : (
+            <div className="flex-1" />
+          )}
           <ViewModeToggle value={viewMode} onChange={setViewMode} />
         </div>
 
-        <div className="relative h-full min-h-[32rem] overflow-auto p-6 pt-16 lg:p-8 lg:pt-16">
+        <div className="relative min-h-0 flex-1 overflow-auto p-6 lg:p-8">
           <div
             className="mx-auto w-fit transition-transform duration-150"
             style={{ transform: `scale(${zoom})`, transformOrigin: "center top" }}
@@ -239,7 +334,8 @@ export function SystemCanvas({
                 battery={battery}
                 bomGroups={bomGroups}
                 layoutKey={layoutKey}
-                onOpenPicker={openPicker}
+                onOpenPicker={readOnly ? undefined : openPicker}
+                readOnly={readOnly}
               />
             ) : (
               <>
@@ -247,7 +343,7 @@ export function SystemCanvas({
                   <CanvasComponentCard
                     component={panel}
                     showProductImage
-                    onSwap={() => openPicker("panel", "swap")}
+                    onSwap={readOnly ? undefined : () => openPicker("panel", "swap")}
                   />
 
                   <GapLine />
@@ -257,7 +353,7 @@ export function SystemCanvas({
                       component={inverter}
                       highlighted
                       showProductImage
-                      onSwap={() => openPicker("inverter", "swap")}
+                      onSwap={readOnly ? undefined : () => openPicker("inverter", "swap")}
                     />
                   </div>
 
@@ -276,10 +372,16 @@ export function SystemCanvas({
                       <CanvasComponentCard
                         component={battery}
                         showProductImage
-                        onSwap={() => openPicker("battery", battery.qty > 0 ? "swap" : "add")}
+                        onSwap={
+                          readOnly
+                            ? undefined
+                            : () => openPicker("battery", battery.qty > 0 ? "swap" : "add")
+                        }
                       />
                     </div>
-                    <AddComponentCard onAdd={() => openPicker("battery", "add")} />
+                    {readOnly ? null : (
+                      <AddComponentCard onAdd={() => openPicker("battery", "add")} />
+                    )}
                   </div>
                 </div>
 
@@ -287,23 +389,29 @@ export function SystemCanvas({
                   <CanvasComponentCard
                     component={panel}
                     showProductImage
-                    onSwap={() => openPicker("panel", "swap")}
+                    onSwap={readOnly ? undefined : () => openPicker("panel", "swap")}
                   />
                   <div className="h-5 w-0.5 rounded-pill bg-[#bfb9ab]" aria-hidden="true" />
                   <CanvasComponentCard
                     component={inverter}
                     highlighted
                     showProductImage
-                    onSwap={() => openPicker("inverter", "swap")}
+                    onSwap={readOnly ? undefined : () => openPicker("inverter", "swap")}
                   />
                   <div className="h-5 w-0.5 rounded-pill bg-[#bfb9ab]" aria-hidden="true" />
                   <CanvasComponentCard component={protection} showProductImage />
                   <CanvasComponentCard
                     component={battery}
                     showProductImage
-                    onSwap={() => openPicker("battery", battery.qty > 0 ? "swap" : "add")}
+                    onSwap={
+                      readOnly
+                        ? undefined
+                        : () => openPicker("battery", battery.qty > 0 ? "swap" : "add")
+                    }
                   />
-                  <AddComponentCard onAdd={() => openPicker("battery", "add")} />
+                  {readOnly ? null : (
+                    <AddComponentCard onAdd={() => openPicker("battery", "add")} />
+                  )}
                 </div>
               </>
             )}

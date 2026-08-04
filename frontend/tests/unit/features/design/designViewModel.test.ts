@@ -4,9 +4,11 @@ import { mockDesignSession } from "../../../../src/features/design/fixtures/mock
 import {
   canvasBomGroups,
   canvasSlots,
+  diagramSourceOptions,
   getActiveBuild,
   summaryTiles,
 } from "../../../../src/features/design/designViewModel";
+import { quoteAuditId } from "../../../../src/features/compare/quoteAuditIds";
 
 describe("designViewModel", () => {
   it("selects the active build and summary tiles", () => {
@@ -38,5 +40,32 @@ describe("designViewModel", () => {
     expect(groups.find((group) => group.slot === "electrical")?.components.length).toBeGreaterThan(
       1,
     );
+  });
+
+  it("lists both solver builds and uploaded quotes as diagram sources", () => {
+    const withoutQuote = diagramSourceOptions(mockDesignSession, []);
+    expect(withoutQuote.map((option) => option.label)).toEqual([
+      "AI suggested",
+      "Custom build A",
+    ]);
+
+    const quote = {
+      filename: "installer.pdf",
+      extracted_total_php: 250_000,
+      extracted_system_kwp: 5.2,
+      extracted_panel_count: 12,
+      benchmark_total_php: 440_000,
+      benchmark_system_kwp: 5.85,
+      findings: [],
+      summary: "Quote summary",
+      diagram_components: mockDesignSession.builds[0]!.components.slice(0, 4),
+    };
+    const withQuote = diagramSourceOptions(mockDesignSession, [quote]);
+    expect(withQuote).toHaveLength(3);
+    expect(withQuote[2]).toMatchObject({
+      value: quoteAuditId(quote, 0),
+      label: "installer.pdf",
+      description: "From uploaded quote",
+    });
   });
 });

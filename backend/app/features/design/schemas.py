@@ -144,6 +144,8 @@ class QuotationDocumentSchema(ContractModel):
     subtotal_php: StrictFloat = Field(ge=0)
     vat_php: StrictFloat = Field(ge=0)
     total_php: StrictFloat = Field(ge=0)
+    total_low_php: StrictFloat = Field(ge=0)
+    total_high_php: StrictFloat = Field(ge=0)
     payment_terms: str
     warranty_summary: str
     is_draft: StrictBool = True
@@ -237,3 +239,4 @@ class QuoteAuditResponseSchema(ContractModel):
     benchmark_system_kwp: StrictFloat = Field(gt=0)
     findings: tuple[QuoteAuditFindingSchema, ...] = ()
     summary: str
+    diagram_components: tuple[DesignComponentSchema, ...] = ()
