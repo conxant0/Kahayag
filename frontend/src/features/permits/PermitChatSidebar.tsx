@@ -38,6 +38,8 @@ function SendIcon() {
   );
 }
 
+type ChatTurn = { role: "user" | "assistant"; text: string };
+
 const SUGGESTED_QUESTIONS = [
   "Do I need a notarized authorization?",
   "What track am I on?",
@@ -55,7 +57,7 @@ export function PermitChatSidebar({
   propertyAddress: string;
   systemKwp: number;
 }) {
-  const [reply, setReply] = useState<string | null>(null);
+  const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
   const chat = usePermitChat();
 
@@ -64,8 +66,8 @@ export function PermitChatSidebar({
     if (!trimmed) {
       return;
     }
-    setReply(null);
     setDraft("");
+    setTurns((current) => [...current, { role: "user", text: trimmed }]);
     try {
       const response = await chat.mutateAsync({
         applicant: toApiApplicant(applicant),
@@ -74,7 +76,7 @@ export function PermitChatSidebar({
         property_address: propertyAddress,
         user_text: trimmed,
       });
-      setReply(response.reply);
+      setTurns((current) => [...current, { role: "assistant", text: response.reply }]);
       onApplicantChange(fromApiApplicant(response.applicant));
     } catch {
       // chat.error surfaces below.
@@ -83,7 +85,7 @@ export function PermitChatSidebar({
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-[20px] border border-hairline bg-white p-5 print:hidden"
+      className="flex h-full min-h-0 flex-col gap-4 rounded-[20px] border border-hairline bg-white p-5 print:hidden"
       aria-label="Ask about your permit packet"
     >
       <header className="flex items-center gap-2 text-ink">
@@ -109,11 +111,28 @@ export function PermitChatSidebar({
         ))}
       </div>
 
-      {reply ? (
-        <p className="rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-ink">
-          {reply}
-        </p>
-      ) : null}
+      <div
+        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
+        aria-live="polite"
+      >
+        {turns.map((turn, index) => (
+          <p
+            key={`${turn.role}-${index}`}
+            className={
+              turn.role === "user"
+                ? "self-end rounded-[14px] bg-[#f2eee4] px-3 py-2 font-sans text-sm leading-5 text-ink"
+                : "rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-ink"
+            }
+          >
+            {turn.text}
+          </p>
+        ))}
+        {chat.isPending ? (
+          <p className="rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-tertiary">
+            Thinking…
+          </p>
+        ) : null}
+      </div>
 
       <form
         className="flex items-center gap-2 rounded-pill border border-hairline bg-[#fcfaf5] py-1.5 pr-1.5 pl-4"
