@@ -22,7 +22,6 @@ import {
 } from "./panelCountAdjustment";
 import { layoutPanelsInPolygon } from "./panelLayoutUtils";
 import { resolveLayoutContext } from "./layoutContext";
-import { PanelLayoutPreview } from "./components/PanelLayoutPreview";
 import { ResultsMapPane } from "./components/ResultsMapPane";
 
 export function EditLayoutPage() {
@@ -153,24 +152,13 @@ export function EditLayoutPage() {
       nextDisabled={isPending || !canSave}
       nextLoading={isPending}
       pane={
-        <div className="flex max-h-full flex-col gap-3 overflow-y-auto">
-          <div className="h-56 shrink-0">
-            <PanelLayoutPreview
-              roofCoordinates={roofCoordinates}
-              panels={panels}
-              status={adjustmentError ?? "Panel placement preview"}
-            />
-          </div>
-          <div className="h-56 shrink-0">
-            <ResultsMapPane
-              selectedProperty={selectedProperty}
-              roofCoordinates={roofCoordinates}
-              panels={panels}
-              flux={cachedFlux?.flux}
-              mask={cachedFlux?.mask}
-            />
-          </div>
-        </div>
+        <ResultsMapPane
+          selectedProperty={selectedProperty}
+          roofCoordinates={roofCoordinates}
+          panels={panels}
+          flux={cachedFlux?.flux}
+          mask={cachedFlux?.mask}
+        />
       }
       lead={
         <p className="font-sans text-[15px] text-secondary">

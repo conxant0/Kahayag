@@ -39,7 +39,7 @@ export function ResultsMapPane({
       <div
         ref={mapContainerRef}
         aria-label={`Recommended layout: ${panels.length} panels over the traced roof`}
-        className="absolute inset-0 min-h-56"
+        className="absolute inset-0 min-h-96"
       >
         {/* The map still shows the property pin without a roof trace; only
             the layout it can't draw yet needs saying. */}

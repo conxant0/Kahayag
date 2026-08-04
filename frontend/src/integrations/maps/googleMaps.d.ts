@@ -143,6 +143,22 @@ interface GooglePolygonOptions {
   zIndex?: number;
 }
 
+interface GooglePolylineOptions {
+  map: GoogleMap | null;
+  path: GoogleLatLngLiteral[];
+  strokeColor?: string;
+  strokeOpacity?: number;
+  strokeWeight?: number;
+  clickable?: boolean;
+  zIndex?: number;
+}
+
+interface GooglePolyline {
+  setMap(map: GoogleMap | null): void;
+  setPath(path: GoogleLatLngLiteral[]): void;
+  setOptions(options: Partial<GooglePolylineOptions>): void;
+}
+
 interface GoogleLatLngBoundsLiteral {
   north: number;
   south: number;
@@ -180,6 +196,7 @@ interface GoogleMapsApi {
   }) => GoogleMarker;
   Animation?: { DROP?: number; BOUNCE?: number };
   Polygon: new (options: GooglePolygonOptions) => GooglePolygon;
+  Polyline: new (options: GooglePolylineOptions) => GooglePolyline;
   LatLng: new (latitude: number, longitude: number) => GoogleLatLngInstance;
   LatLngBounds?: new () => GoogleLatLngBounds;
   GroundOverlay?: new (

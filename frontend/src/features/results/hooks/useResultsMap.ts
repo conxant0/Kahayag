@@ -27,6 +27,40 @@ function toLatLngPath(points: readonly GeoPoint[]) {
   }));
 }
 
+// Bilinear interpolation across the panel's 4 corners in lat/lng space, the
+// same math PanelLayoutPreview used for its SVG cell grid.
+function lerpLatLng(
+  corners: readonly GeoPoint[],
+  u: number,
+  v: number,
+): { lat: number; lng: number } {
+  const [p00, p10, p11, p01] = corners;
+  const lat =
+    (1 - u) * (1 - v) * p00.latitude +
+    u * (1 - v) * p10.latitude +
+    u * v * p11.latitude +
+    (1 - u) * v * p01.latitude;
+  const lng =
+    (1 - u) * (1 - v) * p00.longitude +
+    u * (1 - v) * p10.longitude +
+    u * v * p11.longitude +
+    (1 - u) * v * p01.longitude;
+  return { lat, lng };
+}
+
+function panelGridLinePaths(corners: readonly GeoPoint[]) {
+  const columnSplits = [1 / 2];
+  const rowSplits = [1 / 3, 2 / 3];
+  const paths: { lat: number; lng: number }[][] = [];
+  for (const u of columnSplits) {
+    paths.push([lerpLatLng(corners, u, 0), lerpLatLng(corners, u, 1)]);
+  }
+  for (const v of rowSplits) {
+    paths.push([lerpLatLng(corners, 0, v), lerpLatLng(corners, 1, v)]);
+  }
+  return paths;
+}
+
 function boundsOf(points: readonly GeoPoint[]): GoogleLatLngBounds | null {
   if (!points.length || !window.google?.maps?.LatLngBounds) {
     return null;
@@ -52,6 +86,7 @@ export function useResultsMap(
   const mapInstanceRef = useRef<GoogleMap | null>(null);
   const roofPolygonRef = useRef<GooglePolygon | null>(null);
   const panelPolygonsRef = useRef<GooglePolygon[]>([]);
+  const panelGridLinesRef = useRef<GooglePolyline[]>([]);
   const fluxOverlayRef = useRef<GoogleGroundOverlay | null>(null);
   const overlay = useMemo(
     () =>
@@ -172,6 +207,34 @@ export function useResultsMap(
 
     return () => {
       panelPolygonsRef.current.forEach((polygon) => polygon.setMap(null));
+    };
+  }, [googleStatus, panels]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !window.google?.maps) {
+      return;
+    }
+
+    const maps = window.google.maps;
+    panelGridLinesRef.current.forEach((polyline) => polyline.setMap(null));
+    panelGridLinesRef.current = panels.flatMap((panel) =>
+      panelGridLinePaths(panel.corners).map(
+        (path) =>
+          new maps.Polyline({
+            map,
+            path,
+            strokeColor: ROOF_COLOUR,
+            strokeOpacity: 0.85,
+            strokeWeight: 1,
+            clickable: false,
+            zIndex: 1100,
+          }),
+      ),
+    );
+
+    return () => {
+      panelGridLinesRef.current.forEach((polyline) => polyline.setMap(null));
     };
   }, [googleStatus, panels]);
 
