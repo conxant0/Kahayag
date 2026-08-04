@@ -2,6 +2,7 @@
 
 import uuid
 
+from app.domain.design.bom import estimate_balance_of_system_cost_php
 from app.domain.design.catalog import (
     CatalogBattery,
     CatalogInverter,
@@ -47,31 +48,13 @@ def _estimate_combo_cost_php(
     inverter_cost = inverter.price_php.mid * inverter_units
     battery_cost = battery.price_php.mid if battery else 0.0
 
-    mount = catalog.mounting_kits["mount_001"]
-    cable = catalog.cabling["cable_001"]
-    install = catalog.misc_bom_items["misc_001"]
-    permits = catalog.misc_bom_items["misc_002"]
-    protection_id = "prot_002" if inverter.battery_compatible else "prot_001"
-    protection = catalog.protections[protection_id]
-
-    mount_cost = (mount.price_php_per_kwp.mid if mount.price_php_per_kwp else 0) * system_kwp
-    cable_cost = (cable.price_php_per_kwp.mid if cable.price_php_per_kwp else 0) * system_kwp
-    install_cost = (
-        install.price_php_per_kwp.mid if install.price_php_per_kwp else 0
-    ) * system_kwp
-    permits_cost = permits.price_php.mid if permits.price_php else 0
-    protection_cost = protection.price_php.mid if protection.price_php else 0
-
-    return (
-        panel_cost
-        + inverter_cost
-        + battery_cost
-        + mount_cost
-        + cable_cost
-        + install_cost
-        + permits_cost
-        + protection_cost
+    bos_cost = estimate_balance_of_system_cost_php(
+        system_kwp,
+        hybrid=inverter.battery_compatible,
+        catalog=catalog,
     )
+
+    return panel_cost + inverter_cost + battery_cost + bos_cost
 
 
 def _annual_offset_ratio(system_kwp: float, constraints: SolverConstraints) -> float:
@@ -177,6 +160,16 @@ def _evaluate_combo(
             "locked_inverter",
             f"Inverter {inverter.id} does not match locked inverter",
             inverter_id=inverter.id,
+        )
+
+    if constraints.locked_battery_id and (
+        battery is None or battery.id != constraints.locked_battery_id
+    ):
+        return None, make_rejection(
+            key,
+            "locked_battery",
+            f"Battery must be {constraints.locked_battery_id}",
+            battery_id=battery.id if battery else None,
         )
 
     if panel_count > constraints.max_panel_count:
@@ -365,6 +358,9 @@ def run_solver(
 
     if constraints.require_battery:
         batteries = list(cat.batteries.values())
+        if constraints.locked_battery_id:
+            locked = cat.batteries.get(constraints.locked_battery_id)
+            batteries = [locked] if locked is not None else []
 
     for panel in panels:
         for inverter in inverters:

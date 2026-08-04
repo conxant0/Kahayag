@@ -70,6 +70,8 @@ def test_quotation_matches_build_totals(
     assert quote["subtotal_php"] == build["subtotal_php"]
     assert quote["vat_php"] == build["vat_php"]
     assert quote["total_php"] == build["total_investment_php"]
+    assert quote["total_low_php"] == build["total_investment_low_php"]
+    assert quote["total_high_php"] == build["total_investment_high_php"]
 
 
 def test_bootstrap_succeeds_for_small_usable_roof(

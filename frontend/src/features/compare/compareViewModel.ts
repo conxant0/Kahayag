@@ -1,6 +1,6 @@
 // Maps design session builds into compare-page view models.
 import type { DesignBuild, DesignSession } from "../../shared/api/types";
-import { peso } from "../../shared/lib/currency";
+import { peso, pesoRange, pesoRangeCompact } from "../../shared/lib/currency";
 
 export type CompareMetric = {
   label: string;
@@ -27,10 +27,18 @@ export type CompareBuildView = {
   technicalRows: CompareMetric[];
 };
 
-// No cost-per-watt here on purpose: dividing investment by capacity mints a
-// new financial figure client-side, which hard rule 1 reserves for
-// backend/app/domain/. If the compare page should show it, the domain
-// computes it and the build payload carries it.
+export function formatInvestmentRange(build: DesignBuild): string {
+  const useCompact =
+    build.total_investment_low_php >= 1_000_000 ||
+    build.total_investment_high_php >= 1_000_000;
+  return useCompact
+    ? pesoRangeCompact(
+        build.total_investment_low_php,
+        build.total_investment_high_php,
+      )
+    : pesoRange(build.total_investment_low_php, build.total_investment_high_php);
+}
+
 export function compareBuilds(session: DesignSession): CompareBuildView[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
@@ -54,7 +62,7 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
       paybackLabel: build.payback_years
         ? `${build.payback_years.toFixed(1)} years`
         : "—",
-      totalInvestmentLabel: peso(build.total_investment_php),
+      totalInvestmentLabel: formatInvestmentRange(build),
       utilisationPct: build.inverter_utilisation_pct,
       insight: build.insight,
       overviewSpecs: overviewSpecs(build),

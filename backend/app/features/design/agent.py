@@ -16,6 +16,7 @@ from app.features.design.schemas import (
     AgentAuditEntrySchema,
     AgentDesignRequest,
     AgentDesignResponse,
+    DesignBuildSchema,
     DesignSessionSchema,
     ExplainDesignRequest,
     ExplainDesignResponse,
@@ -403,6 +404,46 @@ def run_design_agent_turn(
     return AgentDesignResponse(session=audited, reply=reply)
 
 
+def _panel_alternatives_for_explain(
+    session: DesignSessionSchema,
+    *,
+    active_panel_id: str | None,
+) -> list[dict[str, object]]:
+    if not session.last_solve or not active_panel_id:
+        return []
+
+    catalog = load_catalog()
+    alternatives: list[dict[str, object]] = []
+    for combo in session.last_solve.valid:
+        if combo.panel_id == active_panel_id:
+            continue
+        panel = catalog.panels.get(combo.panel_id)
+        if panel is None:
+            continue
+        alternatives.append(
+            {
+                "panel_id": panel.id,
+                "brand": panel.brand,
+                "model": panel.model,
+                "wattage_w": panel.wattage_w,
+                "fit_score": combo.fit_score,
+                "estimated_cost_php": combo.estimated_cost_php,
+            },
+        )
+        if len(alternatives) >= 4:
+            break
+    return alternatives
+
+
+def _active_panel_id(active: DesignBuildSchema | None) -> str | None:
+    if active is None:
+        return None
+    for component in active.components:
+        if component.slot == "panel" and component.catalog_id:
+            return component.catalog_id
+    return None
+
+
 def explain_design_session(
     request: ExplainDesignRequest,
     *,
@@ -416,6 +457,7 @@ def explain_design_session(
         ),
         None,
     )
+    active_panel_id = _active_panel_id(active)
     snapshot = {
         "active_build": active.model_dump() if active else None,
         "last_solve": request.session.last_solve.model_dump()
@@ -429,6 +471,10 @@ def explain_design_session(
                 else ()
             )
         ],
+        "panel_alternatives": _panel_alternatives_for_explain(
+            request.session,
+            active_panel_id=active_panel_id,
+        ),
     }
     explanation = client.explain_snapshot(question=request.question, snapshot=snapshot)
     return ExplainDesignResponse(explanation=explanation)

@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { apiPost } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
-import type { DesignSession, MutateDesignPayload, SolverGoal } from "../../shared/api/types";
+import type { DesignSession, MutateDesignPayload, SolverGoal, CatalogPickerSlot, CatalogOption } from "../../shared/api/types";
 import { useDesignStore } from "../../state/designStore";
 
 export type AgentDesignPayload = {
@@ -100,5 +100,21 @@ export function useMutateDesign() {
       });
     },
     onSuccess: (session) => setDesignSession(session),
+  });
+}
+
+export function useCatalogOptions() {
+  const designSession = useDesignStore((state) => state.designSession);
+
+  return useMutation({
+    mutationFn: (slot: CatalogPickerSlot) => {
+      if (!designSession) {
+        throw new Error("Design session is not ready.");
+      }
+      return apiPost<CatalogOption[]>(ENDPOINTS.designsCatalogOptions, {
+        session: designSession,
+        slot,
+      });
+    },
   });
 }

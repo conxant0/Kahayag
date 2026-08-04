@@ -13,6 +13,7 @@ export const ENDPOINTS = {
   designsBootstrap: "/designs/bootstrap",
   designsOptimise: "/designs/optimise",
   designsMutate: "/designs/mutate",
+  designsCatalogOptions: "/designs/catalog-options",
   designsRejections: (solveId: string) => `/designs/solves/${solveId}/rejections`,
   designsQuotation: (buildId: string) => `/designs/quotation/${buildId}`,
   designsQuoteAudit: "/designs/quote-audit",

@@ -20,14 +20,16 @@ export const mockDesignSession: DesignSession = {
       "battery_kwh": null,
       "monthly_savings_php": 6000.0,
       "annual_savings_php": 72000.0,
-      "payback_years": 5.3,
-      "total_investment_php": 379456.0,
-      "subtotal_php": 338800.0,
-      "vat_php": 40656.0,
+      "payback_years": 6.1,
+      "total_investment_php": 439782.0,
+      "total_investment_low_php": 354928.0,
+      "total_investment_high_php": 524636.0,
+      "subtotal_php": 392662.5,
+      "vat_php": 47119.5,
       "inverter_utilisation_pct": 78.0,
       "fit_score": 83.6,
       "co2_tonnes_avoided_yearly": 5.38,
-      "insight": "5.85 kWp system with DC:AC 1.17 and 78.0% inverter utilisation. Estimated payback 5.3 years.",
+      "insight": "5.85 kWp system with DC:AC 1.17 and 78.0% inverter utilisation. Estimated payback 6.1 years.",
       "components": [
         {
           "slot": "panel",
@@ -74,15 +76,134 @@ export const mockDesignSession: DesignSession = {
         },
         {
           "slot": "protection",
-          "catalog_id": "prot_001",
+          "catalog_id": "prot_005",
           "brand": "Generic",
-          "model": "Residential DC Protection Kit",
-          "summary": "DC isolator, surge protection, and fusing for grid-tie residential",
+          "model": "DC Combiner Box / String Junction Box",
+          "summary": "IP65-rated combiner box with fuse holders for 2\u20134 PV strings",
           "qty": 1.0,
           "unit": "lot",
-          "unit_price_php": 10250.0,
+          "unit_price_php": 6000.0,
           "price_as_of": "2026-07-01",
-          "line_total_php": 10250.0,
+          "line_total_php": 6000.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_006",
+          "brand": "Generic",
+          "model": "DC Isolator Switch (600V)",
+          "summary": "Lockable DC disconnect switch for string inverter input side",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 3650.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3650.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_007",
+          "brand": "Generic",
+          "model": "DC String Fuse Holder & Fuses (15A)",
+          "summary": "PV-rated fuse holders and gPV fuses per string for overcurrent protection",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 1700.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 1700.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_008",
+          "brand": "Generic",
+          "model": "AC Manual Disconnect Switch (63A)",
+          "summary": "Lockable AC disconnect switch at inverter output, utility-side",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_009",
+          "brand": "Schneider Electric",
+          "model": "Acti9 iC60N AC Main Breaker (63A)",
+          "summary": "Main AC circuit breaker in consumer unit for solar tie-in",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_011",
+          "brand": "Phoenix Contact",
+          "model": "VAL-MS DC Surge Protector (Type 2)",
+          "summary": "Type 2 DC-side surge protection device for PV strings up to 1000V",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 5750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 5750.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_012",
+          "brand": "Phoenix Contact",
+          "model": "VAL-MS AC Surge Protector (Type 2)",
+          "summary": "Type 2 AC-side surge protection device at inverter output",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4900.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4900.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "misc_007",
+          "brand": "Generic",
+          "model": "Weatherproof DC/AC Enclosure Box",
+          "summary": "IP65 wall-mount enclosure for DC disconnect, SPD, and combiner components",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4750.0,
           "warranty_note": "5-year warranty",
           "badges": [
             "INCLUDED"
@@ -108,15 +229,100 @@ export const mockDesignSession: DesignSession = {
         },
         {
           "slot": "electrical",
-          "catalog_id": "cable_001",
+          "catalog_id": "cable_003",
           "brand": "Generic",
-          "model": "DC/AC Cabling & Conduit Package",
-          "summary": "PV wire, MC4 connectors, AC cable, and conduit for residential install",
+          "model": "DC PV Wire & MC4 Connector Kit",
+          "summary": "4mm\u00b2/6mm\u00b2 PV1-F DC cable with MC4 male/female connectors per string",
           "qty": 5.85,
           "unit": "kWp",
-          "unit_price_php": 6500.0,
+          "unit_price_php": 4500.0,
           "price_as_of": "2026-07-01",
-          "line_total_php": 38025.0,
+          "line_total_php": 26325.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_004",
+          "brand": "Generic",
+          "model": "AC Output Cable & Terminal Lugs",
+          "summary": "THHN/THWN AC cable from inverter to consumer unit with crimp lugs",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_005",
+          "brand": "Generic",
+          "model": "Grounding Conductor & Bonding Kit",
+          "summary": "6 AWG bare copper grounding wire, lugs, and panel/frame bonding hardware",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 2750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 2750.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_006",
+          "brand": "Generic",
+          "model": "PVC Conduit & Trunking Package",
+          "summary": "PVC conduit, fittings, and cable trunking for roof-to-inverter runs",
+          "qty": 5.85,
+          "unit": "kWp",
+          "unit_price_php": 2250.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 13162.5,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_007",
+          "brand": "Generic",
+          "model": "MC4 Branch Connector & Y-Adaptor Kit",
+          "summary": "MC4 Y-branch connectors and inline fuses for parallel string wiring",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 1150.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 1150.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "misc_006",
+          "brand": "Generic",
+          "model": "Grounding Electrode & Bonding Kit",
+          "summary": "Ground rod, clamp, exothermic weld, and bonding jumpers for system grounding",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
           "warranty_note": "5-year warranty",
           "badges": [
             "INCLUDED"
@@ -156,6 +362,23 @@ export const mockDesignSession: DesignSession = {
             "INCLUDED"
           ],
           "specs": {}
+        },
+        {
+          "slot": "installation",
+          "catalog_id": "misc_005",
+          "brand": "Secure / Elster",
+          "model": "Bi-directional Production/Net Meter",
+          "summary": "Utility-approved bi-directional meter for Meralco net metering program",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 17000.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 17000.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
         }
       ],
       "source": "ai_suggested"
@@ -174,14 +397,16 @@ export const mockDesignSession: DesignSession = {
       "battery_kwh": null,
       "monthly_savings_php": 6000.0,
       "annual_savings_php": 72000.0,
-      "payback_years": 5.3,
-      "total_investment_php": 380576.0,
-      "subtotal_php": 339800.0,
-      "vat_php": 40776.0,
+      "payback_years": 6.1,
+      "total_investment_php": 440902.0,
+      "total_investment_low_php": 356048.0,
+      "total_investment_high_php": 525756.0,
+      "subtotal_php": 393662.5,
+      "vat_php": 47239.5,
       "inverter_utilisation_pct": 78.0,
       "fit_score": 83.6,
       "co2_tonnes_avoided_yearly": 5.38,
-      "insight": "5.85 kWp system with DC:AC 1.17 and 78.0% inverter utilisation. Estimated payback 5.3 years.",
+      "insight": "5.85 kWp system with DC:AC 1.17 and 78.0% inverter utilisation. Estimated payback 6.1 years.",
       "components": [
         {
           "slot": "panel",
@@ -224,15 +449,134 @@ export const mockDesignSession: DesignSession = {
         },
         {
           "slot": "protection",
-          "catalog_id": "prot_001",
+          "catalog_id": "prot_005",
           "brand": "Generic",
-          "model": "Residential DC Protection Kit",
-          "summary": "DC isolator, surge protection, and fusing for grid-tie residential",
+          "model": "DC Combiner Box / String Junction Box",
+          "summary": "IP65-rated combiner box with fuse holders for 2\u20134 PV strings",
           "qty": 1.0,
           "unit": "lot",
-          "unit_price_php": 10250.0,
+          "unit_price_php": 6000.0,
           "price_as_of": "2026-07-01",
-          "line_total_php": 10250.0,
+          "line_total_php": 6000.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_006",
+          "brand": "Generic",
+          "model": "DC Isolator Switch (600V)",
+          "summary": "Lockable DC disconnect switch for string inverter input side",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 3650.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3650.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_007",
+          "brand": "Generic",
+          "model": "DC String Fuse Holder & Fuses (15A)",
+          "summary": "PV-rated fuse holders and gPV fuses per string for overcurrent protection",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 1700.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 1700.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_008",
+          "brand": "Generic",
+          "model": "AC Manual Disconnect Switch (63A)",
+          "summary": "Lockable AC disconnect switch at inverter output, utility-side",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_009",
+          "brand": "Schneider Electric",
+          "model": "Acti9 iC60N AC Main Breaker (63A)",
+          "summary": "Main AC circuit breaker in consumer unit for solar tie-in",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_011",
+          "brand": "Phoenix Contact",
+          "model": "VAL-MS DC Surge Protector (Type 2)",
+          "summary": "Type 2 DC-side surge protection device for PV strings up to 1000V",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 5750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 5750.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "prot_012",
+          "brand": "Phoenix Contact",
+          "model": "VAL-MS AC Surge Protector (Type 2)",
+          "summary": "Type 2 AC-side surge protection device at inverter output",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4900.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4900.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "protection",
+          "catalog_id": "misc_007",
+          "brand": "Generic",
+          "model": "Weatherproof DC/AC Enclosure Box",
+          "summary": "IP65 wall-mount enclosure for DC disconnect, SPD, and combiner components",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 4750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 4750.0,
           "warranty_note": "5-year warranty",
           "badges": [
             "INCLUDED"
@@ -258,15 +602,100 @@ export const mockDesignSession: DesignSession = {
         },
         {
           "slot": "electrical",
-          "catalog_id": "cable_001",
+          "catalog_id": "cable_003",
           "brand": "Generic",
-          "model": "DC/AC Cabling & Conduit Package",
-          "summary": "PV wire, MC4 connectors, AC cable, and conduit for residential install",
+          "model": "DC PV Wire & MC4 Connector Kit",
+          "summary": "4mm\u00b2/6mm\u00b2 PV1-F DC cable with MC4 male/female connectors per string",
           "qty": 5.85,
           "unit": "kWp",
-          "unit_price_php": 6500.0,
+          "unit_price_php": 4500.0,
           "price_as_of": "2026-07-01",
-          "line_total_php": 38025.0,
+          "line_total_php": 26325.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_004",
+          "brand": "Generic",
+          "model": "AC Output Cable & Terminal Lugs",
+          "summary": "THHN/THWN AC cable from inverter to consumer unit with crimp lugs",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_005",
+          "brand": "Generic",
+          "model": "Grounding Conductor & Bonding Kit",
+          "summary": "6 AWG bare copper grounding wire, lugs, and panel/frame bonding hardware",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 2750.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 2750.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_006",
+          "brand": "Generic",
+          "model": "PVC Conduit & Trunking Package",
+          "summary": "PVC conduit, fittings, and cable trunking for roof-to-inverter runs",
+          "qty": 5.85,
+          "unit": "kWp",
+          "unit_price_php": 2250.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 13162.5,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "cable_007",
+          "brand": "Generic",
+          "model": "MC4 Branch Connector & Y-Adaptor Kit",
+          "summary": "MC4 Y-branch connectors and inline fuses for parallel string wiring",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 1150.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 1150.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
+        },
+        {
+          "slot": "electrical",
+          "catalog_id": "misc_006",
+          "brand": "Generic",
+          "model": "Grounding Electrode & Bonding Kit",
+          "summary": "Ground rod, clamp, exothermic weld, and bonding jumpers for system grounding",
+          "qty": 1.0,
+          "unit": "lot",
+          "unit_price_php": 3500.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 3500.0,
           "warranty_note": "5-year warranty",
           "badges": [
             "INCLUDED"
@@ -306,6 +735,23 @@ export const mockDesignSession: DesignSession = {
             "INCLUDED"
           ],
           "specs": {}
+        },
+        {
+          "slot": "installation",
+          "catalog_id": "misc_005",
+          "brand": "Secure / Elster",
+          "model": "Bi-directional Production/Net Meter",
+          "summary": "Utility-approved bi-directional meter for Meralco net metering program",
+          "qty": 1.0,
+          "unit": "pcs",
+          "unit_price_php": 17000.0,
+          "price_as_of": "2026-07-01",
+          "line_total_php": 17000.0,
+          "warranty_note": "5-year warranty",
+          "badges": [
+            "INCLUDED"
+          ],
+          "specs": {}
         }
       ],
       "source": "custom"
@@ -334,7 +780,7 @@ export const mockDesignSession: DesignSession = {
         "inverter_utilisation_pct": 78.0,
         "fit_score": 83.6,
         "rejection_log_ref": "c73a8353-6a24-458b-84ff-def5a9c0fcb5",
-        "estimated_cost_php": 338800.0
+        "estimated_cost_php": 392662.5
       },
       {
         "combo_id": "panel_004:inv_004:none:13",
@@ -347,7 +793,7 @@ export const mockDesignSession: DesignSession = {
         "inverter_utilisation_pct": 78.0,
         "fit_score": 83.6,
         "rejection_log_ref": "c73a8353-6a24-458b-84ff-def5a9c0fcb5",
-        "estimated_cost_php": 339800.0
+        "estimated_cost_php": 393662.5
       },
       {
         "combo_id": "panel_002:inv_001:none:10",

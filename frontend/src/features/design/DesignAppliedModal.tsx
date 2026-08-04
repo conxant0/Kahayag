@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 
 import { Button, ButtonLink } from "../../shared/components/ui";
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { peso } from "../../shared/lib/currency";
 
 function CheckMark() {
   return (
@@ -29,12 +28,12 @@ export function DesignAppliedModal({
   open,
   onKeepEditing,
   systemKwp,
-  totalInvestmentPhp,
+  totalInvestmentLabel,
 }: {
   open: boolean;
   onKeepEditing: () => void;
   systemKwp?: number;
-  totalInvestmentPhp?: number;
+  totalInvestmentLabel?: string;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -60,10 +59,9 @@ export function DesignAppliedModal({
 
   const sizeLabel =
     typeof systemKwp === "number" ? `${systemKwp.toFixed(1)} kWp` : "system";
-  const pricedNote =
-    typeof totalInvestmentPhp === "number"
-      ? ` Priced at ${peso(totalInvestmentPhp)} against current vendor rates.`
-      : "";
+  const pricedNote = totalInvestmentLabel
+    ? ` Estimated at ${totalInvestmentLabel} against current vendor rates.`
+    : "";
 
   return (
     <div

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { DesignFlowStepper } from "../../shared/components/layout";
+import { DesignFlowStepper, DesignStepTabs } from "../../shared/components/layout";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
@@ -10,13 +10,14 @@ import { DesignAppliedModal } from "./DesignAppliedModal";
 import { DesignSidebar } from "./DesignSidebar";
 import { DesignSummaryBar } from "./DesignSummaryBar";
 import { SystemCanvas } from "./SystemCanvas";
-import { getActiveBuild, summaryTiles } from "./designViewModel";
+import { getActiveBuild, formatBuildInvestment, summaryTiles } from "./designViewModel";
 import { useBootstrapDesign } from "./useDesignActions";
 
 export function DesignPage() {
   const rawResult = useAssessmentStore((state) => state.result);
   const selectedProperty = useAssessmentStore((state) => state.selectedProperty);
   const designSession = useDesignStore((state) => state.designSession);
+  const quoteAuditResults = useDesignStore((state) => state.quoteAuditResults);
   const applyDesign = useDesignStore((state) => state.applyDesign);
   const bootstrap = useBootstrapDesign();
   const [showApplied, setShowApplied] = useState(false);
@@ -71,8 +72,11 @@ export function DesignPage() {
     <>
       <main id="main" className="flex h-svh flex-col bg-paper">
         <header className="shrink-0 bg-paper pt-5 pb-4">
-          <div className="mx-auto flex w-full max-w-[1440px] justify-center overflow-x-auto px-4 lg:px-8">
-            <DesignFlowStepper activeStep={4} />
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 overflow-x-auto px-4 lg:px-8">
+            <div className="flex justify-center">
+              <DesignFlowStepper activeStep={4} />
+            </div>
+            <DesignStepTabs />
           </div>
         </header>
 
@@ -100,7 +104,11 @@ export function DesignPage() {
                 Running the design solver…
               </div>
             ) : (
-              <SystemCanvas build={activeBuild} session={designSession} />
+              <SystemCanvas
+                build={activeBuild}
+                session={designSession}
+                quoteResults={quoteAuditResults}
+              />
             )}
           </section>
         </div>
@@ -110,7 +118,9 @@ export function DesignPage() {
         open={showApplied}
         onKeepEditing={() => setShowApplied(false)}
         systemKwp={activeBuild?.system_kwp}
-        totalInvestmentPhp={activeBuild?.total_investment_php}
+        totalInvestmentLabel={
+          activeBuild ? formatBuildInvestment(activeBuild) : undefined
+        }
       />
     </>
   );

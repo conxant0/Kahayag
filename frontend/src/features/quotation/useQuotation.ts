@@ -3,12 +3,15 @@
 // the domain composes (quote number, dates, terms) — fabricating one in the
 // browser would violate the "domain computes" rule and mint quote numbers no
 // backend record matches. Failures surface as errors instead.
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { apiPost } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
-import type { QuotationDocument } from "../../shared/api/types";
+import type { QuotationDocument, QuoteAuditResponse } from "../../shared/api/types";
 import { useDesignStore } from "../../state/designStore";
+import { getActiveBuild } from "../design/designViewModel";
+import { buildQuotationFromQuoteAudit } from "./quotationViewModel";
 
 export function useQuotation(buildId: string | null) {
   const designSession = useDesignStore((state) => state.designSession);
@@ -32,4 +35,48 @@ export function useQuotation(buildId: string | null) {
     },
     enabled: Boolean(designSession && buildId),
   });
+}
+
+export function useActiveQuotation(): {
+  data: QuotationDocument | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  mode: "build" | "quote";
+  activeQuote: QuoteAuditResponse | null;
+} {
+  const designSession = useDesignStore((state) => state.designSession);
+  const activeQuoteFilename = useDesignStore((state) => state.activeQuoteFilename);
+  const quoteAuditResults = useDesignStore((state) => state.quoteAuditResults);
+  const activeBuild = getActiveBuild(designSession);
+  const activeQuote = useMemo(
+    () =>
+      activeQuoteFilename
+        ? (quoteAuditResults.find((result) => result.filename === activeQuoteFilename) ??
+          null)
+        : null,
+    [activeQuoteFilename, quoteAuditResults],
+  );
+  const buildQuery = useQuotation(activeQuote ? null : (activeBuild?.id ?? null));
+  const uploadedQuote = useMemo(
+    () => (activeQuote ? buildQuotationFromQuoteAudit(activeQuote) : undefined),
+    [activeQuote],
+  );
+
+  if (activeQuote) {
+    return {
+      data: uploadedQuote,
+      isLoading: false,
+      error: null,
+      mode: "quote",
+      activeQuote,
+    };
+  }
+
+  return {
+    data: buildQuery.data,
+    isLoading: buildQuery.isLoading,
+    error: buildQuery.error,
+    mode: "build",
+    activeQuote: null,
+  };
 }
