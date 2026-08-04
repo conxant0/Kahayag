@@ -56,7 +56,6 @@ export function LoadingPage() {
   const [fluxError, setFluxError] = useState<string | null>(null);
   const [isFluxRunning, setIsFluxRunning] = useState(false);
   const hasStartedFluxPreload = useRef(false);
-  const hasAutoSubmitted = useRef(false);
 
   const rawResult = useAssessmentStore((state) => state.result);
   const selectedProperty = useAssessmentStore(
@@ -151,26 +150,25 @@ export function LoadingPage() {
   // runs on the pass that returns `<Navigate>`, and submitting an assessment on
   // the way out is exactly what the guard exists to prevent.
   //
-  // The attempt is recorded rather than inferred from the request. A failed
-  // request settles back into exactly the state this effect submits from —
-  // nothing pending, nothing succeeded — so reading the flags alone would
-  // resubmit on the next render and keep resubmitting, hammering a service
-  // that is already failing and never letting the homeowner reach "Try again".
-  // One automatic attempt; any further one is theirs to ask for.
+  // A failed request settles back into the state this effect submits from —
+  // nothing pending, nothing succeeded — so the failure itself has to be part
+  // of the guard, or the next render resubmits and keeps resubmitting,
+  // hammering a service that is already failing and never letting the homeowner
+  // reach "Try again".
+  //
+  // `error` rather than a ref that records the attempt. A ref outlives the
+  // remount StrictMode performs, and the mutation's observer does not: the
+  // request started before the remount lands on the torn-down observer, so
+  // holding the second pass back leaves the screen waiting on a result that
+  // has already arrived and can never be delivered. Reading the request's own
+  // state means the second pass re-asks and is answered.
   useEffect(() => {
-    if (
-      redirect ||
-      !payload ||
-      isPending ||
-      isSuccess ||
-      hasAutoSubmitted.current
-    ) {
+    if (redirect || !payload || isPending || isSuccess || error) {
       return;
     }
 
-    hasAutoSubmitted.current = true;
     mutate(payload);
-  }, [redirect, payload, isPending, isSuccess, mutate]);
+  }, [redirect, payload, isPending, isSuccess, error, mutate]);
 
   useEffect(() => {
     if (!isSuccess) {
