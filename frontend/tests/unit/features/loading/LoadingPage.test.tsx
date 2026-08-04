@@ -1,6 +1,6 @@
 // Verifies the analysis step guards, submits once, and offers a way past flux.
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -141,6 +141,28 @@ describe("LoadingPage", () => {
         inputs: expect.objectContaining({ monthly_bill_php: 4800 }),
       }),
     );
+  });
+
+  it("does not resubmit on its own once the assessment has failed", async () => {
+    seedCompleteSession();
+
+    renderAtLoading();
+    await waitFor(() => expect(submitState.mutate).toHaveBeenCalledTimes(1));
+
+    // What a failed request leaves behind: nothing pending, nothing succeeded —
+    // the same state the page submits from. Anything that re-renders after it
+    // would start the request again, and again, for as long as the service is
+    // down.
+    submitState.isPending = false;
+    submitState.error = new Error("The assessment service is unavailable.");
+    act(() => {
+      useAssessmentStore.getState().setEnergyInputs({ budgetPhp: 300000 });
+    });
+
+    expect(
+      await screen.findByText("We couldn’t finish the assessment."),
+    ).toBeInTheDocument();
+    expect(submitState.mutate).toHaveBeenCalledTimes(1);
   });
 
   it("offers a retry that resends the assessment when submission fails", async () => {

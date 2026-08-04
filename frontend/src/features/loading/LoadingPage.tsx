@@ -56,6 +56,7 @@ export function LoadingPage() {
   const [fluxError, setFluxError] = useState<string | null>(null);
   const [isFluxRunning, setIsFluxRunning] = useState(false);
   const hasStartedFluxPreload = useRef(false);
+  const hasAutoSubmitted = useRef(false);
 
   const rawResult = useAssessmentStore((state) => state.result);
   const selectedProperty = useAssessmentStore(
@@ -149,11 +150,25 @@ export function LoadingPage() {
   // `redirect` is checked here as well as before the render: an effect still
   // runs on the pass that returns `<Navigate>`, and submitting an assessment on
   // the way out is exactly what the guard exists to prevent.
+  //
+  // The attempt is recorded rather than inferred from the request. A failed
+  // request settles back into exactly the state this effect submits from —
+  // nothing pending, nothing succeeded — so reading the flags alone would
+  // resubmit on the next render and keep resubmitting, hammering a service
+  // that is already failing and never letting the homeowner reach "Try again".
+  // One automatic attempt; any further one is theirs to ask for.
   useEffect(() => {
-    if (redirect || !payload || isPending || isSuccess) {
+    if (
+      redirect ||
+      !payload ||
+      isPending ||
+      isSuccess ||
+      hasAutoSubmitted.current
+    ) {
       return;
     }
 
+    hasAutoSubmitted.current = true;
     mutate(payload);
   }, [redirect, payload, isPending, isSuccess, mutate]);
 
