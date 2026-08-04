@@ -1,0 +1,204 @@
+{
+ "name": "buildings/ChIJVRZqspO3lzMRuDvB65QZV3A",
+ "center": {
+  "latitude": 14.622368400000001,
+  "longitude": 121.0647939
+ },
+ "imageryDate": {
+  "year": 2018,
+  "month": 3,
+  "day": 1
+ },
+ "administrativeArea": "00",
+ "regionCode": "PH",
+ "solarPotential": {
+  "maxArrayPanelsCount": 2,
+  "maxArrayAreaMeters2": 3.9271097,
+  "maxSunshineHoursPerYear": 1547.7648,
+  "carbonOffsetFactorKgPerMwh": 501.9994,
+  "wholeRoofStats": {
+   "areaMeters2": 25.272581,
+   "sunshineQuantiles": [
+    730.67395,
+    890.4297,
+    1094.7869,
+    1328.5535,
+    1394.7579,
+    1419.8651,
+    1433.5498,
+    1468.2689,
+    1498.9703,
+    1511.9419,
+    1555.0857
+   ],
+   "groundAreaMeters2": 24.560001
+  },
+  "roofSegmentStats": [
+   {
+    "pitchDegrees": 13.207515,
+    "azimuthDegrees": 316.41043,
+    "stats": {
+     "areaMeters2": 11.401584,
+     "sunshineQuantiles": [
+      787.71155,
+      926.45264,
+      1220.5554,
+      1412.7828,
+      1457.8604,
+      1486.1178,
+      1500.0531,
+      1506.903,
+      1511.9419,
+      1527.5752,
+      1555.0857
+     ],
+     "groundAreaMeters2": 11.1
+    },
+    "center": {
+     "latitude": 14.6223593,
+     "longitude": 121.064794
+    },
+    "boundingBox": {
+     "sw": {
+      "latitude": 14.622339700000001,
+      "longitude": 121.06477110000002
+     },
+     "ne": {
+      "latitude": 14.622378900000001,
+      "longitude": 121.0648178
+     }
+    },
+    "planeHeightAtCenterMeters": 50.639687
+   },
+   {
+    "pitchDegrees": 16.17516,
+    "azimuthDegrees": 312.7622,
+    "stats": {
+     "areaMeters2": 3.3214824,
+     "sunshineQuantiles": [
+      730.73804,
+      794.98645,
+      1258.0222,
+      1402.6517,
+      1421.4276,
+      1432.2803,
+      1452.5593,
+      1470.415,
+      1484.2008,
+      1495.563,
+      1539.8668
+     ],
+     "groundAreaMeters2": 3.19
+    },
+    "center": {
+     "latitude": 14.6223713,
+     "longitude": 121.06481710000001
+    },
+    "boundingBox": {
+     "sw": {
+      "latitude": 14.6223581,
+      "longitude": 121.0648082
+     },
+     "ne": {
+      "latitude": 14.6223853,
+      "longitude": 121.06482700000001
+     }
+    },
+    "planeHeightAtCenterMeters": 51.000103
+   },
+   {
+    "pitchDegrees": 13.218628,
+    "azimuthDegrees": 11.323173,
+    "stats": {
+     "areaMeters2": 10.549514,
+     "sunshineQuantiles": [
+      730.67395,
+      868.38727,
+      1008.81323,
+      1241.0906,
+      1329.3151,
+      1370.6028,
+      1397.7611,
+      1416.8198,
+      1425.6532,
+      1433.4104,
+      1487.8229
+     ],
+     "groundAreaMeters2": 10.27
+    },
+    "center": {
+     "latitude": 14.6223782,
+     "longitude": 121.0647855
+    },
+    "boundingBox": {
+     "sw": {
+      "latitude": 14.6223622,
+      "longitude": 121.06476169999998
+     },
+     "ne": {
+      "latitude": 14.622389799999999,
+      "longitude": 121.06481489999999
+     }
+    },
+    "planeHeightAtCenterMeters": 49.195007
+   }
+  ],
+  "panelCapacityWatts": 400,
+  "panelHeightMeters": 1.879,
+  "panelWidthMeters": 1.045,
+  "panelLifetimeYears": 20,
+  "buildingStats": {
+   "areaMeters2": 25.272581,
+   "sunshineQuantiles": [
+    730.67395,
+    890.4297,
+    1094.7869,
+    1328.5535,
+    1394.7579,
+    1419.8651,
+    1433.5498,
+    1468.2689,
+    1498.9703,
+    1511.9419,
+    1555.0857
+   ],
+   "groundAreaMeters2": 24.560001
+  },
+  "solarPanels": [
+   {
+    "center": {
+     "latitude": 14.622350800000001,
+     "longitude": 121.06478739999999
+    },
+    "orientation": "LANDSCAPE",
+    "yearlyEnergyDcKwh": 607.0845,
+    "segmentIndex": 0
+   },
+   {
+    "center": {
+     "latitude": 14.622362599999999,
+     "longitude": 121.0647999
+    },
+    "orientation": "LANDSCAPE",
+    "yearlyEnergyDcKwh": 589.0733,
+    "segmentIndex": 0
+   }
+  ]
+ },
+ "boundingBox": {
+  "sw": {
+   "latitude": 14.6223396,
+   "longitude": 121.06476169999998
+  },
+  "ne": {
+   "latitude": 14.6223899,
+   "longitude": 121.0648271
+  }
+ },
+ "imageryQuality": "MEDIUM",
+ "imageryProcessedDate": {
+  "year": 2026,
+  "month": 2,
+  "day": 5
+ }
+}
