@@ -9,6 +9,14 @@ const USAGE_SLIDER_STEP = 10;
 const ABSOLUTE_COST_MIN = 150_000;
 const ABSOLUTE_USAGE_MIN = 100;
 
+// The projection endpoint's validation ceilings (assessment schemas.py:
+// system_cost_php le=5_000_000, monthly_consumption_kwh le=10_000). The
+// sliders must never offer a value the backend will 422 — a large system's
+// ×1.5 headroom used to push costMax past the cap and surface the raw
+// "Input should be less than or equal to 5000000" error.
+const API_COST_MAX = 5_000_000;
+const API_USAGE_MAX = 10_000;
+
 export interface InvestmentDefaults {
   electricityRatePhpPerKwh: number;
   systemCostPhp: number;
@@ -57,21 +65,33 @@ export function buildInvestmentDefaults(result: AssessmentResult): InvestmentDef
 export function buildInvestmentSliderBounds(
   defaults: InvestmentDefaults,
 ): InvestmentSliderBounds {
-  const costMin = Math.max(
-    ABSOLUTE_COST_MIN,
-    snapToStep(defaults.systemCostPhp * 0.5, COST_SLIDER_STEP),
+  const costMax = Math.min(
+    API_COST_MAX,
+    Math.max(
+      defaults.systemCostPhp,
+      snapToStep(defaults.systemCostPhp * 1.5, COST_SLIDER_STEP),
+    ),
   );
-  const costMax = Math.max(
-    defaults.systemCostPhp,
-    snapToStep(defaults.systemCostPhp * 1.5, COST_SLIDER_STEP),
+  const costMin = Math.min(
+    costMax,
+    Math.max(
+      ABSOLUTE_COST_MIN,
+      snapToStep(defaults.systemCostPhp * 0.5, COST_SLIDER_STEP),
+    ),
   );
-  const usageMin = Math.max(
-    ABSOLUTE_USAGE_MIN,
-    snapToStep(defaults.monthlyUsageKwh * 0.5, USAGE_SLIDER_STEP),
+  const usageMax = Math.min(
+    API_USAGE_MAX,
+    Math.max(
+      defaults.monthlyUsageKwh,
+      snapToStep(defaults.monthlyUsageKwh * 1.5, USAGE_SLIDER_STEP),
+    ),
   );
-  const usageMax = Math.max(
-    defaults.monthlyUsageKwh,
-    snapToStep(defaults.monthlyUsageKwh * 1.5, USAGE_SLIDER_STEP),
+  const usageMin = Math.min(
+    usageMax,
+    Math.max(
+      ABSOLUTE_USAGE_MIN,
+      snapToStep(defaults.monthlyUsageKwh * 0.5, USAGE_SLIDER_STEP),
+    ),
   );
 
   return {
@@ -151,15 +171,22 @@ export function formatPeso(value: number): string {
 
 export function formatCompactPeso(value: number): string {
   const rounded = Math.round(value);
-  if (rounded >= 1_000_000) {
-    const millions = rounded / 1_000_000;
-    return `₱${millions >= 10 ? Math.round(millions) : millions.toFixed(1).replace(/\.0$/, "")}M+`;
+  // A negative 25-year net is a legitimate outcome at extreme slider values
+  // (maximum cost, minimal savings). Format the magnitude and carry the sign
+  // explicitly — "−₱1.2M", never "₱-1,234,567" — and drop the "+" suffix,
+  // which reads as "and growing" and would lie on a loss.
+  const sign = rounded < 0 ? "−" : "";
+  const magnitude = Math.abs(rounded);
+  const suffix = rounded < 0 ? "" : "+";
+  if (magnitude >= 1_000_000) {
+    const millions = magnitude / 1_000_000;
+    return `${sign}₱${millions >= 10 ? Math.round(millions) : millions.toFixed(1).replace(/\.0$/, "")}M${suffix}`;
   }
-  if (rounded >= 1_000) {
-    const thousands = rounded / 1_000;
-    return `₱${thousands >= 100 ? Math.round(thousands) : thousands.toFixed(1).replace(/\.0$/, "")}K+`;
+  if (magnitude >= 1_000) {
+    const thousands = magnitude / 1_000;
+    return `${sign}₱${thousands >= 100 ? Math.round(thousands) : thousands.toFixed(1).replace(/\.0$/, "")}K${suffix}`;
   }
-  return formatPeso(rounded);
+  return `${sign}${formatPeso(magnitude)}`;
 }
 
 export function formatBreakEvenYear(breakEvenYear: number | null): string {
