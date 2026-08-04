@@ -7,7 +7,7 @@
 // editing.
 import { useState } from "react";
 
-import { Eyebrow, SegmentedToggle } from "../../shared/components/ui";
+import { Button, Eyebrow, SegmentedToggle } from "../../shared/components/ui";
 import type { SolarInOriginalPermitAnswer } from "./permitTypes";
 import { resolveTrack } from "./permitsViewModel";
 
@@ -32,13 +32,28 @@ export interface ApplicantFormValues {
   registeredOwnerName: string;
 }
 
+function canSubmitApplicant(values: ApplicantFormValues): boolean {
+  if (values.fullName.trim() === "") {
+    return false;
+  }
+  if (values.isRegisteredOwner === "no" && values.registeredOwnerName.trim() === "") {
+    return false;
+  }
+  return true;
+}
+
 export function ApplicantForm({
   values,
   onChange,
+  onSubmit,
   propertyAddress,
 }: {
   values: ApplicantFormValues;
   onChange: (values: ApplicantFormValues) => void;
+  /** Fires when the homeowner clicks Submit. Optional so callers that don't
+   * gate a request behind a submit step (e.g. the read-only preview fixture)
+   * can render the form without wiring one up. */
+  onSubmit?: () => void;
   propertyAddress: string;
 }) {
   const [editing, setEditing] = useState(false);
@@ -179,6 +194,14 @@ export function ApplicantForm({
             </div>
           ) : null}
         </div>
+
+        <Button
+          variant="secondary"
+          onClick={onSubmit}
+          disabled={!canSubmitApplicant(values)}
+        >
+          Submit
+        </Button>
       </div>
     </section>
   );

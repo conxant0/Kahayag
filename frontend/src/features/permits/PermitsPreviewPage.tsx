@@ -27,12 +27,16 @@ import {
   PERMIT_ASSESSMENT_SCENARIOS,
   type PermitAssessmentScenario,
 } from "./fixtures/mockPermitAssessments";
-import { chatOpeningMessages, deriveAssessment } from "./permitsViewModel";
+import { deriveAssessment } from "./permitsViewModel";
 
 const SCENARIO_OPTIONS = [
   { value: "incomplete" as PermitAssessmentScenario, label: "Incomplete packet" },
   { value: "complete" as PermitAssessmentScenario, label: "Complete packet" },
 ];
+
+// This fixture-driven preview has no real uploads for the chat to ground on
+// — a stable empty map so it isn't a new object identity every render.
+const NO_UPLOADS: ReadonlyMap<string, File> = new Map();
 
 const DEFAULT_APPLICANT: ApplicantFormValues = {
   solarInOriginalPermit: "not_sure",
@@ -150,7 +154,8 @@ export function PermitsPreviewPage() {
               onApplicantChange={setApplicant}
               propertyAddress={MOCK_PROPERTY_ADDRESS}
               systemKwp={baseAssessment.net_metering_eligibility.system_kwp}
-              openingMessages={chatOpeningMessages(assessment, false)}
+              uploads={NO_UPLOADS}
+              buildId={null}
             />
           </aside>
         </div>
