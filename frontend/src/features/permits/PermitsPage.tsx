@@ -85,6 +85,16 @@ export function PermitsPage() {
     setSubmittedApplicant(applicant);
   };
 
+  // Chat confirms applicant changes itself (the reply already carries a
+  // recomputed assessment) and only calls back when the values actually
+  // changed, so treat them as submitted too. Otherwise the next document
+  // upload re-triggers the assess effect with the pre-chat snapshot and
+  // silently reverts the correction (PR #32 review).
+  const handleChatApplicantChange = (next: ApplicantFormValues) => {
+    setApplicant(next);
+    setSubmittedApplicant(next);
+  };
+
   const assessment = lastAssessment;
 
   return (
@@ -176,7 +186,7 @@ export function PermitsPage() {
           <aside className="xl:sticky xl:top-6 xl:h-[calc(100svh-3rem)]">
             <PermitChatSidebar
               applicant={applicant}
-              onApplicantChange={handleApplicantChange}
+              onApplicantChange={handleChatApplicantChange}
               onAssessmentChange={setLastAssessment}
               propertyAddress={propertyAddress}
               systemKwp={systemKwp}
