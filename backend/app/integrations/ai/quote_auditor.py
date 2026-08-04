@@ -28,7 +28,9 @@ def regex_extract_quote_facts(text: str) -> dict[str, float | int | None]:
         text,
         re.IGNORECASE,
     )
-    kwp_match = re.search(r"([\d.]+)\s*kWp?", text, re.IGNORECASE)
+    # kWp only — an optional "p" would also match inverter ratings ("5 kW")
+    # and battery sizes ("10 kWh"), extracting the wrong figure as system size.
+    kwp_match = re.search(r"([\d.]+)\s*kWp\b", text, re.IGNORECASE)
     panel_match = re.search(
         r"([\d]+)\s*(?:x|\×)?\s*(?:panels?|modules?)",
         text,

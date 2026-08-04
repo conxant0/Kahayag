@@ -23,6 +23,7 @@ from app.features.design.schemas import (
     MutateDesignRequest,
     OptimiseDesignRequest,
     PlannedActionSchema,
+    SolverGoal,
 )
 from app.features.design.service import (
     NoValidDesignError,
@@ -63,6 +64,26 @@ def _parse_change_request(change_request: str) -> dict[str, object]:
     if inverter_match:
         patch["locked_inverter_id"] = f"inv_{inverter_match.group(1)}"
     return patch
+
+
+def _coerce_goal(value: object) -> SolverGoal:
+    """Tool arguments come from the planner model, not a validated request —
+    an off-enum goal ("cheapest") must fall back to "auto", not 500."""
+    text = str(value if value is not None else "auto").strip().lower()
+    if text in ("auto", "budget", "backup", "independence"):
+        return text  # narrowed to the literal set by the membership check
+    return "auto"
+
+
+def _coerce_int(value: object) -> int | None:
+    """Model-supplied numbers arrive as strings often enough that a raw
+    pass-through crashes the comparison in the catalog filters."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(float(str(value)))
+    except (TypeError, ValueError):
+        return None
 
 
 def _session_summary(session: DesignSessionSchema) -> dict[str, object]:
@@ -141,10 +162,11 @@ def _execute_tool(
                 for item in list(catalog.batteries.values())[:10]
             ]
         else:
+            brand = call.arguments.get("brand")
             items = filter_panels(
                 catalog=catalog,
-                min_wattage_w=call.arguments.get("min_wattage_w"),
-                brand=call.arguments.get("brand"),
+                min_wattage_w=_coerce_int(call.arguments.get("min_wattage_w")),
+                brand=brand if isinstance(brand, str) and brand.strip() else None,
             )
             payload = [
                 {
@@ -158,9 +180,9 @@ def _execute_tool(
         return {"items": payload}, None
 
     if call.name == "run_solver":
-        goal = str(call.arguments.get("goal", "auto"))
+        goal = _coerce_goal(call.arguments.get("goal", "auto"))
         updated = optimise_design_session(
-            OptimiseDesignRequest(session=session, goal=goal),  # type: ignore[arg-type]
+            OptimiseDesignRequest(session=session, goal=goal),
         )
         return {
             "solve_id": updated.last_solve.solve_id if updated.last_solve else None,

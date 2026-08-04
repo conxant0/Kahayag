@@ -139,8 +139,8 @@ def test_normalize_tool_call_uses_active_build_for_quotation(
         },
     ).json()
     session = DesignSessionSchema.model_validate(bootstrap)
-    from app.integrations.ai.design_agent import PlannedToolCall
     from app.features.design.agent import _normalize_tool_call
+    from app.integrations.ai.design_agent import PlannedToolCall
 
     normalized = _normalize_tool_call(
         PlannedToolCall(

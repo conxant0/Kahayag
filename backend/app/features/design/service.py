@@ -42,7 +42,6 @@ from app.features.design.schemas import (
     ValidComboSchema,
 )
 
-
 MAX_SESSION_REJECTIONS = 200
 
 

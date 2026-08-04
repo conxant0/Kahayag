@@ -14,13 +14,17 @@ from app.integrations.ai.quote_auditor import QuoteAuditorClient
 def extract_document_text(filename: str, content: bytes) -> str:
     lowered = filename.lower()
     if lowered.endswith(".pdf"):
+        # pypdf raises its own PdfReadError/PdfStreamError hierarchy for
+        # malformed files, which is not a ValueError — a corrupt upload must
+        # land in the empty-text path (422 upstream), never a 500.
         try:
             from pypdf import PdfReader
+            from pypdf.errors import PyPdfError
 
             reader = PdfReader(io.BytesIO(content))
             pages = [page.extract_text() or "" for page in reader.pages]
             return "\n".join(pages).strip()
-        except (ImportError, OSError, ValueError):
+        except (ImportError, OSError, ValueError, PyPdfError):
             return ""
     if lowered.endswith((".txt", ".csv", ".md")):
         return content.decode("utf-8", errors="ignore").strip()
