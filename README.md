@@ -44,7 +44,7 @@ running it through a deterministic financial and technical model.
 explains and customises. Every technical and financial number comes from
 `backend/app/domain/`. AI adapters phrase already-validated numbers in plain
 language — they never calculate, alter, or invent a figure, brand, guarantee,
-or site condition. Three surfaces use AI:
+or site condition. Four surfaces use AI:
 
 - **Report narration** — an AI adapter turns the validated assessment into a
   shareable PDF with cautious prose; the pipeline verifies value preservation
