@@ -24,7 +24,6 @@ import {
   ButtonLink,
   HairlineList,
   HairlineRow,
-  InfoPill,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useFluxCacheStore } from "../../state/fluxCacheStore";
@@ -32,12 +31,6 @@ import { computeFluxCacheKey } from "./fluxCacheKey";
 import { layoutPanelsInPolygon } from "./panelLayoutUtils";
 import { preloadFluxLayersForAssessment } from "./preloadFluxLayers";
 import { ResultsMapPane } from "./components/ResultsMapPane";
-
-const SIZING_HEADLINES: Record<string, string> = {
-  demand: "Sized to your electricity use",
-  budget: "Sized to your budget",
-  roof_area: "Sized to your roof's maximum",
-};
 
 export function ResultsPage() {
   const rawResult = useAssessmentStore((state) => state.result);
@@ -91,28 +84,6 @@ export function ResultsPage() {
     flux: cachedFlux?.flux,
   });
 
-  // The sizing card and hairline list are passed to FlowLayout's `children`
-  // slot (not `lead`) so they land after the map in DOM order. `lead` and
-  // `pane` render before `children` in FlowLayout's fixed slot order, which
-  // is also mobile's scroll order, so this alone gets the mobile stack right
-  // — savings figure/caption (lead), map (pane), then this pair and the
-  // accordion (children) — with no CSS reordering needed. On desktop,
-  // `children` lands directly under `lead` in the same rail column exactly
-  // where this pair used to sit, except FlowLayout gives that slot `lg:pt-8`
-  // of its own top padding (for the accordion, which has no sibling above it
-  // today). `lg:-mt-3.5` on the first item cancels that back down to the
-  // `lg:gap-4.5` rhythm the rest of the rail uses, so desktop is unchanged.
-  const sizingCard = (
-    <div className="flex flex-col gap-1.5 rounded-map border border-hairline p-3 lg:-mt-3.5 lg:gap-2 lg:p-4">
-      <InfoPill className="w-fit">
-        {SIZING_HEADLINES[result.recommendation.limiting_constraint] ??
-          "How this was sized"}
-      </InfoPill>
-      <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
-        {result.recommendation.rationale}
-      </p>
-    </div>
-  );
   const hairlineList = (
     <HairlineList className="pt-1.5">
       <HairlineRow label="Panels" value={`${panelCount} panels`} />
@@ -175,17 +146,26 @@ export function ResultsPage() {
         </ButtonLink>
       }
     >
-      {sizingCard}
-      {hairlineList}
-
       {/*
-        Detail content, below the pane on mobile. Bounded and internally
-        scrollable from `lg:` up so an opened accordion panel can never push
-        the CTA action bar (a separate row in FlowLayout) below the fold —
-        the always-visible summary above stays outside this box.
+        Scrollable rail content below the savings figure. FlowLayout gives this
+        slot the grid's 1fr row, so its height is whatever's left after the
+        heading/savings figure and the action bar — never more, never a
+        guessed constant. lg:min-h-0 lets that row actually shrink to fit
+        instead of growing to the accordion's full content height, which is
+        the default for a grid item.
       */}
-      <div className="w-full lg:max-h-[38svh] lg:overflow-y-auto lg:pr-1">
+      <div className="w-full lg:min-h-0 lg:overflow-y-auto lg:pr-1">
         <Accordion>
+          <AccordionItem title={`SIZING: ${panelCount} Panels`}>
+            <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
+              {result.recommendation.rationale}
+            </p>
+          </AccordionItem>
+
+          <AccordionItem title="Your panels" defaultOpen>
+            {hairlineList}
+          </AccordionItem>
+
           <AccordionItem title="Assessment result details" defaultOpen>
             <HairlineList>
               <HairlineRow
