@@ -84,6 +84,22 @@ describe("PermitsPage", () => {
     );
   });
 
+  it("does not assess on every keystroke, only on explicit submit", async () => {
+    const user = userEvent.setup();
+    seedSession();
+
+    renderPermits();
+
+    await user.click(screen.getByRole("button", { name: "Edit details" }));
+    await user.type(screen.getByLabelText("Your full name"), "Maria");
+
+    expect(mockMutate).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
+  });
+
   it("stubs Submit to eGov and reveals start-over after acknowledgement", async () => {
     const user = userEvent.setup();
     mockMutate.mockImplementation((_vars, options) => {

@@ -78,7 +78,10 @@ export function PermitsPage() {
 
   const handleApplicantChange = (next: ApplicantFormValues) => {
     setApplicant(next);
-    setSubmittedApplicant(next);
+  };
+
+  const handleApplicantSubmit = () => {
+    setSubmittedApplicant(applicant);
   };
 
   const assessment = lastAssessment;
@@ -119,8 +122,8 @@ export function PermitsPage() {
 
             <ApplicantForm
               values={applicant}
-              onChange={setApplicant}
-              onSubmit={() => setSubmittedApplicant(applicant)}
+              onChange={handleApplicantChange}
+              onSubmit={handleApplicantSubmit}
               propertyAddress={propertyAddress}
             />
 
