@@ -5,11 +5,11 @@ import type { DesignComponent } from "../../shared/api/types";
 import { CanvasComponentCard } from "../design/CanvasComponentCard";
 import { canvasSlotsFromComponents } from "../design/designViewModel";
 
-const CARD_WIDTH = "w-[10.25rem]";
+const CARD_CLASS = "w-[7.25rem]";
 
 function GapLine() {
   return (
-    <div className="flex w-4 shrink-0 items-center self-center" aria-hidden="true">
+    <div className="flex w-3 shrink-0 items-center self-center" aria-hidden="true">
       <div className="h-0.5 w-full rounded-pill bg-[#bfb9ab]" />
     </div>
   );
@@ -49,7 +49,7 @@ function BranchGap({
       const inverterY = midY(inverter.getBoundingClientRect());
       const protectionY = midY(protection.getBoundingClientRect());
       const batteryY = midY(battery.getBoundingClientRect());
-      const hubX = gapBox.width * 0.35;
+      const hubX = gapBox.width / 2;
 
       setSize({ width: gapBox.width, height: gapBox.height });
       setPaths([
@@ -76,7 +76,7 @@ function BranchGap({
   }, [inverterRef, protectionRef, batteryRef, layoutKey]);
 
   return (
-    <div ref={gapRef} className="relative w-5 shrink-0 self-stretch" aria-hidden="true">
+    <div ref={gapRef} className="relative w-4 shrink-0 self-stretch" aria-hidden="true">
       {size.width > 0 && size.height > 0 ? (
         <svg
           className="absolute inset-0 h-full w-full overflow-visible"
@@ -107,29 +107,22 @@ export function MiniSystemDiagram({ components }: { components: DesignComponent[
   const protectionRef = useRef<HTMLDivElement>(null);
   const batteryRef = useRef<HTMLDivElement>(null);
   const layoutKey = [
-    panel?.catalog_id,
-    panel?.model,
-    inverter?.catalog_id,
-    inverter?.model,
-    battery?.catalog_id,
-    battery?.qty,
+    panel.catalog_id,
+    panel.model,
+    inverter.catalog_id,
+    inverter.model,
+    protection.catalog_id,
+    battery.catalog_id,
+    battery.qty,
   ].join(":");
 
-  if (!panel || !inverter || !protection || !battery) {
-    return (
-      <p className="px-2 py-6 text-center font-sans text-[12px] text-secondary">
-        No diagram available
-      </p>
-    );
-  }
-
   return (
-    <div aria-label="System layout preview" className="w-full overflow-x-auto">
-      <div className="mx-auto flex w-max min-w-full items-center justify-center px-1 py-1">
-        <CanvasComponentCard component={panel} className={CARD_WIDTH} />
+    <div aria-label="System layout preview" className="mx-auto w-full max-w-full overflow-hidden">
+      <div className="mx-auto flex w-fit max-w-full items-center justify-center">
+        <CanvasComponentCard component={panel} compact className={CARD_CLASS} />
         <GapLine />
-        <div ref={inverterRef}>
-          <CanvasComponentCard component={inverter} highlighted className={CARD_WIDTH} />
+        <div ref={inverterRef} className="shrink-0">
+          <CanvasComponentCard component={inverter} compact highlighted className={CARD_CLASS} />
         </div>
         <BranchGap
           inverterRef={inverterRef}
@@ -137,12 +130,12 @@ export function MiniSystemDiagram({ components }: { components: DesignComponent[
           batteryRef={batteryRef}
           layoutKey={layoutKey}
         />
-        <div className="flex flex-col gap-2">
+        <div className="flex shrink-0 flex-col justify-center gap-1.5">
           <div ref={protectionRef}>
-            <CanvasComponentCard component={protection} className={CARD_WIDTH} />
+            <CanvasComponentCard component={protection} compact className={CARD_CLASS} />
           </div>
           <div ref={batteryRef}>
-            <CanvasComponentCard component={battery} className={CARD_WIDTH} />
+            <CanvasComponentCard component={battery} compact className={CARD_CLASS} />
           </div>
         </div>
       </div>

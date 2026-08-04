@@ -1,6 +1,6 @@
 # Defines BOM expansion from valid combos into design component lines.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 PriceTier = Literal["min", "max"]
@@ -114,10 +114,20 @@ def _package_line_cost(package: CatalogPackage, qty: float) -> float:
     return 0.0
 
 
-def _bom_line_templates(*, hybrid: bool) -> tuple[BomLineTemplate, ...]:
-    if hybrid:
-        return GRID_TIE_BOM_LINES + HYBRID_EXTRA_BOM_LINES
-    return GRID_TIE_BOM_LINES
+def _bom_line_templates(
+    *,
+    hybrid: bool,
+    mounting_kit_id: str | None = None,
+) -> tuple[BomLineTemplate, ...]:
+    base = GRID_TIE_BOM_LINES + (HYBRID_EXTRA_BOM_LINES if hybrid else ())
+    if mounting_kit_id is None:
+        return base
+    return tuple(
+        replace(template, catalog_id=mounting_kit_id)
+        if template.section == "mounting_kits"
+        else template
+        for template in base
+    )
 
 
 def estimate_balance_of_system_cost_php(
@@ -125,10 +135,11 @@ def estimate_balance_of_system_cost_php(
     *,
     hybrid: bool,
     catalog: SolarCatalog | None = None,
+    mounting_kit_id: str | None = None,
 ) -> float:
     cat = catalog or load_catalog()
     total = 0.0
-    for template in _bom_line_templates(hybrid=hybrid):
+    for template in _bom_line_templates(hybrid=hybrid, mounting_kit_id=mounting_kit_id):
         package = _catalog_packages(cat, template.section)[template.catalog_id]
         qty = _resolve_qty(template, system_kwp)
         total += _package_line_cost(package, qty)
@@ -252,9 +263,10 @@ def _expand_balance_of_system_lines(
     hybrid: bool,
     catalog: SolarCatalog,
     badges: tuple[str, ...],
+    mounting_kit_id: str | None = None,
 ) -> list[DesignComponent]:
     lines: list[DesignComponent] = []
-    for template in _bom_line_templates(hybrid=hybrid):
+    for template in _bom_line_templates(hybrid=hybrid, mounting_kit_id=mounting_kit_id):
         package = _catalog_packages(catalog, template.section)[template.catalog_id]
         qty = _resolve_qty(template, system_kwp)
         lines.append(
@@ -274,6 +286,7 @@ def expand_combo_to_components(
     *,
     catalog: SolarCatalog | None = None,
     ai_suggested: bool = False,
+    mounting_kit_id: str | None = None,
 ) -> tuple[DesignComponent, ...]:
     cat = catalog or load_catalog()
     panel = get_panel(combo.panel_id, cat)
@@ -300,6 +313,7 @@ def expand_combo_to_components(
             hybrid=inverter.battery_compatible,
             catalog=cat,
             badges=included_badges,
+            mounting_kit_id=mounting_kit_id,
         ),
     )
 

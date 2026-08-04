@@ -74,6 +74,64 @@ def _same_equipment_stack(left: ValidCombo, right: ValidCombo) -> bool:
     )
 
 
+def pick_swap_combo(
+    valid: tuple[ValidCombo, ...] | list[ValidCombo],
+    *,
+    swap_slot: str,
+    current_panel_id: str | None,
+    current_inverter_id: str | None,
+    current_battery_id: str | None,
+    current_panel_count: int | None,
+    prefer_cheaper: bool,
+) -> ValidCombo | None:
+    def swapped_id(combo: ValidCombo) -> str | None:
+        if swap_slot == "panel":
+            return combo.panel_id
+        if swap_slot == "inverter":
+            return combo.inverter_id
+        return combo.battery_id
+
+    current_id = {
+        "panel": current_panel_id,
+        "inverter": current_inverter_id,
+        "battery": current_battery_id,
+    }[swap_slot]
+
+    candidates: list[ValidCombo] = []
+    for combo in valid:
+        if swapped_id(combo) == current_id:
+            continue
+        if current_panel_id and combo.panel_id != current_panel_id:
+            continue
+        if (
+            current_panel_count
+            and combo.panel_count != current_panel_count
+            and swap_slot in {"inverter", "battery"}
+        ):
+            continue
+        if current_inverter_id and swap_slot == "battery" and combo.inverter_id != current_inverter_id:
+            continue
+        if current_battery_id and swap_slot in {"panel", "inverter"} and combo.battery_id != current_battery_id:
+            continue
+        if swap_slot == "battery" and current_battery_id is None and combo.battery_id is not None:
+            candidates.append(combo)
+            continue
+        if swap_slot == "battery" and current_battery_id is None and combo.battery_id is None:
+            continue
+        candidates.append(combo)
+
+    if not candidates:
+        return None
+
+    if prefer_cheaper:
+        ranked = sorted(
+            candidates,
+            key=lambda combo: (combo.estimated_cost_php, -combo.fit_score),
+        )
+        return ranked[0]
+    return max(candidates, key=lambda combo: (combo.fit_score, -combo.estimated_cost_php))
+
+
 def pick_alternate_combo(
     top: ValidCombo,
     valid: tuple[ValidCombo, ...] | list[ValidCombo],

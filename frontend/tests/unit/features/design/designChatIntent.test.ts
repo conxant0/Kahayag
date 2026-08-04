@@ -14,5 +14,12 @@ describe("classifyMessageIntent", () => {
   it("treats design edits as change requests", () => {
     expect(classifyMessageIntent("Add two more panels")).toBe("change");
     expect(classifyMessageIntent("Optimise for my budget")).toBe("change");
+    expect(classifyMessageIntent("Generate a quotation for this build")).toBe("change");
+    expect(classifyMessageIntent("Add backup for blackouts under my budget")).toBe("change");
+  });
+
+  it("routes diagnostic agent requests as changes", () => {
+    expect(classifyMessageIntent("What got rejected in the last solve?")).toBe("question");
+    expect(classifyMessageIntent("List compatible panels")).toBe("change");
   });
 });

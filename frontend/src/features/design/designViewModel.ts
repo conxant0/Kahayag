@@ -1,5 +1,6 @@
 // Maps design session state into canvas and summary view models.
 import type {
+  BuildSource,
   ComponentSlot,
   DesignBuild,
   DesignComponent,
@@ -53,8 +54,49 @@ const FULL_VIEW_GROUP_ORDER: ComponentSlot[] = [
   "structure",
   "electrical",
   "installation",
-  "battery",
 ];
+
+const BOS_SLOTS: ComponentSlot[] = FULL_VIEW_GROUP_ORDER;
+
+function isFromQuoteComponent(component: DesignComponent): boolean {
+  return component.badges.some((badge) => badge.toUpperCase().includes("QUOTE"));
+}
+
+export function isAggregatedBosComponent(component: DesignComponent): boolean {
+  return (
+    BOS_SLOTS.includes(component.slot) &&
+    component.model.endsWith(" items") &&
+    /^\d+ items$/.test(component.model)
+  );
+}
+
+function aggregateBosComponents(items: DesignComponent[]): DesignComponent | undefined {
+  if (items.length === 0) {
+    return undefined;
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  const lineTotal = items.reduce((sum, component) => sum + component.line_total_php, 0);
+  const fromQuote = items.every(isFromQuoteComponent);
+
+  return {
+    slot: "protection",
+    catalog_id: null,
+    brand: fromQuote ? "Quoted" : "Included",
+    model: `${items.length} items`,
+    summary: "Balance of system",
+    qty: 1,
+    unit: "lot",
+    unit_price_php: lineTotal,
+    price_as_of: items[0]?.price_as_of ?? null,
+    line_total_php: lineTotal,
+    warranty_note: "",
+    badges: fromQuote ? (["FROM QUOTE"] as DesignComponent["badges"]) : (["INCLUDED"] as DesignComponent["badges"]),
+    specs: {},
+  };
+}
 
 export type CanvasBomGroup = {
   slot: ComponentSlot;
@@ -84,15 +126,21 @@ export type DiagramSourceOption = {
   label: string;
   description: string;
   kind: "build" | "quote";
+  manageable?: boolean;
 };
+
+export function isManageableBuildSource(source: BuildSource): boolean {
+  return source === "custom" || source === "user";
+}
 
 function compareOrderedBuilds(session: DesignSession): DesignBuild[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
     [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
   const customBuilds = session.builds.filter((build) => build.source === "custom");
+  const userBuilds = session.builds.filter((build) => build.source === "user");
 
-  return [suggested, ...customBuilds].filter(
+  return [suggested, ...customBuilds, ...userBuilds].filter(
     (build, index, builds): build is DesignBuild =>
       build !== undefined && builds.indexOf(build) === index,
   );
@@ -110,8 +158,14 @@ export function diagramSourceOptions(
     (build) => ({
       value: build.id,
       label: build.label,
-      description: `${build.system_kwp.toFixed(1)} kWp · Solver build`,
+      description:
+        build.source === "user"
+          ? build.system_kwp > 0
+            ? `${build.system_kwp.toFixed(1)} kWp · Your build`
+            : "Empty · Add components"
+          : `${build.system_kwp.toFixed(1)} kWp · Solver build`,
       kind: "build",
+      manageable: isManageableBuildSource(build.source),
     }),
   );
 
@@ -163,25 +217,37 @@ export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
 export function canvasSlotsFromComponents(
   components: DesignComponent[],
 ): DesignComponent[] {
-  const bySlot = new Map(components.map((c) => [c.slot, c]));
-  return SLOT_ORDER.map(
-    (slot) =>
-      bySlot.get(slot) ?? {
-        slot,
-        catalog_id: null,
-        brand: "—",
-        model: slot === "battery" ? "Not included" : "Pending",
-        summary: SLOT_LABELS[slot],
-        qty: 0,
-        unit: "—",
-        unit_price_php: 0,
-        price_as_of: null,
-        line_total_php: 0,
-        warranty_note: "",
-        badges: [],
-        specs: {},
-      },
-  );
+  const placeholder = (slot: ComponentSlot): DesignComponent => ({
+    slot,
+    catalog_id: null,
+    brand: "—",
+    model: slot === "battery" ? "Not included" : "Pending",
+    summary: SLOT_LABELS[slot],
+    qty: 0,
+    unit: "—",
+    unit_price_php: 0,
+    price_as_of: null,
+    line_total_php: 0,
+    warranty_note: "",
+    badges: [],
+    specs: {},
+  });
+
+  const bosItems = components.filter((component) => BOS_SLOTS.includes(component.slot));
+  const bosSlot = aggregateBosComponents(bosItems);
+
+  const bySlot = new Map<ComponentSlot, DesignComponent>();
+  for (const component of components) {
+    if (BOS_SLOTS.includes(component.slot)) {
+      continue;
+    }
+    bySlot.set(component.slot, component);
+  }
+  if (bosSlot) {
+    bySlot.set("protection", bosSlot);
+  }
+
+  return SLOT_ORDER.map((slot) => bySlot.get(slot) ?? placeholder(slot));
 }
 
 export function canvasBomGroups(build: DesignBuild | null): CanvasBomGroup[] {
@@ -193,7 +259,11 @@ export function canvasBomGroupsFromComponents(
 ): CanvasBomGroup[] {
   const groups = new Map<ComponentSlot, DesignComponent[]>();
   for (const component of components) {
-    if (component.slot === "panel" || component.slot === "inverter") {
+    if (
+      component.slot === "panel" ||
+      component.slot === "inverter" ||
+      component.slot === "battery"
+    ) {
       continue;
     }
     const existing = groups.get(component.slot) ?? [];
@@ -210,6 +280,13 @@ export function canvasBomGroupsFromComponents(
 
 export function canvasSlotHeader(slot: ComponentSlot): string {
   return CANVAS_SLOT_HEADERS[slot] ?? slot;
+}
+
+export function canvasSlotHeaderForComponent(component: DesignComponent): string {
+  if (isAggregatedBosComponent(component)) {
+    return "Balance of system";
+  }
+  return canvasSlotHeader(component.slot);
 }
 
 export function rejectionsForCombo(
@@ -236,7 +313,7 @@ export const GOAL_LABELS: Record<SolverGoal, string> = {
 };
 
 export const ASK_AI_CHIPS = [
-  "Why this inverter?",
-  "What was rejected?",
-  "How is payback calculated?",
+  "Why was this inverter chosen?",
+  "Add backup for blackouts under my budget",
+  "What got rejected in the last solve?",
 ] as const;

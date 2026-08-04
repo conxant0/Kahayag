@@ -21,8 +21,10 @@ export type CompareColumn = {
 
 export type CompareMatrixRow = {
   label: string;
-  values: string[];
+  values: [string, string];
 };
+
+export const EMPTY_COMPARE_COLUMN_ID = "";
 
 export function compareColumns(
   session: DesignSession,
@@ -183,14 +185,19 @@ const COMPARISON_ROW_LABELS = [
   "Parts subtotal",
 ] as const;
 
-export function comparisonMatrix(columns: CompareColumn[]): CompareMatrixRow[] {
+export function comparisonMatrix(
+  left: CompareColumn,
+  right: CompareColumn | null,
+): CompareMatrixRow[] {
+  const leftValue = (column: CompareColumn, label: string) =>
+    column.kind === "build" ? buildSpecValue(column, label) : quoteSpecValue(column, label);
+
   return COMPARISON_ROW_LABELS.map((label) => ({
     label,
-    values: columns.map((column) =>
-      column.kind === "build"
-        ? buildSpecValue(column, label)
-        : quoteSpecValue(column, label),
-    ),
+    values: [
+      leftValue(left, label),
+      right ? leftValue(right, label) : "—",
+    ],
   }));
 }
 
@@ -199,7 +206,7 @@ export function defaultComparePair(columns: CompareColumn[]): [string, string] {
     return ["", ""];
   }
   if (columns.length === 1) {
-    return [columns[0]!.id, columns[0]!.id];
+    return [columns[0]!.id, EMPTY_COMPARE_COLUMN_ID];
   }
 
   const suggested = columns.find((column) => column.isSuggested) ?? columns[0]!;
@@ -220,21 +227,32 @@ export function resolveComparePair(
   columns: CompareColumn[],
   leftId: string,
   rightId: string,
-): CompareColumn[] {
-  const left = columns.find((column) => column.id === leftId);
-  const right = columns.find((column) => column.id === rightId);
-  if (left && right && left.id !== right.id) {
+): [CompareColumn | null, CompareColumn | null] {
+  if (columns.length === 0) {
+    return [null, null];
+  }
+
+  const resolveLeft = (id: string) => columns.find((column) => column.id === id) ?? columns[0]!;
+  const resolveRight = (id: string) => {
+    if (!id || id === EMPTY_COMPARE_COLUMN_ID) {
+      return null;
+    }
+    const column = columns.find((candidate) => candidate.id === id);
+    return column ?? null;
+  };
+
+  const left = resolveLeft(leftId);
+  const right = resolveRight(rightId);
+  if (right && right.id !== left.id) {
     return [left, right];
   }
 
   const [fallbackLeft, fallbackRight] = defaultComparePair(columns);
-  const resolvedLeft = columns.find((column) => column.id === fallbackLeft) ?? columns[0];
-  const resolvedRight =
-    columns.find((column) => column.id === fallbackRight && column.id !== resolvedLeft?.id) ??
-    columns.find((column) => column.id !== resolvedLeft?.id);
-
-  if (!resolvedLeft) {
-    return [];
+  const resolvedLeft = columns.find((column) => column.id === fallbackLeft) ?? left;
+  const resolvedRight = resolveRight(fallbackRight);
+  if (resolvedRight && resolvedRight.id !== resolvedLeft.id) {
+    return [resolvedLeft, resolvedRight];
   }
-  return resolvedRight ? [resolvedLeft, resolvedRight] : [resolvedLeft];
+
+  return [resolvedLeft, null];
 }

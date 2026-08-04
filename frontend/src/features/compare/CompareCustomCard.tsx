@@ -1,9 +1,12 @@
-// Defines the compare-custom card wired to POST /designs/mutate.
+// Defines the compare-custom card for starting a blank build or running the solver.
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
+import { ROUTE_PATHS } from "../../app/routePaths";
 import { Button } from "../../shared/components/ui";
 import type { SolverGoal } from "../../shared/api/types";
-import { useMutateDesign } from "../design/useDesignActions";
+import { compareUtilityCardClass } from "./CompareCardsGrid";
+import { useCreateUserBuild, useMutateDesign } from "../design/useDesignActions";
 
 function PlusIcon() {
   return (
@@ -26,11 +29,19 @@ function PlusIcon() {
 }
 
 export function CompareCustomCard() {
+  const navigate = useNavigate();
+  const createUserBuild = useCreateUserBuild();
   const mutate = useMutateDesign();
   const [expanded, setExpanded] = useState(false);
   const [requireBattery, setRequireBattery] = useState(false);
   const [panelDelta, setPanelDelta] = useState(0);
   const [goal, setGoal] = useState<SolverGoal>("auto");
+
+  const startFromScratch = () => {
+    createUserBuild.mutate(undefined, {
+      onSuccess: () => navigate(ROUTE_PATHS.design),
+    });
+  };
 
   const runCustomCompare = () => {
     mutate.mutate(
@@ -46,17 +57,21 @@ export function CompareCustomCard() {
     );
   };
 
+  const pending = createUserBuild.isPending || mutate.isPending;
+  const error = createUserBuild.error ?? mutate.error;
+
   if (expanded) {
     return (
       <article
-        className="flex h-full min-h-[280px] flex-col rounded-[20px] border border-hairline bg-white px-6 py-6"
+        className="flex h-full w-full flex-col rounded-[20px] border border-hairline bg-white px-6 py-6 shadow-[0px_3px_10px_0px_rgba(26,23,18,0.04)]"
         aria-label="Compare custom"
       >
-        <h2 className="font-serif text-[21px] font-medium leading-7 text-ink">
-          Compare custom
+        <h2 className="font-serif text-[26px] font-medium leading-none text-ink">
+          Solver alternate
         </h2>
         <p className="mt-2 font-sans text-[12.5px] leading-5 text-secondary">
-          Run the solver with a different constraint mix and refresh the build cards.
+          Or run the solver with a different constraint mix instead of building
+          from scratch.
         </p>
 
         <label className="mt-5 flex items-center gap-3 font-sans text-sm text-ink">
@@ -107,8 +122,8 @@ export function CompareCustomCard() {
         </label>
 
         <div className="mt-auto flex flex-col gap-2 pt-6">
-          <Button disabled={mutate.isPending} onClick={runCustomCompare}>
-            {mutate.isPending ? "Running solver…" : "Run custom compare"}
+          <Button disabled={pending} onClick={runCustomCompare}>
+            {mutate.isPending ? "Running solver…" : "Run solver alternate"}
           </Button>
           <Button
             variant="ghost"
@@ -117,9 +132,9 @@ export function CompareCustomCard() {
           >
             Cancel
           </Button>
-          {mutate.error ? (
+          {error ? (
             <p className="font-sans text-sm text-ember" role="alert">
-              {mutate.error.message}
+              {error.message}
             </p>
           ) : null}
         </div>
@@ -128,26 +143,46 @@ export function CompareCustomCard() {
   }
 
   return (
-    <article
-      className="flex h-full min-h-[280px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#d8d2c4] px-6 py-[30px]"
-      aria-label="Compare custom"
-    >
-      <div className="flex size-[58px] items-center justify-center rounded-pill bg-[#f2eee4] text-secondary">
-        <PlusIcon />
+    <article className={compareUtilityCardClass} aria-label="Compare custom">
+      <div className="flex flex-col items-center text-center">
+        <h2 className="font-serif text-[26px] font-medium leading-none text-tertiary">
+          Your build
+        </h2>
       </div>
-      <h2 className="mt-5 text-center font-serif text-[21px] font-medium leading-7 text-tertiary">
-        Compare custom
-      </h2>
-      <p className="mt-2.5 text-center font-sans text-[12.5px] leading-5 text-tertiary">
-        Test a different mix of components and capacity.
-      </p>
-      <Button
-        variant="ghost"
-        className="mt-6 border-hairline bg-white text-ink"
-        onClick={() => setExpanded(true)}
-      >
-        Configure custom mix
-      </Button>
+
+      <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+        <div className="flex size-[58px] items-center justify-center rounded-pill bg-[#f2eee4] text-secondary">
+          <PlusIcon />
+        </div>
+        <p className="mt-5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary">
+          Start with an empty diagram and pick panels, inverters, and batteries
+          yourself.
+        </p>
+      </div>
+
+      <div className="mt-auto flex w-full flex-col gap-2">
+        <Button
+          fullWidth
+          className="h-[52px] text-[13.5px]"
+          disabled={pending}
+          onClick={startFromScratch}
+        >
+          {createUserBuild.isPending ? "Creating build…" : "Start from scratch"}
+        </Button>
+        <Button
+          variant="ghost"
+          fullWidth
+          className="h-[52px] border-hairline bg-white text-[13.5px] text-ink hover:border-tertiary"
+          onClick={() => setExpanded(true)}
+        >
+          Run solver alternate
+        </Button>
+        {error ? (
+          <p className="font-sans text-sm text-ember" role="alert">
+            {error.message}
+          </p>
+        ) : null}
+      </div>
     </article>
   );
 }

@@ -29,6 +29,8 @@ def test_catalog_options_returns_panel_entries(
     statuses = {row["status"] for row in body}
     assert "selected" in statuses
     assert any(row["status"] in {"recommended", "compatible", "incompatible"} for row in body)
+    assert all(row["line_total_php"] > 0 for row in body)
+    assert all(row["unit_price_php"] > 0 for row in body)
 
 
 def test_mutate_locked_battery_adds_storage(

@@ -24,6 +24,11 @@ type AssistantMessage = {
   kind: "assistant";
   content: string;
   tone?: "answer" | "status";
+  reasoningSteps?: Array<{
+    kind: "thinking" | "tool_call" | "tool_result" | "error";
+    label: string;
+    detail?: string | null;
+  }>;
 };
 
 type ConfirmationMessage = {
@@ -41,6 +46,37 @@ const MODE_OPTIONS = [
 ] as const;
 
 const GOAL_SHORTCUTS: SolverGoal[] = ["budget", "backup", "independence"];
+
+function ReasoningStepsList({
+  steps,
+}: {
+  steps: NonNullable<AssistantMessage["reasoningSteps"]>;
+}) {
+  if (steps.length === 0) {
+    return null;
+  }
+  return (
+    <ul className="mb-2 space-y-1 border-b border-[#e8e2d6] pb-2" aria-label="Reasoning steps">
+      {steps.map((step, index) => (
+        <li
+          key={`${step.kind}-${index}`}
+          className={cn(
+            "font-sans text-[11px] leading-4",
+            step.kind === "error" ? "text-ember" : "text-secondary",
+          )}
+        >
+          <span className="mr-1.5">
+            {step.kind === "error" ? "✕" : step.kind === "tool_result" ? "✓" : "◉"}
+          </span>
+          {step.label}
+          {step.detail ? (
+            <span className="block pl-4 text-tertiary">{step.detail}</span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function SendIcon() {
   return (
@@ -206,10 +242,14 @@ export function DesignChat() {
     ]);
   };
 
-  const appendAssistant = (content: string, tone: "answer" | "status" = "answer") => {
+  const appendAssistant = (
+    content: string,
+    tone: "answer" | "status" = "answer",
+    reasoningSteps?: AssistantMessage["reasoningSteps"],
+  ) => {
     setMessages((current) => [
       ...current,
-      { id: nextMessageId(), kind: "assistant", content, tone },
+      { id: nextMessageId(), kind: "assistant", content, tone, reasoningSteps },
     ]);
   };
 
@@ -237,12 +277,14 @@ export function DesignChat() {
       appendConfirmation(preview.reply, userText);
       return;
     }
-    appendAssistant(preview.reply);
+    appendAssistant(preview.reply, "answer", preview.reasoning_steps);
   };
 
   const applyChange = async (userText: string) => {
-    const { reply } = await agent.mutateAsync({ user_text: userText });
-    appendAssistant(reply);
+    const { reply, reasoning_steps: reasoningSteps } = await agent.mutateAsync({
+      user_text: userText,
+    });
+    appendAssistant(reply, "answer", reasoningSteps);
   };
 
   const sendMessage = async (rawText: string) => {
@@ -280,11 +322,14 @@ export function DesignChat() {
       content: "Applying changes…",
     });
     try {
-      const { reply } = await agent.mutateAsync({ user_text: message.userText });
+      const { reply, reasoning_steps: reasoningSteps } = await agent.mutateAsync({
+        user_text: message.userText,
+      });
       resolveConfirmation(message.id, {
         id: message.id,
         kind: "assistant",
         content: reply,
+        reasoningSteps,
       });
     } catch (caught) {
       const detail =
@@ -409,6 +454,9 @@ export function DesignChat() {
                       <span className="mb-1 block font-sans text-[10px] font-semibold tracking-[0.8px] text-secondary uppercase">
                         Assistant
                       </span>
+                      {message.reasoningSteps ? (
+                        <ReasoningStepsList steps={message.reasoningSteps} />
+                      ) : null}
                       <p className="whitespace-pre-wrap">{message.content}</p>
                     </div>
                   )}

@@ -22,7 +22,26 @@ class PlannedToolCall:
     arguments: dict[str, object]
 
 
+@dataclass(frozen=True)
+class AgentStepResult:
+    tool_calls: tuple[PlannedToolCall, ...] = ()
+    assistant_message: dict[str, object] | None = None
+    final_reply: str | None = None
+
+
 class DesignAgentClient(Protocol):
+    def build_agent_messages(
+        self,
+        *,
+        user_text: str,
+        session_summary: dict[str, object],
+    ) -> list[dict[str, object]]: ...
+
+    def agent_step(
+        self,
+        messages: list[dict[str, object]],
+    ) -> AgentStepResult: ...
+
     def plan_tool_calls(
         self,
         *,
@@ -48,13 +67,127 @@ class DesignAgentClient(Protocol):
 
 def _infer_goal_from_text(text: str) -> str:
     lowered = text.lower()
-    if any(token in lowered for token in ("budget", "cheaper", "afford", "cost")):
+    if any(token in lowered for token in ("budget", "cheaper", "afford", "cost", "cheapest", "save money")):
         return "budget"
-    if any(token in lowered for token in ("backup", "blackout", "outage")):
+    if any(token in lowered for token in ("backup", "blackout", "brownout", "outage", "power cut")):
         return "backup"
-    if any(token in lowered for token in ("independence", "self-sufficient", "off-grid")):
+    if any(token in lowered for token in ("independence", "self-sufficient", "off-grid", "off grid")):
         return "independence"
+    if any(token in lowered for token in ("auto", "optimi", "best fit", "recommend")):
+        return "auto"
     return "auto"
+
+
+def _is_change_request(text: str) -> bool:
+    lowered = text.lower()
+    change_verbs = (
+        "add", "remove", "swap", "change", "update", "optimi",
+        "increase", "decrease", "make it", "make this", "more", "fewer",
+        "less", "extra", "drop", "include", "maximi", "ensure", "upgrade",
+        "downgrade", "switch", "use ", "try ", "set ", "lock ",
+    )
+    change_nouns = (
+        "panel", "battery", "inverter", "storage", "budget", "backup",
+        "independence", "kwp", "system", "quotation", "quote",
+    )
+    return any(v in lowered for v in change_verbs) or any(n in lowered for n in change_nouns)
+
+
+def _infer_catalog_category(text: str) -> str:
+    lowered = text.lower()
+    if "inverter" in lowered:
+        return "inverters"
+    if "batter" in lowered or "storage" in lowered:
+        return "batteries"
+    return "panels"
+
+
+def _infer_catalog_brand(text: str) -> str | None:
+    lowered = text.lower()
+    brands = (
+        "ae solar", "ae", "longi", "ja solar", "ja", "jinko", "trina",
+        "canadian solar", "growatt", "sungrow", "huawei", "byd", "pylontech",
+    )
+    for brand in brands:
+        if brand in lowered:
+            return brand.split()[0] if " " in brand else brand
+    return None
+
+
+def _plan_disabled_tools(
+    user_text: str,
+    session_summary: dict[str, object],
+) -> tuple[PlannedToolCall, ...]:
+    lowered = user_text.lower()
+    active_build_id = str(session_summary.get("active_build_id", ""))
+    last_solve_id = str(session_summary.get("last_solve_id", ""))
+
+    if any(token in lowered for token in ("quote", "quotation", "price breakdown", "bom", "line item")):
+        return (
+            PlannedToolCall(
+                name="generate_quotation",
+                arguments={"build_id": active_build_id},
+            ),
+        )
+
+    if any(
+        token in lowered
+        for token in (
+            "reject", "rejected", "didn't work", "didnt work", "failed",
+            "what got rejected", "why not", "why didn't", "why didnt",
+            "no valid", "couldn't find", "couldnt find",
+        )
+    ):
+        return (
+            PlannedToolCall(
+                name="get_rejection_reasons",
+                arguments={"solve_id": last_solve_id},
+            ),
+        )
+
+    if any(
+        token in lowered
+        for token in (
+            "show me", "list", "what panels", "what inverters", "what batteries",
+            "catalog", "available", "compatible panel", "compatible inverter",
+        )
+    ):
+        args: dict[str, object] = {"category": _infer_catalog_category(user_text)}
+        brand = _infer_catalog_brand(user_text)
+        if brand:
+            args["brand"] = brand
+        return (PlannedToolCall(name="query_catalog", arguments=args),)
+
+    goal = _infer_goal_from_text(user_text)
+    if any(
+        token in lowered
+        for token in ("optimi", "re-run", "rebuild", "solve", "auto", "refresh", "recalculate")
+    ):
+        return (PlannedToolCall(name="run_solver", arguments={"goal": goal}),)
+
+    if active_build_id and _is_change_request(lowered):
+        return (
+            PlannedToolCall(
+                name="update_build",
+                arguments=_infer_update_build_args(user_text, active_build_id),
+            ),
+        )
+
+    if (
+        active_build_id
+        and ("backup" in lowered or "battery" in lowered or "storage" in lowered)
+        and any(
+            token in lowered for token in ("add", "include", "need", "want", "ensure", "get")
+        )
+    ):
+        return (
+            PlannedToolCall(
+                name="update_build",
+                arguments=_infer_update_build_args(user_text, active_build_id),
+            ),
+        )
+
+    return (PlannedToolCall(name="run_solver", arguments={"goal": goal}),)
 
 
 def _is_nighttime_question(question: str) -> bool:
@@ -462,39 +595,103 @@ def _explain_conversational_fallback(build: dict[str, object], question: str = "
 def _infer_update_build_args(user_text: str, build_id: str) -> dict[str, object]:
     lowered = user_text.lower()
     change_bits: list[str] = []
-    if any(token in lowered for token in ("battery", "storage", "backup")):
-        change_bits.append("require battery storage")
-    if any(token in lowered for token in ("more panel", "add panel", "extra panel")):
-        change_bits.append("add one panel")
-    if any(token in lowered for token in ("fewer panel", "less panel", "remove panel")):
-        change_bits.append("remove one panel")
-    if any(token in lowered for token in ("budget", "cheaper", "afford")):
+    if any(token in lowered for token in ("battery", "storage", "backup", "blackout", "brownout")):
+        if any(token in lowered for token in ("remove", "drop", "without", "no ")):
+            change_bits.append("remove battery storage")
+        else:
+            change_bits.append("require battery storage")
+    if any(token in lowered for token in ("more panel", "add panel", "extra panel", "increase panel")):
+        count_match = re.search(r"(\d+|one|two|three|four|five)\s+(?:more\s+)?panels?", lowered)
+        if count_match:
+            change_bits.append(f"add {count_match.group(1)} panels")
+        else:
+            change_bits.append("add one panel")
+    if any(token in lowered for token in ("fewer panel", "less panel", "remove panel", "decrease panel")):
+        count_match = re.search(r"(\d+|one|two|three|four|five)\s+panels?", lowered)
+        if count_match:
+            change_bits.append(f"remove {count_match.group(1)} panels")
+        else:
+            change_bits.append("remove one panel")
+    if any(token in lowered for token in ("budget", "cheaper", "afford", "cheapest")):
         change_bits.append("optimise for budget")
+    swap_verbs = ("swap", "switch", "change", "replace", "upgrade", "downgrade")
+    if any(verb in lowered for verb in swap_verbs):
+        if "inverter" in lowered:
+            change_bits.append("swap inverter")
+        elif "panel" in lowered:
+            change_bits.append("swap panel")
+        elif "batter" in lowered or "storage" in lowered or "energy store" in lowered:
+            change_bits.append("swap battery")
+    if any(token in lowered for token in ("independence", "self-sufficient", "off-grid", "off grid")):
+        change_bits.append("optimise for energy independence")
+    budget_match = re.search(
+        r"(?:under|below|max|maximum|cap(?:ped)? at|within)\s*(?:₱|php|peso[s]?)?\s*([\d,]+(?:\.\d+)?)\s*(?:k|000)?",
+        lowered,
+    )
+    if budget_match:
+        raw = budget_match.group(1).replace(",", "")
+        amount = float(raw)
+        if amount < 1000:
+            amount *= 1000
+        change_bits.append(f"set budget to ₱{amount:,.0f}")
+    if any(token in lowered for token in ("larger inverter", "bigger inverter", "upgrade inverter")):
+        change_bits.append("upgrade to a larger inverter")
+    panel_model = re.search(r"\b(?:use|switch to|swap to|try)\s+([a-z]{2,}\d{2,}[a-z0-9./+-]*)\b", lowered)
+    if panel_model:
+        change_bits.append(f"use {panel_model.group(1)} panels")
     change_request = ", ".join(change_bits) if change_bits else user_text.strip()
     return {"build_id": build_id, "change_request": change_request}
 
 
 class DisabledDesignAgentClient:
+    def build_agent_messages(
+        self,
+        *,
+        user_text: str,
+        session_summary: dict[str, object],
+    ) -> list[dict[str, object]]:
+        return [
+            {"role": "system", "content": DESIGN_AGENT_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {"user_text": user_text, "session": session_summary},
+                    default=str,
+                ),
+            },
+        ]
+
+    def agent_step(
+        self,
+        messages: list[dict[str, object]],
+    ) -> AgentStepResult:
+        has_tool_results = any(message.get("role") == "tool" for message in messages)
+        if has_tool_results:
+            return AgentStepResult()
+        user_payload = next(
+            (message["content"] for message in messages if message.get("role") == "user"),
+            "{}",
+        )
+        try:
+            payload = json.loads(str(user_payload))
+            user_text = str(payload.get("user_text", ""))
+            session_summary = payload.get("session", {})
+            if not isinstance(session_summary, dict):
+                session_summary = {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            user_text = str(user_payload)
+            session_summary = {}
+        return AgentStepResult(
+            tool_calls=_plan_disabled_tools(user_text, session_summary),
+        )
+
     def plan_tool_calls(
         self,
         *,
         user_text: str,
         session_summary: dict[str, object],
     ) -> tuple[PlannedToolCall, ...]:
-        active_build_id = str(session_summary.get("active_build_id", ""))
-        goal = _infer_goal_from_text(user_text)
-        if active_build_id and re.search(
-            r"\b(panel|battery|inverter|change|swap|update|more|fewer|add|remove)\b",
-            user_text,
-            re.IGNORECASE,
-        ):
-            return (
-                PlannedToolCall(
-                    name="update_build",
-                    arguments=_infer_update_build_args(user_text, active_build_id),
-                ),
-            )
-        return (PlannedToolCall(name="run_solver", arguments={"goal": goal}),)
+        return _plan_disabled_tools(user_text, session_summary)
 
     def explain_snapshot(
         self,
@@ -589,16 +786,160 @@ class DisabledDesignAgentClient:
         tool_audit: list[dict[str, object]],
         active_build: dict[str, object] | None,
     ) -> str:
-        if not active_build:
-            return "Design session updated."
-        kwp = active_build.get("system_kwp")
-        panels = active_build.get("panel_count")
-        investment = float(active_build.get("total_investment_php", 0))
-        payback = active_build.get("payback_years")
-        return (
-            f"Done — updated to {kwp} kWp ({panels} panels). "
-            f"Investment is now ₱{investment:,.0f} with about {payback} years payback."
+        return build_agent_turn_reply(
+            user_text=user_text,
+            tool_audit=tool_audit,
+            active_build=active_build,
         )
+
+
+def build_agent_turn_reply(
+    *,
+    user_text: str,
+    tool_audit: list[dict[str, object]],
+    active_build: dict[str, object] | None,
+) -> str:
+    lowered = user_text.lower()
+    remove_verbs = ("remove", "drop", "delete", "take out", "get rid of", "without")
+
+    if tool_audit:
+        last = tool_audit[-1]
+        name = str(last.get("name", ""))
+        result = last.get("result")
+        if isinstance(result, dict):
+            if result.get("error"):
+                message = str(result["error"])
+                if message.startswith(("I can't", "I'm not", "That wouldn't", "No cheaper")):
+                    return message
+                return f"I couldn't do that — {message[0].lower()}{message[1:]}" if message else message
+
+            if name == "generate_quotation" and result.get("total_php") is not None:
+                total = float(result["total_php"])
+                lines = result.get("line_count", 0)
+                return (
+                    f"Here's your quotation — ₱{total:,.0f} total "
+                    f"({lines} line items). Open the quotation view for the full breakdown."
+                )
+            if name == "get_rejection_reasons":
+                rejections = result.get("rejections")
+                if isinstance(rejections, list) and rejections:
+                    samples = []
+                    for row in rejections[:3]:
+                        if isinstance(row, dict) and row.get("message"):
+                            samples.append(str(row["message"]))
+                    if samples:
+                        return (
+                            "Some combinations were rejected — for example: "
+                            + "; ".join(samples)
+                            + ". I can adjust the design if you'd like to retry."
+                        )
+                return "No rejection details are available for the latest solve."
+            if name == "query_catalog":
+                items = result.get("items")
+                if isinstance(items, list) and items:
+                    names = []
+                    for row in items[:5]:
+                        if isinstance(row, dict):
+                            names.append(
+                                f"{row.get('brand', '')} {row.get('model', '')}".strip(),
+                            )
+                    return (
+                        "Compatible options include "
+                        + ", ".join(name for name in names if name)
+                        + ". Use the component picker on the canvas to swap."
+                    )
+                return "I couldn't find matching catalog items for that query."
+            if name == "run_solver":
+                kwp = result.get("system_kwp") or (active_build or {}).get("system_kwp")
+                investment = result.get("total_investment_php") or (active_build or {}).get(
+                    "total_investment_php",
+                )
+                if kwp is not None and investment is not None:
+                    return (
+                        f"I re-optimised your design — it's now {kwp} kWp with about "
+                        f"₱{float(investment):,.0f} total investment."
+                    )
+                return "I re-ran the optimiser on your design."
+            if name == "update_build":
+                if (
+                    result.get("swap_slot") == "inverter"
+                    and result.get("component_changed")
+                    and result.get("new_model")
+                ):
+                    previous = result.get("previous_model")
+                    new_model = result.get("new_model")
+                    investment = result.get("total_investment_php")
+                    if previous:
+                        reply = f"I swapped the inverter from {previous} to {new_model}."
+                    else:
+                        reply = f"I swapped the inverter to {new_model}."
+                    if investment is not None:
+                        reply += f" Total investment is about ₱{float(investment):,.0f}."
+                    return reply
+
+                previous_battery = result.get("previous_battery_kwh")
+                battery = result.get("battery_kwh")
+                if previous_battery and not battery:
+                    return (
+                        "I've removed battery storage from this design — it's grid-tied "
+                        "without backup for now."
+                    )
+                if not previous_battery and battery:
+                    return f"I've added {battery} kWh of battery storage to your design."
+
+                previous_panels = result.get("previous_panel_count")
+                panels = result.get("panel_count")
+                if (
+                    previous_panels is not None
+                    and panels is not None
+                    and previous_panels != panels
+                ):
+                    delta = int(panels) - int(previous_panels)
+                    kwp = result.get("system_kwp")
+                    if delta > 0:
+                        return (
+                            f"I added {delta} panel{'s' if delta != 1 else ''} — "
+                            f"you're now at {panels} panels ({kwp} kWp)."
+                        )
+                    return (
+                        f"I removed {abs(delta)} panel{'s' if abs(delta) != 1 else ''} — "
+                        f"you're now at {panels} panels ({kwp} kWp)."
+                    )
+
+                if any(token in lowered for token in ("budget", "cheaper", "optimi", "afford")):
+                    kwp = result.get("system_kwp")
+                    investment = result.get("total_investment_php")
+                    if kwp is not None and investment is not None:
+                        return (
+                            f"I adjusted the design for cost — you're at {kwp} kWp with "
+                            f"about ₱{float(investment):,.0f} total investment."
+                        )
+
+                if any(token in lowered for token in remove_verbs) and any(
+                    token in lowered for token in ("battery", "storage", "energy store")
+                ):
+                    return (
+                        "Battery storage is already removed — this build is grid-tied "
+                        "without backup."
+                    )
+
+    if not active_build:
+        return "I wasn't able to update your design."
+
+    kwp = active_build.get("system_kwp")
+    panels = active_build.get("panel_count")
+    investment = float(active_build.get("total_investment_php", 0))
+    payback = active_build.get("payback_years")
+    battery = active_build.get("battery_kwh")
+    storage_clause = (
+        f", including {battery} kWh storage"
+        if battery
+        else ", without battery backup"
+    )
+    return (
+        f"Your design is at {kwp} kWp ({panels} panels{storage_clause}). "
+        f"Estimated investment is about ₱{investment:,.0f} with roughly {payback} years payback."
+    )
 
 
 class GroqDesignAgentClient:
@@ -606,13 +947,13 @@ class GroqDesignAgentClient:
         self._api_key = api_key
         self._model = model
 
-    def plan_tool_calls(
+    def build_agent_messages(
         self,
         *,
         user_text: str,
         session_summary: dict[str, object],
-    ) -> tuple[PlannedToolCall, ...]:
-        messages: list[dict[str, object]] = [
+    ) -> list[dict[str, object]]:
+        return [
             {"role": "system", "content": DESIGN_AGENT_SYSTEM_PROMPT},
             {
                 "role": "user",
@@ -622,43 +963,78 @@ class GroqDesignAgentClient:
                 ),
             },
         ]
+
+    def agent_step(
+        self,
+        messages: list[dict[str, object]],
+    ) -> AgentStepResult:
+        try:
+            response = httpx.post(
+                GROQ_CHAT_COMPLETIONS_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self._model,
+                    "messages": messages,
+                    "tools": list(DESIGN_TOOL_SCHEMAS),
+                    "tool_choice": "auto",
+                },
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            message = response.json()["choices"][0]["message"]
+            tool_calls = message.get("tool_calls") or []
+            if not tool_calls:
+                content = message.get("content")
+                return AgentStepResult(
+                    final_reply=str(content) if content else None,
+                )
+            planned: list[PlannedToolCall] = []
+            for call in tool_calls:
+                fn = call["function"]
+                args_raw = fn.get("arguments", "{}")
+                args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+                planned.append(
+                    PlannedToolCall(name=str(fn["name"]), arguments=dict(args)),
+                )
+            return AgentStepResult(
+                tool_calls=tuple(planned),
+                assistant_message=message,
+            )
+        except (httpx.HTTPError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+            return AgentStepResult()
+
+    def plan_tool_calls(
+        self,
+        *,
+        user_text: str,
+        session_summary: dict[str, object],
+    ) -> tuple[PlannedToolCall, ...]:
+        messages = self.build_agent_messages(
+            user_text=user_text,
+            session_summary=session_summary,
+        )
         planned: list[PlannedToolCall] = []
         try:
             for _ in range(MAX_TOOL_ITERATIONS):
-                response = httpx.post(
-                    GROQ_CHAT_COMPLETIONS_URL,
-                    headers={"Authorization": f"Bearer {self._api_key}"},
-                    json={
-                        "model": self._model,
-                        "messages": messages,
-                        "tools": list(DESIGN_TOOL_SCHEMAS),
-                        "tool_choice": "auto",
-                    },
-                    timeout=15.0,
-                )
-                response.raise_for_status()
-                message = response.json()["choices"][0]["message"]
-                tool_calls = message.get("tool_calls") or []
-                if not tool_calls:
+                step = self.agent_step(messages)
+                if step.final_reply and not step.tool_calls:
                     break
-                messages.append(message)
-                for call in tool_calls:
-                    fn = call["function"]
-                    args_raw = fn.get("arguments", "{}")
-                    args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
-                    planned.append(
-                        PlannedToolCall(name=str(fn["name"]), arguments=dict(args)),
-                    )
+                if not step.tool_calls:
+                    break
+                planned.extend(step.tool_calls)
+                if step.assistant_message:
+                    messages.append(step.assistant_message)
+                for index, call in enumerate(step.tool_calls):
                     messages.append(
                         {
                             "role": "tool",
-                            "tool_call_id": call["id"],
-                            "content": json.dumps({"status": "queued"}),
+                            "tool_call_id": f"preview-{index}",
+                            "content": json.dumps({"status": "preview_only"}),
                         },
                     )
                 if len(planned) >= MAX_TOOL_ITERATIONS:
                     break
-        except (httpx.HTTPError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        except (TypeError, ValueError):
             planned.clear()
 
         if not planned:

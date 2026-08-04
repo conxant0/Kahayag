@@ -69,3 +69,24 @@ def test_solver_rejects_roof_area(base_constraints: SolverConstraints) -> None:
 
 def test_combo_key_is_stable() -> None:
     assert combo_key("panel_001", "inv_001", None, 8) == "panel_001:inv_001:none:8"
+
+
+def test_solver_honors_seed_panel_count(base_constraints: SolverConstraints) -> None:
+    seeded = SolverConstraints(
+        target_kwp=base_constraints.target_kwp,
+        max_panel_count=base_constraints.max_panel_count,
+        usable_roof_area_m2=base_constraints.usable_roof_area_m2,
+        budget_php=base_constraints.budget_php,
+        require_battery=False,
+        min_battery_kwh=None,
+        goal="auto",
+        seed_panel_count=8,
+        annual_consumption_kwh=base_constraints.annual_consumption_kwh,
+        resolved_tariff_php_per_kwh=base_constraints.resolved_tariff_php_per_kwh,
+        annual_yield_per_kwp_kwh=base_constraints.annual_yield_per_kwp_kwh,
+    )
+
+    result = run_solver(seeded)
+
+    assert result.valid
+    assert all(combo.panel_count == 8 for combo in result.valid)

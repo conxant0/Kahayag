@@ -1,7 +1,7 @@
 # Defines fit-score and alternate-selection unit tests.
 
 from app.domain.design.entities import ValidCombo
-from app.domain.design.scoring import pick_alternate_combo
+from app.domain.design.scoring import pick_alternate_combo, pick_swap_combo
 
 
 def _combo(
@@ -26,6 +26,56 @@ def _combo(
         rejection_log_ref="test",
         estimated_cost_php=100_000.0,
     )
+
+
+def test_pick_swap_combo_prefers_lower_cost_when_requested() -> None:
+    current = _combo(
+        panel_id="panel_001",
+        inverter_id="inv_001",
+        battery_id=None,
+        panel_count=10,
+        fit_score=95.0,
+    )
+    current = ValidCombo(
+        **{**current.__dict__, "estimated_cost_php": 300_000.0},
+    )
+    cheaper = ValidCombo(
+        **{
+            **_combo(
+                panel_id="panel_001",
+                inverter_id="inv_002",
+                battery_id=None,
+                panel_count=10,
+                fit_score=90.0,
+            ).__dict__,
+            "estimated_cost_php": 250_000.0,
+        },
+    )
+    pricier = ValidCombo(
+        **{
+            **_combo(
+                panel_id="panel_001",
+                inverter_id="inv_003",
+                battery_id=None,
+                panel_count=10,
+                fit_score=92.0,
+            ).__dict__,
+            "estimated_cost_php": 280_000.0,
+        },
+    )
+
+    picked = pick_swap_combo(
+        (current, cheaper, pricier),
+        swap_slot="inverter",
+        current_panel_id="panel_001",
+        current_inverter_id="inv_001",
+        current_battery_id=None,
+        current_panel_count=10,
+        prefer_cheaper=True,
+    )
+
+    assert picked is not None
+    assert picked.inverter_id == "inv_002"
 
 
 def test_pick_alternate_combo_skips_same_equipment_stack() -> None:

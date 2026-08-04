@@ -23,6 +23,7 @@ def apply_constraint_patch(
     locked_inverter_id: str | None = None,
     locked_battery_id: str | None = None,
     panel_count_delta: int | None = None,
+    seed_panel_count: int | None = None,
     clear_locks: bool = False,
 ) -> SolverConstraints:
     updates: dict[str, object] = {}
@@ -36,6 +37,8 @@ def apply_constraint_patch(
         updates["min_battery_kwh"] = min_battery_kwh
     if panel_count_delta is not None:
         updates["panel_count_delta"] = panel_count_delta
+    if seed_panel_count is not None:
+        updates["seed_panel_count"] = seed_panel_count
     if clear_locks:
         updates["locked_panel_id"] = None
         updates["locked_inverter_id"] = None

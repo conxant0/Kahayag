@@ -4,10 +4,12 @@ import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/
 import {
   canvasBomGroups,
   canvasSlots,
+  canvasSlotsFromComponents,
   diagramSourceOptions,
   getActiveBuild,
   summaryTiles,
 } from "../../../../src/features/design/designViewModel";
+import type { DesignComponent } from "../../../../src/shared/api/types";
 import { quoteAuditId } from "../../../../src/features/compare/quoteAuditIds";
 
 describe("designViewModel", () => {
@@ -25,6 +27,59 @@ describe("designViewModel", () => {
     const slots = canvasSlots(build);
     expect(slots).toHaveLength(4);
     expect(slots.some((slot) => slot.slot === "panel")).toBe(true);
+  });
+
+  it("aggregates all balance-of-system costs in simplified canvas slots", () => {
+    const build = getActiveBuild(mockDesignSession);
+    const groups = canvasBomGroups(build);
+    const protectionSlot = canvasSlots(build).find((slot) => slot.slot === "protection");
+
+    const bosTotal = groups.reduce(
+      (sum, group) =>
+        sum + group.components.reduce((groupSum, component) => groupSum + component.line_total_php, 0),
+      0,
+    );
+    expect(protectionSlot?.line_total_php).toBe(bosTotal);
+    expect(protectionSlot?.model).toMatch(/items$/);
+    expect(protectionSlot?.summary).toBe("Balance of system");
+  });
+
+  it("aggregates uploaded quote balance-of-system lines in simplified slots", () => {
+    const quoteBosLine = (
+      slot: DesignComponent["slot"],
+      summary: string,
+      lineTotal: number,
+    ): DesignComponent => ({
+      slot,
+      catalog_id: null,
+      brand: "Quoted",
+      model: "—",
+      summary,
+      qty: 1,
+      unit: "pcs",
+      unit_price_php: lineTotal,
+      price_as_of: null,
+      line_total_php: lineTotal,
+      warranty_note: "From uploaded quote",
+      badges: ["FROM QUOTE"],
+      specs: {},
+    });
+
+    const slots = canvasSlotsFromComponents([
+      quoteBosLine("protection", "Circuit Breakers", 788),
+      quoteBosLine("structure", "Frames Mounting Panel", 357),
+      quoteBosLine("electrical", "Wires", 315),
+      quoteBosLine("installation", "Labor Cost", 315),
+    ]);
+    const bosSlot = slots.find((slot) => slot.slot === "protection");
+
+    expect(bosSlot?.line_total_php).toBe(1_775);
+    expect(bosSlot).toMatchObject({
+      brand: "Quoted",
+      model: "4 items",
+      summary: "Balance of system",
+      badges: ["FROM QUOTE"],
+    });
   });
 
   it("groups balance-of-system lines for the full canvas view", () => {

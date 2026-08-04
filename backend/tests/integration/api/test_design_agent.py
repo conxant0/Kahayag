@@ -2,7 +2,12 @@
 
 from fastapi.testclient import TestClient
 
-from app.features.design.agent import _parse_change_request, run_design_agent_turn
+from app.features.design.agent import (
+    _detect_swap_slot,
+    _parse_change_request,
+    _validate_change_request,
+    run_design_agent_turn,
+)
 from app.features.design.schemas import AgentDesignRequest, DesignSessionSchema
 from app.integrations.ai.design_agent import DisabledDesignAgentClient
 from app.main import app
@@ -168,6 +173,155 @@ def test_explain_returns_grounded_copy(
     explanation = response.json()["explanation"]
     assert str(bootstrap["builds"][0]["system_kwp"]) in explanation
     assert "kWp" in explanation
+
+
+def test_agent_refuses_to_remove_inverter(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    before_inverter = next(
+        component["catalog_id"]
+        for component in bootstrap["builds"][0]["components"]
+        if component["slot"] == "inverter"
+    )
+
+    response = client.post(
+        "/api/v1/designs/agent",
+        json={
+            "session": bootstrap,
+            "user_text": "remove the inverter for now",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "can't remove the inverter" in body["reply"].lower()
+    active = next(
+        build
+        for build in body["session"]["builds"]
+        if build["id"] == body["session"]["active_build_id"]
+    )
+    after_inverter = next(
+        component["catalog_id"]
+        for component in active["components"]
+        if component["slot"] == "inverter"
+    )
+    assert after_inverter == before_inverter
+    assert "Done — updated" not in body["reply"]
+
+
+def test_validate_change_request_blocks_inverter_removal() -> None:
+    message = _validate_change_request("remove the inverter for now")
+    assert message is not None
+    assert "can't remove the inverter" in message.lower()
+
+
+def test_detect_swap_slot_from_cheaper_inverter_phrasing() -> None:
+    assert _detect_swap_slot("get a cheaper inverter") == "inverter"
+    assert _detect_swap_slot("Swap the inverter with something cheaper") == "inverter"
+
+
+def test_agent_refuses_cheaper_inverter_when_already_lowest_price(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    mutated = client.post(
+        "/api/v1/designs/mutate",
+        json={"session": bootstrap, "goal": "auto"},
+    ).json()
+    custom = next(build for build in mutated["builds"] if build["source"] == "custom")
+    session = {**mutated, "active_build_id": custom["id"]}
+    panel_before = next(
+        component for component in custom["components"] if component["slot"] == "panel"
+    )
+
+    response = client.post(
+        "/api/v1/designs/agent",
+        json={
+            "session": session,
+            "user_text": "Swap the inverter with something cheaper",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "No cheaper compatible inverter" in body["reply"]
+    active = next(
+        build
+        for build in body["session"]["builds"]
+        if build["id"] == body["session"]["active_build_id"]
+    )
+    panel_after = next(
+        component for component in active["components"] if component["slot"] == "panel"
+    )
+    assert panel_after["catalog_id"] == panel_before["catalog_id"]
+
+
+def test_agent_swaps_inverter_when_user_asks_for_cheaper_option(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    ai = next(build for build in bootstrap["builds"] if build["source"] == "ai_suggested")
+    panel_id = next(
+        component["catalog_id"]
+        for component in ai["components"]
+        if component["slot"] == "panel"
+    )
+    mutated = client.post(
+        "/api/v1/designs/mutate",
+        json={
+            "session": bootstrap,
+            "goal": "auto",
+            "locked_panel_id": panel_id,
+            "locked_inverter_id": "inv_015",
+            "seed_panel_count": ai["panel_count"],
+        },
+    ).json()
+    custom = next(build for build in mutated["builds"] if build["source"] == "custom")
+    session = {**mutated, "active_build_id": custom["id"]}
+    inverter_before = next(
+        component for component in custom["components"] if component["slot"] == "inverter"
+    )
+
+    response = client.post(
+        "/api/v1/designs/agent",
+        json={
+            "session": session,
+            "user_text": "Swap the inverter with something cheaper",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    active = next(
+        build
+        for build in body["session"]["builds"]
+        if build["id"] == body["session"]["active_build_id"]
+    )
+    inverter_after = next(
+        component for component in active["components"] if component["slot"] == "inverter"
+    )
+    assert inverter_after["catalog_id"] != inverter_before["catalog_id"]
+    assert inverter_after["unit_price_php"] < inverter_before["unit_price_php"]
+    assert active["panel_count"] == custom["panel_count"]
 
 
 def test_parse_change_request_detects_battery_and_panels() -> None:

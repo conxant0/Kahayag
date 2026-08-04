@@ -166,6 +166,7 @@ function FullBomWiringOverlay({
   panelRef,
   inverterRef,
   bosRef,
+  batteryRef,
   gridRef,
   homeRef,
   layoutKey,
@@ -174,6 +175,7 @@ function FullBomWiringOverlay({
   panelRef: RefObject<HTMLDivElement | null>;
   inverterRef: RefObject<HTMLDivElement | null>;
   bosRef: RefObject<HTMLDivElement | null>;
+  batteryRef: RefObject<HTMLDivElement | null>;
   gridRef: RefObject<HTMLDivElement | null>;
   homeRef: RefObject<HTMLDivElement | null>;
   layoutKey: string;
@@ -191,9 +193,10 @@ function FullBomWiringOverlay({
       const panel = panelRef.current;
       const inverter = inverterRef.current;
       const bos = bosRef.current;
+      const battery = batteryRef.current;
       const grid = gridRef.current;
       const home = homeRef.current;
-      if (!container || !panel || !inverter || !bos || !grid || !home) {
+      if (!container || !panel || !inverter || !bos || !battery || !grid || !home) {
         return;
       }
 
@@ -223,22 +226,33 @@ function FullBomWiringOverlay({
         y: center(inverterRect).y,
       };
       const bosRect = bos.getBoundingClientRect();
+      const batteryRect = battery.getBoundingClientRect();
       const bosPoint = {
         left: edgeLeft(bosRect),
         right: edgeRight(bosRect),
         y: center(bosRect).y,
       };
+      const batteryPoint = {
+        left: edgeLeft(batteryRect),
+        y: center(batteryRect).y,
+      };
       const gridPoint = edgeLeft(grid.getBoundingClientRect());
       const homePoint = edgeLeft(home.getBoundingClientRect());
       const outputJunctionX =
         bosPoint.right.x + (gridPoint.x - bosPoint.right.x) * 0.42;
+      const branchHubX =
+        inverterPoint.right.x +
+        (bosPoint.left.x - inverterPoint.right.x) * 0.38;
 
       const nextPaths = [
         `M ${panelPoint.x} ${panelPoint.y} H ${inverterPoint.left.x}`,
-        `M ${inverterPoint.right.x} ${inverterPoint.y} H ${bosPoint.left.x}`,
+        `M ${inverterPoint.right.x} ${inverterPoint.y} H ${branchHubX}`,
+        `M ${branchHubX} ${inverterPoint.y} V ${bosPoint.y} H ${bosPoint.left.x}`,
+        `M ${branchHubX} ${inverterPoint.y} V ${batteryPoint.y} H ${batteryPoint.left.x}`,
         `M ${bosPoint.right.x} ${bosPoint.y} H ${outputJunctionX}`,
-        `M ${outputJunctionX} ${gridPoint.y} V ${homePoint.y}`,
+        `M ${outputJunctionX} ${bosPoint.y} V ${gridPoint.y}`,
         `M ${outputJunctionX} ${gridPoint.y} H ${gridPoint.x}`,
+        `M ${outputJunctionX} ${gridPoint.y} V ${homePoint.y}`,
         `M ${outputJunctionX} ${homePoint.y} H ${homePoint.x}`,
       ];
 
@@ -246,8 +260,10 @@ function FullBomWiringOverlay({
         panelPoint,
         { x: inverterPoint.left.x, y: inverterPoint.y },
         { x: inverterPoint.right.x, y: inverterPoint.y },
+        { x: branchHubX, y: inverterPoint.y },
         { x: bosPoint.left.x, y: bosPoint.y },
         { x: bosPoint.right.x, y: bosPoint.y },
+        { x: batteryPoint.left.x, y: batteryPoint.y },
         { x: outputJunctionX, y: gridPoint.y },
         { x: outputJunctionX, y: homePoint.y },
         gridPoint,
@@ -261,8 +277,8 @@ function FullBomWiringOverlay({
           text: "DC",
         },
         {
-          x: (inverterPoint.right.x + bosPoint.left.x) / 2,
-          y: inverterPoint.y - 12,
+          x: (branchHubX + bosPoint.left.x) / 2,
+          y: bosPoint.y - 12,
           text: "AC",
         },
       ];
@@ -291,6 +307,7 @@ function FullBomWiringOverlay({
       window.removeEventListener("resize", measure);
     };
   }, [
+    batteryRef,
     bosRef,
     containerRef,
     gridRef,
@@ -362,6 +379,7 @@ export function FullBomDiagram({
   const panelRef = useRef<HTMLDivElement>(null);
   const inverterRef = useRef<HTMLDivElement>(null);
   const bosRef = useRef<HTMLDivElement>(null);
+  const batteryRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const homeRef = useRef<HTMLDivElement>(null);
   const hasBattery = battery.qty > 0;
@@ -379,6 +397,7 @@ export function FullBomDiagram({
           panelRef={panelRef}
           inverterRef={inverterRef}
           bosRef={bosRef}
+          batteryRef={batteryRef}
           gridRef={gridRef}
           homeRef={homeRef}
           layoutKey={layoutKey}
@@ -407,34 +426,40 @@ export function FullBomDiagram({
           </p>
         </div>
 
-        <div
-          ref={bosRef}
-          className={cn(
-            "relative z-10 flex w-[19rem] flex-col gap-3 rounded-[16px] border-2 border-dashed p-3",
-            "border-[#b9dccf] bg-[#f7fbf8]",
-          )}
-        >
-          <p className="px-0.5 font-sans text-[10px] font-bold tracking-[1px] text-[#2f6f58] uppercase">
-            Balance of system
-          </p>
-          <div className="flex max-h-[26rem] flex-col gap-3 overflow-y-auto pr-0.5">
-            {bomGroups.map((group) => (
-              <DiagramBomGroupSection key={group.slot} group={group} />
-            ))}
+        <div className="relative z-10 flex w-[19rem] flex-col gap-3">
+          <div
+            ref={bosRef}
+            className={cn(
+              "flex flex-col gap-3 rounded-[16px] border-2 border-dashed p-3",
+              "border-[#b9dccf] bg-[#f7fbf8]",
+            )}
+          >
+            <p className="px-0.5 font-sans text-[10px] font-bold tracking-[1px] text-[#2f6f58] uppercase">
+              Balance of system
+            </p>
+            <div className="flex max-h-[26rem] flex-col gap-3 overflow-y-auto pr-0.5">
+              {bomGroups.map((group) => (
+                <DiagramBomGroupSection key={group.slot} group={group} />
+              ))}
+            </div>
           </div>
-          {hasBattery ? (
-            <div>
+
+          <div ref={batteryRef} className="shrink-0">
+            {hasBattery ? (
               <CanvasComponentCard
                 component={battery}
                 showProductImage
                 onSwap={openPicker ? () => openPicker("battery", "swap") : undefined}
               />
-            </div>
-          ) : readOnly ? (
-            <CanvasComponentCard component={battery} showProductImage />
-          ) : (
-            <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
-          )}
+            ) : readOnly ? (
+              <CanvasComponentCard component={battery} showProductImage />
+            ) : (
+              <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
+            )}
+            <p className="mt-1 text-center font-sans text-[9px] font-semibold tracking-[0.8px] text-[#2f6f58] uppercase">
+              {canvasSlotHeader("battery")}
+            </p>
+          </div>
         </div>
 
         <div className="relative z-10 flex shrink-0 flex-col gap-3 self-center">
@@ -474,18 +499,18 @@ export function FullBomDiagram({
           {bomGroups.map((group) => (
             <DiagramBomGroupSection key={group.slot} group={group} />
           ))}
-          {hasBattery ? (
-            <CanvasComponentCard
-              component={battery}
-              showProductImage
-              onSwap={openPicker ? () => openPicker("battery", "swap") : undefined}
-            />
-          ) : readOnly ? (
-            <CanvasComponentCard component={battery} showProductImage />
-          ) : (
-            <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
-          )}
         </div>
+        {hasBattery ? (
+          <CanvasComponentCard
+            component={battery}
+            showProductImage
+            onSwap={openPicker ? () => openPicker("battery", "swap") : undefined}
+          />
+        ) : readOnly ? (
+          <CanvasComponentCard component={battery} showProductImage />
+        ) : (
+          <AddComponentCard onAdd={() => openPicker!("battery", "add")} />
+        )}
         <FlowConnector />
         <DestinationCard label="Grid" detail="Utility net-meter export" icon="grid" />
         <DestinationCard label="Home" detail="On-site consumption" icon="home" />

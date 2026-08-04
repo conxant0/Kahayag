@@ -20,6 +20,17 @@ vi.mock("../../../../src/features/design/useDesignActions", () => ({
     isPending: false,
     error: null,
   }),
+  useCreateUserBuild: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useUpdateUserBuildComponent: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
 }));
 
 afterEach(() => {
@@ -53,9 +64,18 @@ describe("ComparePage", () => {
     render(<RouterProvider router={router} />);
 
     expect(screen.getByText("After AI design · Compare builds")).toBeInTheDocument();
+    expect(screen.getByLabelText("Side-by-side build comparison")).toBeInTheDocument();
+    expect(screen.getByText("Nothing to compare")).toBeInTheDocument();
+    expect(screen.getByText("1 build")).toBeInTheDocument();
     expect(screen.getAllByText("AI suggested").length).toBeGreaterThan(0);
     expect(screen.queryByText("Custom build A")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Compare custom")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Quote auditor")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Cards" }));
+
     expect(screen.getByLabelText("Compare custom")).toBeInTheDocument();
+    expect(screen.getByLabelText("Quote auditor")).toBeInTheDocument();
   });
 
   it("shows two builds and flips a card to technical specs", () => {
@@ -122,6 +142,39 @@ describe("ComparePage", () => {
     expect(quoteCard).toHaveAccessibleName(
       "installer.pdf technical specs. Press to show overview.",
     );
+  });
+
+  it("opens the audit review modal from the quote card", () => {
+    useDesignStore.getState().setDesignSession(mockDesignSession);
+    useDesignStore.getState().addQuoteAuditResult({
+      filename: "installer.pdf",
+      extracted_total_php: 465_000,
+      extracted_system_kwp: 5.2,
+      extracted_panel_count: 12,
+      benchmark_total_php: 440_000,
+      benchmark_system_kwp: 5.85,
+      findings: [],
+      summary: "Uploaded quote summary.",
+      diagram_components: mockDesignSession.builds[0]!.components.slice(0, 4),
+      pros: ["Good price per watt"],
+      cons: ["Missing labour line"],
+      questions_for_installer: ["Is installation included?"],
+      verdict: "caution",
+    });
+
+    const router = createMemoryRouter([{ path: "/compare", element: <ComparePage /> }], {
+      initialEntries: ["/compare"],
+    });
+
+    render(<RouterProvider router={router} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Cards" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "View audit review" }));
+
+    expect(screen.getByRole("dialog", { name: /installer\.pdf/i })).toBeInTheDocument();
+    expect(screen.getByText("What's good")).toBeInTheDocument();
+    expect(screen.getByText("Watch out for")).toBeInTheDocument();
+    expect(screen.getByText("Is installation included?")).toBeInTheDocument();
   });
 
   it("selects a build and navigates to quotation", async () => {

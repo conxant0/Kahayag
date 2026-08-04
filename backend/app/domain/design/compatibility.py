@@ -14,7 +14,8 @@ from app.domain.design.catalog import (
     load_catalog,
 )
 from app.domain.design.entities import SolverConstraints
-from app.domain.design.solver import _evaluate_combo
+from app.domain.design.rejection import humanize_catalog_rejection
+from app.domain.design.solver import _evaluate_combo, _is_microinverter
 
 CatalogOptionStatus = Literal["selected", "recommended", "compatible", "incompatible"]
 CatalogSlot = Literal["panel", "inverter", "battery"]
@@ -29,6 +30,46 @@ class CatalogOption:
     status: CatalogOptionStatus
     reason: str | None
     specs: dict[str, str | float | int]
+    unit_price_php: float = 0.0
+    unit_price_low_php: float = 0.0
+    unit_price_high_php: float = 0.0
+    line_total_php: float = 0.0
+    line_total_low_php: float = 0.0
+    line_total_high_php: float = 0.0
+    qty: float = 1.0
+
+
+def _picker_qty(
+    slot: CatalogSlot,
+    *,
+    panel_count: int,
+    inverter: CatalogInverter | None = None,
+    candidate_inverter: CatalogInverter | None = None,
+) -> float:
+    if slot == "panel":
+        return float(max(panel_count, 1))
+    if slot == "inverter":
+        inv = candidate_inverter or inverter
+        if inv is not None and _is_microinverter(inv):
+            return float(max(panel_count, 1))
+        return 1.0
+    return 1.0
+
+
+def _price_fields(
+    price,
+    *,
+    qty: float,
+) -> dict[str, float]:
+    return {
+        "unit_price_php": price.mid,
+        "unit_price_low_php": price.min,
+        "unit_price_high_php": price.max,
+        "line_total_php": round(price.mid * qty, 2),
+        "line_total_low_php": round(price.min * qty, 2),
+        "line_total_high_php": round(price.max * qty, 2),
+        "qty": qty,
+    }
 
 
 def _option_from_panel(panel: CatalogPanel) -> tuple[str, str, str, dict[str, str | float | int]]:
@@ -73,6 +114,7 @@ def _option_from_battery(
 
 def _resolve_status(
     *,
+    slot: CatalogSlot,
     catalog_id: str,
     selected_id: str | None,
     combo,
@@ -83,7 +125,7 @@ def _resolve_status(
     if selected_id == catalog_id:
         return "selected", None
     if combo is None:
-        message = rejection.message if rejection is not None else "Does not fit this design."
+        message = humanize_catalog_rejection(rejection, slot=slot)
         return "incompatible", message
     if appears_in_valid or combo.fit_score >= max(best_fit - 3.0, 75.0):
         return "recommended", None
@@ -128,6 +170,7 @@ def list_catalog_options(
                 for combo_id in valid_combo_ids
             )
             status, reason = _resolve_status(
+                slot="panel",
                 catalog_id=candidate.id,
                 selected_id=panel_id,
                 combo=combo,
@@ -136,6 +179,7 @@ def list_catalog_options(
                 best_fit=best_fit_score,
             )
             brand, model, summary, specs = _option_from_panel(candidate)
+            qty = _picker_qty("panel", panel_count=panel_count)
             options.append(
                 CatalogOption(
                     id=candidate.id,
@@ -145,6 +189,7 @@ def list_catalog_options(
                     status=status,
                     reason=reason,
                     specs=specs,
+                    **_price_fields(candidate.price_php, qty=qty),
                 ),
             )
     elif slot == "inverter":
@@ -162,6 +207,7 @@ def list_catalog_options(
                 f":{candidate.id}:" in combo_id for combo_id in valid_combo_ids
             )
             status, reason = _resolve_status(
+                slot="inverter",
                 catalog_id=candidate.id,
                 selected_id=inverter_id,
                 combo=combo,
@@ -170,6 +216,11 @@ def list_catalog_options(
                 best_fit=best_fit_score,
             )
             brand, model, summary, specs = _option_from_inverter(candidate)
+            qty = _picker_qty(
+                "inverter",
+                panel_count=panel_count,
+                candidate_inverter=candidate,
+            )
             options.append(
                 CatalogOption(
                     id=candidate.id,
@@ -179,6 +230,7 @@ def list_catalog_options(
                     status=status,
                     reason=reason,
                     specs=specs,
+                    **_price_fields(candidate.price_php, qty=qty),
                 ),
             )
     else:
@@ -201,6 +253,7 @@ def list_catalog_options(
                 f":{candidate.id}:" in combo_id for combo_id in valid_combo_ids
             )
             status, reason = _resolve_status(
+                slot="battery",
                 catalog_id=candidate.id,
                 selected_id=battery_id,
                 combo=combo,
@@ -209,6 +262,7 @@ def list_catalog_options(
                 best_fit=best_fit_score,
             )
             brand, model, summary, specs = _option_from_battery(candidate)
+            qty = _picker_qty("battery", panel_count=panel_count)
             options.append(
                 CatalogOption(
                     id=candidate.id,
@@ -218,6 +272,7 @@ def list_catalog_options(
                     status=status,
                     reason=reason,
                     specs=specs,
+                    **_price_fields(candidate.price_php, qty=qty),
                 ),
             )
 

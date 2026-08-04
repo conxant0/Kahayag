@@ -44,12 +44,12 @@ describe("compareColumnsViewModel", () => {
 
   it("aligns spec values across columns in a matrix", () => {
     const columns = compareColumns(mockDesignSessionWithCustom, []);
-    const pair = resolveComparePair(
+    const [left, right] = resolveComparePair(
       columns,
       columns[0]!.id,
       columns[1]!.id,
     );
-    const rows = comparisonMatrix(pair);
+    const rows = comparisonMatrix(left!, right!);
 
     expect(rows.find((row) => row.label === "System size")?.values).toEqual([
       "5.85 kWp",
@@ -61,6 +61,20 @@ describe("compareColumnsViewModel", () => {
     expect(rows.find((row) => row.label === "Inverter")?.values[1]).toContain(
       "GoodWe",
     );
+  });
+
+  it("leaves the right column empty when only one build exists", () => {
+    const columns = compareColumns(mockDesignSession, []);
+    const [leftId, rightId] = defaultComparePair(columns);
+    expect(rightId).toBe("");
+    const [left, right] = resolveComparePair(columns, leftId, rightId);
+    expect(left?.label).toBe("AI suggested");
+    expect(right).toBeNull();
+    const rows = comparisonMatrix(left!, null);
+    expect(rows.find((row) => row.label === "System size")?.values).toEqual([
+      "5.85 kWp",
+      "—",
+    ]);
   });
 
   it("defaults to suggested vs quote when a quote diagram exists", () => {

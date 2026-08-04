@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { resolveComponentImageUrl } from "../../../../src/features/design/componentImageUrl";
+import {
+  catalogAssetUrl,
+  categoryDefaultAssetUrl,
+  normalizeProductImageUrl,
+  resolveComponentImageUrl,
+} from "../../../../src/features/design/componentImageUrl";
 import type { DesignComponent } from "../../../../src/shared/api/types";
 
 function component(overrides: Partial<DesignComponent>): DesignComponent {
@@ -55,5 +60,33 @@ describe("componentProductImage", () => {
         }),
       ),
     ).toBe("https://assets.kahayag.dev/catalog/inverters/inv_009.jpg");
+  });
+
+  it("serves one local image per component type when VITE_CATALOG_IMAGES=local", () => {
+    vi.stubEnv("VITE_CATALOG_IMAGES", "local");
+
+    expect(categoryDefaultAssetUrl("panels")).toBe("/catalog/panels/default.png");
+    expect(catalogAssetUrl("panels", "panel_004")).toBe("/catalog/panels/default.png");
+    expect(
+      normalizeProductImageUrl("https://assets.kahayag.dev/catalog/panels/panel_004.jpg"),
+    ).toBe("/catalog/panels/default.png");
+    expect(
+      resolveComponentImageUrl(
+        component({
+          slot: "protection",
+          catalog_id: null,
+          product_image: null,
+        }),
+      ),
+    ).toBe("/catalog/protections/default.png");
+    expect(
+      resolveComponentImageUrl(
+        component({
+          product_image: "https://assets.kahayag.dev/catalog/panels/panel_004.jpg",
+        }),
+      ),
+    ).toBe("/catalog/panels/default.png");
+
+    vi.unstubAllEnvs();
   });
 });

@@ -231,6 +231,7 @@ export interface DesignSession {
   last_solve: SolveResultSummary | null;
   applied: boolean;
   agent_audit: AgentAuditEntry[];
+  homeowner_plans?: Record<string, unknown> | null;
 }
 
 export interface QuotationLine {
@@ -261,6 +262,7 @@ export interface QuotationDocument {
 }
 
 export type QuoteAuditSeverity = "info" | "warning" | "positive";
+export type QuoteAuditVerdict = "favorable" | "caution" | "needs_review";
 
 export interface QuoteAuditFinding {
   category: string;
@@ -278,6 +280,10 @@ export interface QuoteAuditResponse {
   findings: QuoteAuditFinding[];
   summary: string;
   diagram_components: DesignComponent[];
+  pros?: string[];
+  cons?: string[];
+  questions_for_installer?: string[];
+  verdict?: QuoteAuditVerdict;
 }
 
 export interface MutateDesignPayload {
@@ -292,6 +298,18 @@ export interface MutateDesignPayload {
   panel_count_delta?: number;
 }
 
+export interface UpdateUserBuildComponentPayload {
+  session: DesignSession;
+  build_id: string;
+  slot: CatalogPickerSlot;
+  catalog_id: string;
+}
+
+export interface ManageBuildPayload {
+  session: DesignSession;
+  build_id: string;
+}
+
 export type CatalogPickerSlot = "panel" | "inverter" | "battery";
 export type CatalogOptionStatus = "selected" | "recommended" | "compatible" | "incompatible";
 
@@ -303,4 +321,11 @@ export interface CatalogOption {
   status: CatalogOptionStatus;
   reason: string | null;
   specs: Record<string, string | number>;
+  unit_price_php: number;
+  unit_price_low_php: number;
+  unit_price_high_php: number;
+  line_total_php: number;
+  line_total_low_php: number;
+  line_total_high_php: number;
+  qty: number;
 }

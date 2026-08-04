@@ -324,6 +324,10 @@ def _evaluate_combo(
 
 
 def _panel_count_candidates(constraints: SolverConstraints) -> range:
+    if constraints.seed_panel_count is not None:
+        count = max(1, min(constraints.seed_panel_count, constraints.max_panel_count))
+        return range(count, count + 1)
+
     base_max = constraints.max_panel_count
     if constraints.panel_count_delta is not None:
         target = max(1, round(constraints.target_kwp * 1000 / 440))
@@ -400,6 +404,7 @@ def constraints_from_sizing(
     resolved_tariff_php_per_kwh: float,
     annual_yield_per_kwp_kwh: float,
     goal: str = "auto",
+    seed_panel_count: int | None = None,
 ) -> SolverConstraints:
     from app.domain.design.entities import SolverGoal
 
@@ -412,6 +417,7 @@ def constraints_from_sizing(
         require_battery=False,
         min_battery_kwh=None,
         goal=typed_goal,
+        seed_panel_count=seed_panel_count,
         annual_consumption_kwh=annual_consumption_kwh,
         resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
         annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,

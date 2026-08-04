@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "catalog:placeholders": "node scripts/generate-catalog-placeholders.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
