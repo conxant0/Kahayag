@@ -5,7 +5,7 @@
 // only renders it (AGENTS.md rule 1). Documents uploaded here are resent on
 // every assess call, same as the chat endpoint, since the backend keeps no
 // session store.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
@@ -19,8 +19,8 @@ import { DocumentChecklist } from "./DocumentChecklist";
 import { PacketStatusCard } from "./PacketStatusCard";
 import { PermitChatSidebar } from "./PermitChatSidebar";
 import { VerdictBanner } from "./VerdictBanner";
-import { chatOpeningMessages } from "./permitsViewModel";
 import { useAssessPermit } from "./useAssessPermit";
+import type { PermitAssessment } from "./permitTypes";
 
 const DEFAULT_APPLICANT: ApplicantFormValues = {
   solarInOriginalPermit: "not_sure",
@@ -29,43 +29,33 @@ const DEFAULT_APPLICANT: ApplicantFormValues = {
   registeredOwnerName: "",
 };
 
-// Debounces re-assessment while the homeowner is still typing a name — every
-// keystroke would otherwise fire a request.
-const ASSESS_DEBOUNCE_MS = 500;
-
 export function PermitsPage() {
   const selectedProperty = useAssessmentStore((state) => state.selectedProperty);
   const designSession = useDesignStore((state) => state.designSession);
   const activeBuild = getActiveBuild(designSession);
 
   const [applicant, setApplicant] = useState<ApplicantFormValues>(DEFAULT_APPLICANT);
+  const [submittedApplicant, setSubmittedApplicant] = useState<ApplicantFormValues | null>(null);
   const [uploads, setUploads] = useState<ReadonlyMap<string, File>>(() => new Map());
+  const [lastAssessment, setLastAssessment] = useState<PermitAssessment | null>(null);
   const assess = useAssessPermit();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const propertyAddress = selectedProperty?.address ?? "";
   const systemKwp = activeBuild?.system_kwp ?? 0;
   const buildId = activeBuild?.id ?? null;
 
   useEffect(() => {
-    if (!buildId || !propertyAddress) {
+    if (!submittedApplicant || !buildId || !propertyAddress) {
       return;
     }
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      assess.mutate({ applicant, systemKwp, buildId, propertyAddress, uploads });
-    }, ASSESS_DEBOUNCE_MS);
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
+    assess.mutate(
+      { applicant: submittedApplicant, systemKwp, buildId, propertyAddress, uploads },
+      { onSuccess: setLastAssessment },
+    );
     // assess and assess.mutate are stable across renders (react-query); only
-    // the request's own inputs should re-trigger the debounce.
+    // the request's own inputs should re-trigger it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applicant, uploads, buildId, propertyAddress, systemKwp]);
+  }, [submittedApplicant, uploads, buildId, propertyAddress, systemKwp]);
 
   if (!designSession || !activeBuild) {
     return <Navigate to={ROUTE_PATHS.compare} replace />;
@@ -78,7 +68,12 @@ export function PermitsPage() {
     setUploads((current) => new Map(current).set(documentId, file));
   };
 
-  const assessment = assess.data ?? null;
+  const handleApplicantChange = (next: ApplicantFormValues) => {
+    setApplicant(next);
+    setSubmittedApplicant(next);
+  };
+
+  const assessment = lastAssessment;
 
   return (
     <div className="flex min-h-svh flex-col bg-paper">
@@ -117,12 +112,18 @@ export function PermitsPage() {
             <ApplicantForm
               values={applicant}
               onChange={setApplicant}
+              onSubmit={() => setSubmittedApplicant(applicant)}
               propertyAddress={propertyAddress}
             />
 
             {assessment ? (
               <>
                 <Rule />
+                {assess.isPending ? (
+                  <p className="font-sans text-xs text-tertiary-ink">
+                    Re-checking…
+                  </p>
+                ) : null}
                 <DocumentChecklist
                   assessment={assessment}
                   sessionUploads={new Set(uploads.keys())}
@@ -138,7 +139,7 @@ export function PermitsPage() {
               <p className="font-sans text-sm text-secondary">
                 {assess.isPending
                   ? "Checking your packet…"
-                  : "Confirm your details above to see which documents you need."}
+                  : "Submit your details above to see which documents you need."}
               </p>
             )}
           </div>
@@ -146,10 +147,11 @@ export function PermitsPage() {
           <aside className="xl:sticky xl:top-6 xl:h-[calc(100svh-3rem)]">
             <PermitChatSidebar
               applicant={applicant}
-              onApplicantChange={setApplicant}
+              onApplicantChange={handleApplicantChange}
               propertyAddress={propertyAddress}
               systemKwp={systemKwp}
-              openingMessages={assessment ? chatOpeningMessages(assessment, false) : []}
+              uploads={uploads}
+              buildId={buildId}
             />
           </aside>
         </div>

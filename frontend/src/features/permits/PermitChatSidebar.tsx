@@ -50,25 +50,39 @@ const SUGGESTED_QUESTIONS = [
   "I'm not the registered owner — what changes?",
 ] as const;
 
+// Rolling transcript cap — keeps the last 10 messages (user + assistant
+// combined) so the sidebar doesn't grow unbounded across a long session.
+const MAX_TURNS = 10;
+
+function appendTurn(current: readonly ChatTurn[], turn: ChatTurn): readonly ChatTurn[] {
+  return [...current, turn].slice(-MAX_TURNS);
+}
+
+// Shallow compare of the four applicant fields the chat can change, so a
+// pure question doesn't re-trigger the page's assess request.
+function applicantEquals(a: ApplicantFormValues, b: ApplicantFormValues): boolean {
+  return (
+    a.solarInOriginalPermit === b.solarInOriginalPermit &&
+    a.fullName === b.fullName &&
+    a.isRegisteredOwner === b.isRegisteredOwner &&
+    a.registeredOwnerName === b.registeredOwnerName
+  );
+}
+
 export function PermitChatSidebar({
   applicant,
   onApplicantChange,
   propertyAddress,
   systemKwp,
-  openingMessages,
+  uploads,
+  buildId,
 }: {
   applicant: ApplicantFormValues;
   onApplicantChange: (values: ApplicantFormValues) => void;
   propertyAddress: string;
   systemKwp: number;
-  /**
-   * Deterministic messages the transcript opens with — the assessment
-   * summary, and in the findings-in-chat preview variant every finding.
-   * Rendered from props on each render (never stored as turns) so they stay
-   * current as the checklist re-derives, and so they read as the engine's
-   * standing report rather than something the model said.
-   */
-  openingMessages: readonly string[];
+  uploads: ReadonlyMap<string, File>;
+  buildId: string | null;
 }) {
   const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
@@ -80,17 +94,23 @@ export function PermitChatSidebar({
       return;
     }
     setDraft("");
-    setTurns((current) => [...current, { role: "user", text: trimmed }]);
+    setTurns((current) => appendTurn(current, { role: "user", text: trimmed }));
     try {
       const response = await chat.mutateAsync({
-        applicant: toApiApplicant(applicant),
-        system_kwp: systemKwp,
-        build_id: null,
-        property_address: propertyAddress,
-        user_text: trimmed,
+        payload: {
+          applicant: toApiApplicant(applicant),
+          system_kwp: systemKwp,
+          build_id: buildId,
+          property_address: propertyAddress,
+          user_text: trimmed,
+        },
+        uploads,
       });
-      setTurns((current) => [...current, { role: "assistant", text: response.reply }]);
-      onApplicantChange(fromApiApplicant(response.applicant));
+      setTurns((current) => appendTurn(current, { role: "assistant", text: response.reply }));
+      const nextApplicant = fromApiApplicant(response.applicant);
+      if (!applicantEquals(applicant, nextApplicant)) {
+        onApplicantChange(nextApplicant);
+      }
     } catch {
       // chat.error surfaces below.
     }
@@ -111,38 +131,25 @@ export function PermitChatSidebar({
         recompute from whatever you confirm here.
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        {SUGGESTED_QUESTIONS.map((question) => (
-          <Chip
-            key={question}
-            onClick={() => send(question)}
-            disabled={chat.isPending}
-          >
-            {question}
-          </Chip>
-        ))}
-      </div>
+      {turns.length === 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTED_QUESTIONS.map((question) => (
+            <Chip
+              key={question}
+              onClick={() => send(question)}
+              disabled={chat.isPending}
+            >
+              {question}
+            </Chip>
+          ))}
+        </div>
+      ) : null}
 
       <div
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         aria-live="polite"
       >
-        {openingMessages.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <p className="font-sans text-[10px] font-semibold tracking-[1px] text-cobalt uppercase">
-              What we checked
-            </p>
-            {openingMessages.map((message) => (
-              <p
-                key={message}
-                className="border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-ink"
-              >
-                {message}
-              </p>
-            ))}
-          </div>
-        ) : null}
-        {openingMessages.length === 0 && turns.length === 0 && !chat.isPending ? (
+        {turns.length === 0 && !chat.isPending ? (
           <p className="my-auto max-w-[34ch] self-center text-center font-serif text-[15px] leading-6 text-tertiary-ink italic">
             Ask why a document is required, or tell us something that changes
             your answers — replies come from the same rules that computed this
