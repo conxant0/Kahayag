@@ -40,6 +40,17 @@ export const DOCUMENT_CATALOG: Record<
     source_url: string;
     legal_basis: string;
     source_excerpt: string;
+    /** Sourced validity/expiry note, where the research confirms one. */
+    validity_note?: string;
+    /**
+     * Ordered plain-language actions for obtaining the document, transcribed
+     * from the submission research chrisb588 pasted into PR #32 (the
+     * `.wayfinder/cebu-permit-submission-research.md` content) — per the PR
+     * constraint, permit facts come from the research, never from memory.
+     * Office names only, never a floor or room number: sources conflict on
+     * those, per the research's own fact-check pass.
+     */
+    steps?: readonly string[];
   }
 > = {
   tct: {
@@ -51,6 +62,14 @@ export const DOCUMENT_CATALOG: Record<
       "Cebu City OBO Building Permit Requirements Checklist, item 14 (Certified True Copy of Lot Title).",
     source_excerpt:
       '"Certified True Copy of Lot Title (TCT)" — OBO-FM-PII-B-36 v.00, item 14.',
+    validity_note:
+      "No explicit validity window, but it must be a certified true copy — which implies a recent one.",
+    steps: [
+      "Request a certified true copy online through the LRA eSerbisyo portal (eserbisyo.lra.gov.ph) — delivered to you, no office visit needed.",
+      "Have the registered owner's name, title (TCT) number, and lot number on hand.",
+      "Allow 5–7 working days for a provincial request like Cebu — and up to two weeks if the title needs manual validation.",
+      "Prefer going in person? The Registry of Deeds also serves walk-in requests.",
+    ],
   },
   tax_declaration: {
     title: "Tax Declaration",
@@ -60,6 +79,10 @@ export const DOCUMENT_CATALOG: Record<
     legal_basis: "Cebu City OBO Building Permit Requirements Checklist, item 15.",
     source_excerpt:
       '"Certified True Copy of Lot Tax Declaration" — OBO-FM-PII-B-36 v.00, item 15.',
+    steps: [
+      "Go to the City Assessor's Office at Cebu City Hall and request a certified true copy of the lot's tax declaration.",
+      "Have the owner's name, tax declaration number, and lot number on hand — the copy must carry them exactly as registered.",
+    ],
   },
   tax_clearance: {
     title: "Real Property Tax Clearance",
@@ -69,6 +92,13 @@ export const DOCUMENT_CATALOG: Record<
     legal_basis: "Cebu City OBO Building Permit Requirements Checklist, item 16.",
     source_excerpt:
       '"Certified True Copy of Lot Tax Clearance" — OBO-FM-PII-B-36 v.00, item 16. Reflects current-year real property tax payment status.',
+    validity_note:
+      "Annual — reflects current-year real property tax payment status.",
+    steps: [
+      "Go to the City Treasurer's Office at Cebu City Hall and request a real property tax clearance for the lot.",
+      "Real property tax must be paid up for the current year — the clearance reflects that payment status.",
+      "Your cedula comes from the same office, so one visit can cover both.",
+    ],
   },
   barangay_clearance: {
     title: "Barangay Clearance",
@@ -77,6 +107,10 @@ export const DOCUMENT_CATALOG: Record<
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
     legal_basis: "Cebu City OBO Building Permit Requirements Checklist, item 12.",
     source_excerpt: '"Barangay Clearance" — OBO-FM-PII-B-36 v.00, item 12.',
+    steps: [
+      "Go to the barangay hall of the barangay that covers the property and request a barangay clearance for construction.",
+      "Address and office hours vary per barangay — check with yours before heading out.",
+    ],
   },
   cedula: {
     title: "Community Tax Certificate (Cedula)",
@@ -86,6 +120,11 @@ export const DOCUMENT_CATALOG: Record<
       "Local Government Code (RA 7160) community tax certificate requirement, commonly requested alongside a barangay clearance.",
     source_excerpt:
       "Community Tax Certificate (Cedula) — annual, issued by the City Treasurer's Office.",
+    validity_note: "Issued yearly — must be dated for the current year.",
+    steps: [
+      "Request a Community Tax Certificate (cedula) at the City Treasurer's Office, Cebu City Hall — the same office that issues the tax clearance, so one visit covers both.",
+      "Check the date before leaving the counter: it must be issued for the current year.",
+    ],
   },
   valid_id: {
     title: "Valid Government-Issued ID",
@@ -103,8 +142,81 @@ export const DOCUMENT_CATALOG: Record<
     legal_basis:
       "Cebu City OBO Building Permit Requirements Checklist, item 18 (Consent and Authority, notarized) — required only if the applicant is not the registered owner.",
     source_excerpt: '"Consent and Authority (notarized)" — OBO-FM-PII-B-36 v.00, item 18.',
+    steps: [
+      "Have the registered owner write and sign a Consent and Authority naming who is authorized to file for this property.",
+      "Bring it to any commissioned notary public for notarization — this can happen at any point, in any order.",
+    ],
   },
 };
+
+/**
+ * The sourced office visiting order for the homeowner's document run —
+ * Barangay → City Assessor → City Treasurer → Registry of Deeds — from the
+ * Cebu submission research (quoted in PR #32 review; the CPDO, OBO, and VECO
+ * stops that follow are installer-side and out of this screen's scope).
+ * Offices are keyed by the documents they issue; the label comes from the
+ * catalog so the two never disagree. The notarized authorization has no fixed
+ * stop — any commissioned notary, at any point.
+ */
+const OFFICE_RUN_DOCUMENT_IDS: readonly (readonly string[])[] = [
+  ["barangay_clearance"],
+  ["tax_declaration"],
+  ["tax_clearance", "cedula"],
+  ["tct"],
+];
+
+export type OfficeRunStop = {
+  position: number;
+  office: string;
+  documents: readonly {
+    documentId: string;
+    title: string;
+    status: DocumentDisplayStatus;
+  }[];
+};
+
+/**
+ * The trip plan for this assessment: the sourced office order, restricted to
+ * offices issuing documents actually on the checklist, each carrying its
+ * documents' current display status so resolved stops can quiet down.
+ */
+export function officeRunStops(assessment: PermitAssessment): OfficeRunStop[] {
+  const docById = new Map(
+    assessment.documents.map((doc) => [doc.document_id, doc]),
+  );
+  const stops: OfficeRunStop[] = [];
+  for (const documentIds of OFFICE_RUN_DOCUMENT_IDS) {
+    const documents = documentIds.flatMap((id) => {
+      const doc = docById.get(id);
+      return doc
+        ? [
+            {
+              documentId: id,
+              title: doc.title,
+              status: documentDisplayStatus(doc, assessment.findings),
+            },
+          ]
+        : [];
+    });
+    if (documents.length > 0) {
+      stops.push({
+        position: stops.length + 1,
+        office: DOCUMENT_CATALOG[documents[0].documentId]?.issuing_agency ?? "",
+        documents,
+      });
+    }
+  }
+  return stops;
+}
+
+/** Which stop of the office run issues this document — null for documents
+ * with no fixed stop (the notarized authorization). */
+export function officeRunPosition(documentId: string): number | null {
+  const index = OFFICE_RUN_DOCUMENT_IDS.findIndex((ids) =>
+    ids.includes(documentId),
+  );
+  return index === -1 ? null : index + 1;
+}
 
 /** Homeowner-facing document sets per track (app.domain.permits.catalog.documents_for_track,
  * filtered to the homeowner-produced subset per CLOSED-document-scope.md). */
@@ -280,6 +392,43 @@ export function progressSummary(assessment: PermitAssessment): {
     );
   }).length;
   return { resolved, total, ratio: total === 0 ? 0 : resolved / total };
+}
+
+/**
+ * The chat's deterministic opening messages: the summary always leads, and
+ * when `includeFindings` (the findings-in-chat preview variant) each finding
+ * follows as its own message, in assessment order, prefixed with its severity
+ * and document. Every string comes from the assessment — nothing is phrased
+ * here (CLOSED-verdict-source.md).
+ */
+export function chatOpeningMessages(
+  assessment: PermitAssessment,
+  includeFindings: boolean,
+): string[] {
+  if (!includeFindings) {
+    return [assessment.summary];
+  }
+  const titleById = new Map(
+    assessment.documents.map((doc) => [doc.document_id, doc.title]),
+  );
+  return [
+    assessment.summary,
+    ...assessment.findings.map((finding) => {
+      const title = finding.document_id
+        ? titleById.get(finding.document_id)
+        : undefined;
+      return `${findingSeverityLabel(finding.severity)}${title ? ` · ${title}` : ""} — ${finding.message}`;
+    }),
+  ];
+}
+
+/** Titles of required documents that still need the homeowner — missing,
+ * needs review, or uploaded with an open finding. What the verdict names so
+ * "not yet complete" is immediately actionable. */
+export function outstandingDocumentTitles(assessment: PermitAssessment): string[] {
+  return assessment.documents
+    .filter((doc) => documentDisplayStatus(doc, assessment.findings) !== "uploaded")
+    .map((doc) => doc.title);
 }
 
 export type DocumentDisplayStatus = DocumentSlotStatus | "flagged";
