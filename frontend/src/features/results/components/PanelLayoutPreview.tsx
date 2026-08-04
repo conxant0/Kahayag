@@ -6,7 +6,7 @@ import type { LayoutPanel } from "../panelLayoutUtils";
 
 function allPoints(
   roofCoordinates: readonly GeoPoint[],
-  panels: LayoutPanel[],
+  panels: readonly LayoutPanel[],
 ) {
   return [...roofCoordinates, ...panels.flatMap((panel) => panel.corners)];
 }
@@ -86,22 +86,23 @@ export function PanelLayoutPreview({
   status,
   flux = null,
   mask = null,
+  unframed = false,
 }: {
   roofCoordinates: readonly GeoPoint[];
-  panels: LayoutPanel[];
+  panels: readonly LayoutPanel[];
   status?: string;
   flux?: GeoTiffRaster | null;
   mask?: GeoTiffRaster | null;
+  unframed?: boolean;
 }) {
   const points = allPoints(roofCoordinates, panels);
   if (!points.length) {
-    return (
-      <MapSurface>
-        <div className="flex size-full min-h-56 items-center justify-center px-6 text-center font-sans text-sm text-secondary">
-          Roof layout preview unavailable until the roof is traced.
-        </div>
-      </MapSurface>
+    const empty = (
+      <div className="flex size-full min-h-56 items-center justify-center px-6 text-center font-sans text-sm text-secondary">
+        Roof layout preview unavailable until the roof is traced.
+      </div>
     );
+    return unframed ? empty : <MapSurface>{empty}</MapSurface>;
   }
 
   const minLatitude = Math.min(...points.map((point) => point.latitude));
@@ -140,8 +141,8 @@ export function PanelLayoutPreview({
       })()
     : null;
 
-  return (
-    <MapSurface>
+  const preview = (
+    <>
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
@@ -238,6 +239,8 @@ export function PanelLayoutPreview({
         {panels.length} panels shown in the roof layout.
         {status ? ` ${status}` : ""}
       </p>
-    </MapSurface>
+    </>
   );
+
+  return unframed ? preview : <MapSurface>{preview}</MapSurface>;
 }

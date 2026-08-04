@@ -30,11 +30,13 @@ export function Accordion({
  */
 export function AccordionItem({
   title,
+  as: TitleTag = "span",
   defaultOpen = false,
   children,
   className,
 }: {
   title: ReactNode;
+  as?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "span";
   defaultOpen?: boolean;
   children: ReactNode;
   className?: string;
@@ -45,7 +47,7 @@ export function AccordionItem({
       open={defaultOpen}
     >
       <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase marker:content-none [&::-webkit-details-marker]:hidden">
-        {title}
+        <TitleTag>{title}</TitleTag>
         <span
           aria-hidden
           className="shrink-0 text-[10px] text-tertiary-ink transition-transform duration-200 group-open:rotate-180"

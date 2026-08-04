@@ -149,7 +149,7 @@ export function FlowLayout({
             railColumn,
             // The grid sets no row gap, so this block buys its own air under the
             // heading on desktop and collapses entirely when it has no content.
-            "pb-2 empty:hidden lg:col-start-1 lg:row-start-2 lg:min-h-0 lg:pt-8 lg:pr-10 lg:pb-0 lg:pl-12",
+            "pb-2 empty:hidden lg:col-start-1 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:pt-8 lg:pr-10 lg:pb-0 lg:pl-12",
             behind &&
               "pointer-events-none relative z-10 mt-auto pb-4 lg:pointer-events-auto lg:mt-0 lg:pb-0 [&>*]:pointer-events-auto",
           )}

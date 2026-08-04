@@ -8,6 +8,7 @@ import type { GeoTiffRaster } from "../../../integrations/solar/geoTiffLoader";
 import type { SelectedProperty } from "../../../state/assessmentStore";
 import type { LayoutPanel } from "../panelLayoutUtils";
 import { useResultsMap } from "../hooks/useResultsMap";
+import { PanelLayoutPreview } from "./PanelLayoutPreview";
 
 export function ResultsMapPane({
   selectedProperty,
@@ -25,7 +26,7 @@ export function ResultsMapPane({
   mask?: GeoTiffRaster | null;
 }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const { fluxRange } = useResultsMap(
+  const { googleStatus, fluxRange } = useResultsMap(
     mapContainerRef,
     selectedProperty,
     roofCoordinates,
@@ -36,23 +37,31 @@ export function ResultsMapPane({
 
   return (
     <MapSurface className="relative min-h-0">
-      <div
-        ref={mapContainerRef}
-        aria-label={`Recommended layout: ${panels.length} panels over the traced roof`}
-        className="absolute inset-0 min-h-96"
-      >
-        {/* The map still shows the property pin without a roof trace; only
-            the layout it can't draw yet needs saying. */}
-        {!selectedProperty ? (
-          <div className="flex size-full items-center justify-center bg-paper p-6 font-sans text-sm text-secondary">
-            Layout preview unavailable until a property is selected.
-          </div>
-        ) : roofCoordinates.length < 3 ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-paper/90 p-3 text-center font-sans text-sm text-secondary">
-            Panel layout unavailable until the roof is traced.
-          </div>
-        ) : null}
-      </div>
+      {!selectedProperty ? (
+        <div className="flex size-full items-center justify-center bg-paper p-6 font-sans text-sm text-secondary">
+          Layout preview unavailable until a property is selected.
+        </div>
+      ) : roofCoordinates.length < 3 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-paper/90 p-3 text-center font-sans text-sm text-secondary">
+          Panel layout unavailable until the roof is traced.
+        </div>
+      ) : googleStatus === "ready" ? (
+        <div
+          ref={mapContainerRef}
+          aria-label={`Recommended layout: ${panels.length} panels over the traced roof`}
+          role="img"
+          className="absolute inset-0 min-h-96"
+        />
+      ) : (
+        <PanelLayoutPreview
+          roofCoordinates={roofCoordinates}
+          panels={panels}
+          status={status}
+          flux={flux}
+          mask={mask}
+          unframed
+        />
+      )}
       {fluxRange ? (
         <div className="absolute right-3 bottom-3 rounded bg-paper/90 px-2 py-1.5 font-sans text-[10px] text-secondary">
           <p>

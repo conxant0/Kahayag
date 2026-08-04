@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
@@ -42,7 +42,10 @@ export function ResultsPage() {
   const result = readAssessmentResult(rawResult);
   const [showFlux, setShowFlux] = useState(false);
   const [fluxError, setFluxError] = useState<string | null>(null);
-  const roofCoordinates = roofPolygon?.coordinates ?? [];
+  const roofCoordinates = useMemo(
+    () => roofPolygon?.coordinates ?? [],
+    [roofPolygon],
+  );
   const fluxKey = computeFluxCacheKey({
     roofCoordinates,
     selectedProperty,
@@ -67,22 +70,25 @@ export function ResultsPage() {
     loadFlux();
   }, [loadFlux]);
 
+  const panels = useMemo(() => {
+    if (!result) {
+      return [];
+    }
+    return layoutPanelsInPolygon({
+      coordinates: roofCoordinates,
+      panelCount: result.recommendation.panel_count,
+      panelWidthM: Number(result.assumptions.panel_width_m),
+      panelHeightM: Number(result.assumptions.panel_height_m),
+      flux: cachedFlux?.flux,
+    });
+  }, [roofCoordinates, result, cachedFlux?.flux]);
+
   if (!result) {
     return <Navigate to={ROUTE_PATHS.energy} replace />;
   }
 
   const panelCount = result.recommendation.panel_count;
   const shadingImpact = formatShadingImpact(result);
-  const panelWidthM = Number(result.assumptions.panel_width_m);
-  const panelHeightM = Number(result.assumptions.panel_height_m);
-
-  const panels = layoutPanelsInPolygon({
-    coordinates: roofCoordinates,
-    panelCount,
-    panelWidthM,
-    panelHeightM,
-    flux: cachedFlux?.flux,
-  });
 
   const hairlineList = (
     <HairlineList className="pt-1.5">
@@ -156,17 +162,17 @@ export function ResultsPage() {
       */}
       <div className="w-full lg:min-h-0 lg:overflow-y-auto lg:pr-1">
         <Accordion>
-          <AccordionItem title={`SIZING: ${panelCount} Panels`}>
+          <AccordionItem title={`SIZING: ${panelCount} Panels`} as="h2">
             <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
               {result.recommendation.rationale}
             </p>
           </AccordionItem>
 
-          <AccordionItem title="Your panels" defaultOpen>
+          <AccordionItem title="Your panels" defaultOpen as="h2">
             {hairlineList}
           </AccordionItem>
 
-          <AccordionItem title="Assessment result details" defaultOpen>
+          <AccordionItem title="Assessment result details" defaultOpen as="h2">
             <HairlineList>
               <HairlineRow
                 label="Budget compatibility"
@@ -193,7 +199,7 @@ export function ResultsPage() {
           </AccordionItem>
 
           {result.shading ? (
-            <AccordionItem title="Sunshine visualization">
+            <AccordionItem title="Sunshine visualization" as="h2">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -219,7 +225,7 @@ export function ResultsPage() {
             </AccordionItem>
           ) : null}
 
-          <AccordionItem title="Assumptions">
+          <AccordionItem title="Assumptions" as="h2">
             <HairlineList>
               <HairlineRow
                 label="Peak sun hours/day"
@@ -255,6 +261,7 @@ export function ResultsPage() {
                 ? "Preliminary assessment"
                 : "Limitations"
             }
+            as="h2"
           >
             {result.limitations.map((limitation) => (
               <p
