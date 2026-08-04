@@ -22,6 +22,7 @@ from app.integrations.ai.document_intake import DocumentIntakeClient
 from app.integrations.ai.permit_chat_agent import (
     PermitChatClient,
     PlannedPermitToolCall,
+    is_question_only,
 )
 
 
@@ -146,27 +147,46 @@ def run_permit_chat_turn(
         upload.filename: (upload.slot_id or None) for upload in uploads
     }
 
-    planned = chat_client.plan_tool_calls(
-        user_text=user_text,
-        applicant={
-            "solar_in_original_permit": applicant.solar_in_original_permit,
-            "full_name": applicant.full_name,
-            "is_registered_owner": applicant.is_registered_owner,
-            "registered_owner_name": applicant.registered_owner_name,
-            "delegates_filing_to_representative": applicant.delegates_filing_to_representative,
-        },
-        uploaded_filenames=tuple(slot_by_filename.keys()),
-    )
+    # Deterministic gate: a message that reads as a plain question never
+    # reaches tool planning, so the loose regex fallbacks below can't
+    # misclassify it as an applicant-detail update (see is_question_only).
+    if is_question_only(user_text):
+        planned: tuple[PlannedPermitToolCall, ...] = ()
+    else:
+        planned = chat_client.plan_tool_calls(
+            user_text=user_text,
+            applicant={
+                "solar_in_original_permit": applicant.solar_in_original_permit,
+                "full_name": applicant.full_name,
+                "is_registered_owner": applicant.is_registered_owner,
+                "registered_owner_name": applicant.registered_owner_name,
+                "delegates_filing_to_representative": (
+                    applicant.delegates_filing_to_representative
+                ),
+            },
+            uploaded_filenames=tuple(slot_by_filename.keys()),
+        )
 
     tool_audit: list[dict[str, object]] = []
     updated_applicant = applicant
     updated_slot_by_filename = slot_by_filename
     for call in planned:
+        before_applicant = updated_applicant
+        before_slot_by_filename = updated_slot_by_filename
         result, updated_applicant, updated_slot_by_filename = _execute_tool(
             call,
             applicant=updated_applicant,
             slot_by_filename=updated_slot_by_filename,
         )
+        is_error = isinstance(result, dict) and bool(result.get("error"))
+        # A no-op (the value it would set already matches the current one)
+        # is dropped from the audit rather than reported as an "Updated: …"
+        # — this is what keeps a classifier miss from being destructive.
+        if not is_error and (
+            updated_applicant == before_applicant
+            and updated_slot_by_filename == before_slot_by_filename
+        ):
+            continue
         tool_audit.append({"name": call.name, "arguments": call.arguments, "result": result})
 
     updated_uploads = tuple(
@@ -184,7 +204,7 @@ def run_permit_chat_turn(
         client=intake_client,
     )
 
-    if planned:
+    if tool_audit:
         reply = chat_client.generate_turn_reply(
             user_text=user_text,
             tool_audit=tool_audit,
