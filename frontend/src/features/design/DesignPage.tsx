@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { FlowLayout } from "../../shared/components/layout";
+import { FlowLayout, DesignFlowStepper } from "../../shared/components/layout";
 import { Eyebrow, HairlineList, HairlineRow } from "../../shared/components/ui";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { useAssessmentStore } from "../../state/assessmentStore";
@@ -73,12 +73,15 @@ export function DesignPage() {
         }}
         railClassName="lg:gap-4"
         lead={
-          activeBuild ? (
-            <p className="font-sans text-sm text-secondary">
-              {activeBuild.label} · {formatBuildInvestment(activeBuild)} · fit{" "}
-              {activeBuild.fit_score.toFixed(0)}
-            </p>
-          ) : null
+          <>
+            <DesignFlowStepper activeStep={4} />
+            {activeBuild ? (
+              <p className="font-sans text-sm text-secondary">
+                {activeBuild.label} · {formatBuildInvestment(activeBuild)} · fit{" "}
+                {activeBuild.fit_score.toFixed(0)}
+              </p>
+            ) : null}
+          </>
         }
         pane={
           loading ? (

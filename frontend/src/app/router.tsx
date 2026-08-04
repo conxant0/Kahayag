@@ -14,11 +14,12 @@ import { PropertyPage } from "../features/property";
 import { RecommendationPage, WhyPage } from "../features/recommendation";
 import { BriefPage, ReportPage } from "../features/reports";
 import { EditLayoutPage, ResultsPage } from "../features/results";
+import { ComparePage } from "../features/compare";
 import { DesignPage } from "../features/design";
+import { QuotationPage } from "../features/quotation";
 import { RoofPage } from "../features/roof";
 
 import { ROUTE_PATHS } from "./routePaths";
-import { PendingScreen } from "./PendingScreen";
 
 export const router = createBrowserRouter([
   { path: ROUTE_PATHS.landing, element: <LandingPage /> },
@@ -28,8 +29,8 @@ export const router = createBrowserRouter([
   { path: ROUTE_PATHS.loading, element: <LoadingPage /> },
   { path: ROUTE_PATHS.results, element: <ResultsPage /> },
   { path: ROUTE_PATHS.design, element: <DesignPage /> },
-  { path: ROUTE_PATHS.compare, element: <PendingScreen name="Compare builds" /> },
-  { path: ROUTE_PATHS.quotation, element: <PendingScreen name="Quotation" /> },
+  { path: ROUTE_PATHS.compare, element: <ComparePage /> },
+  { path: ROUTE_PATHS.quotation, element: <QuotationPage /> },
   { path: ROUTE_PATHS.editLayout, element: <EditLayoutPage /> },
   { path: ROUTE_PATHS.invest, element: <RecommendationPage /> },
   { path: ROUTE_PATHS.why, element: <WhyPage /> },
