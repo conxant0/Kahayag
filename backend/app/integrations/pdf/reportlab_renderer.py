@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from io import BytesIO
 from xml.sax.saxutils import escape as _escape
 
@@ -44,6 +44,14 @@ _PAPER = colors.HexColor("#FAFBFD")
 
 def _money(value: int) -> str:
     return f"PHP {value:,.0f}"
+
+
+def _kwh(value: Decimal) -> str:
+    return f"{Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):f} kWh"
+
+
+def _rate(value: Decimal) -> str:
+    return f"PHP {Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):f}/kWh"
 
 
 def _styles() -> dict[str, ParagraphStyle]:
@@ -422,8 +430,8 @@ def render_report_pdf(
                     [
                         ["Input", "Value", "Source"],
                         ["Monthly electricity bill", _money(report.inputs.monthly_bill_php), "User-provided"],
-                        ["Monthly consumption", f"{report.inputs.monthly_consumption_kwh} kWh", "Calculated or supplied"],
-                        ["Electricity tariff", f"PHP {report.inputs.electricity_rate_php_per_kwh}/kWh", "Assessment input"],
+                        ["Monthly consumption", _kwh(report.estimated_monthly_consumption_kwh), "Calculated or supplied"],
+                        ["Electricity tariff", _rate(report.resolved_tariff_php_per_kwh), "Default or supplied"],
                         ["Budget", _money(report.inputs.budget_php or 0), "User-provided"],
                         ["Usable roof area", f"{report.roof.usable_area_m2} m2", "Roof trace"],
                     ]
@@ -467,7 +475,7 @@ def render_report_pdf(
                 _table(
                     [
                         ["Measure", "Estimate"],
-                        ["Annual consumption", f"{Decimal(report.inputs.monthly_consumption_kwh) * 12} kWh"],
+                        ["Annual consumption", _kwh(Decimal(report.estimated_monthly_consumption_kwh) * 12)],
                         ["Annual solar production", f"{report.recommendation.annual_generation_kwh} kWh"],
                         ["Consumption offset", f"{report.recommendation.annual_consumption_offset_ratio * 100}%"],
                         ["Annual savings", _money(report.financials.annual_savings_php)],

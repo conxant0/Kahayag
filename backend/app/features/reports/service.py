@@ -146,7 +146,7 @@ def _effective_rate_php_per_kwh(report: ValidatedReportInput) -> Decimal:
     """Back out the per-kWh rate implied by year-1 savings against the
     self-consumption cap, since no battery/net-metering split is modeled
     here and self-consumed energy is simply min(generation, consumption)."""
-    annual_consumption_kwh = report.inputs.monthly_consumption_kwh * 12
+    annual_consumption_kwh = report.estimated_monthly_consumption_kwh * 12
     self_consumed_kwh = min(
         report.recommendation.annual_generation_kwh, annual_consumption_kwh
     )
@@ -163,10 +163,10 @@ def _scenario_rows(
 ) -> tuple[ProjectionRow, ...]:
     projection = project_investment(
         year_one_generation_kwh=report.recommendation.annual_generation_kwh,
-        baseline_monthly_consumption_kwh=report.inputs.monthly_consumption_kwh,
+        baseline_monthly_consumption_kwh=report.estimated_monthly_consumption_kwh,
         baseline_rate_php_per_kwh=_effective_rate_php_per_kwh(report),
         baseline_annual_savings_php=report.financials.annual_savings_php,
-        monthly_consumption_kwh=report.inputs.monthly_consumption_kwh,
+        monthly_consumption_kwh=report.estimated_monthly_consumption_kwh,
         rate_php_per_kwh=_effective_rate_php_per_kwh(report),
         system_cost_php=report.financials.estimated_base_cost_php,
         generation_ratio=generation_ratio,
