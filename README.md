@@ -40,20 +40,31 @@ azimuth, and annual sunshine hours) for the homeowner's actual address and
 running it through a deterministic financial and technical model.
 
 **AI's role is narrow and explicitly bounded:** the domain computes, AI only
-explains. Every technical and financial number in a report comes from
-`backend/app/domain/`. An AI adapter may phrase those already-validated
-numbers in plain, cautious language for the final report — it never
-calculates, alters, or invents a number, brand, guarantee, or site condition.
-The report pipeline validates that AI output preserves the underlying values
-before it reaches the user.
+explains and customises. Every technical and financial number comes from
+`backend/app/domain/`. AI adapters phrase already-validated numbers in plain
+language — they never calculate, alter, or invent a figure, brand, guarantee,
+or site condition. Three surfaces use AI:
+
+- **Report narration** — an AI adapter turns the validated assessment into a
+  shareable PDF with cautious prose; the pipeline verifies value preservation
+  before delivery.
+- **Design customisation** — a conversational agent lets homeowners refine
+  their system (swap panels, add battery, optimise for budget or backup) via
+  natural-language chat. The agent calls deterministic solver tools; it does
+  not compute prices or yields itself.
+- **Quote comparison** — an uploaded installer quote is OCR'd and then an AI
+  auditor summarises how the installer's price and specs compare against
+  Kahayag's benchmark build, using only extracted facts.
 
 ## AI Tools, Frameworks, & Datasets Used
 
 | Category | Choice | Purpose |
 | --- | --- | --- |
-| Report narration | [Groq](https://groq.com/) (OpenAI-compatible chat completions API) | Turns validated report values into cautious, plain-language prose (executive summary, technical/financial explanation, contractor observations). Chosen over OpenAI for a free tier with no card on file. |
+| LLM (report, design agent, quote audit) | [Groq](https://groq.com/) (OpenAI-compatible chat completions API) | Powers three surfaces: (1) report narration — turns validated report values into cautious prose; (2) design agent — a tool-calling loop that lets homeowners refine their system via natural-language chat (`query_catalog`, `run_solver`, `update_build`, etc.); (3) quote auditor — summarises how an uploaded installer quote compares to Kahayag's benchmark. Chosen over OpenAI for a free tier with no card on file. |
+| Quote OCR | [Google Cloud Vision](https://cloud.google.com/vision) (`DOCUMENT_TEXT_DETECTION`), Groq vision fallback, or local Tesseract | Extracts text from uploaded installer quote images/PDFs before the auditor parses facts (total price, system size, panel count). |
 | Solar data | [Google Solar API](https://developers.google.com/maps/documentation/solar) (`buildingInsights:findClosest`, `dataLayers:get`) | Supplies per-roof segment pitch, azimuth, annual sunshine hours, and the flux/mask rasters behind the shading summary — the one keyed, billed vendor accepted because no free source has this resolution. |
-| Map imagery | Google Maps (browser script tag) | Basemap tiled to match the Google Solar rasters, avoiding a second coordinate/imagery pipeline. |
+| Map imagery (browser) | Google Maps JavaScript API | Basemap tiled to match the Google Solar rasters, avoiding a second coordinate/imagery pipeline. |
+| Map imagery (PDF) | Google Static Maps API (server key), Esri World Imagery fallback | Satellite basemap behind the roof trace on the downloadable PDF report. Falls back to the keyless Esri tiles when no server key is configured. |
 | Address search / geocoding | [Nominatim](https://nominatim.org/) (OpenStreetMap), proxied through the backend | Free, keyless address lookup; server-side proxying enforces the 1 req/sec usage policy and a proper User-Agent. |
 | Approximate location | [ip-api.com](http://ip-api.com/), proxied through the backend | Returns a rough lat/lon from the client's IP so the map can centre before the homeowner searches for an address. Keyless, free tier. |
 | PDF generation | [ReportLab](https://www.reportlab.com/) | Renders the final report locally, no external service or key. |
@@ -62,10 +73,12 @@ before it reaches the user.
 data are fetched live from the vendors above at assessment time; there is no
 static dataset in this repository.
 
-Both keyed integrations (Google Solar, Groq) default to `disabled`. With no
-credentials configured, the stack still boots and the assessment path falls
-back to deterministic nationwide peak-sun-hour assumptions and a
-non-AI-generated report — no API key is required to run or test the project.
+All keyed integrations (Google Solar, Groq, Google Cloud Vision) default to
+`disabled`. With no credentials configured, the stack still boots: the
+assessment falls back to deterministic nationwide peak-sun-hour assumptions,
+the design agent uses rule-based responses, the quote auditor is unavailable,
+and the report is generated without AI narration — no API key is required to
+run or test the project.
 
 ## Setup & Run Instructions for Testing the Project
 
@@ -87,11 +100,17 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-No API keys are required to boot the stack — the AI and solar providers
-default to `disabled` and fall back to deterministic behavior. `frontend/.env`
-must set `VITE_API_BASE_URL` to an absolute URL including the scheme, and
-`VITE_GOOGLE_MAPS_API_KEY` to a key with the Maps JavaScript API enabled
-(restrict by HTTP referrer in Google Cloud Console).
+No API keys are required to boot the stack — all AI and solar providers
+default to `disabled` and fall back to deterministic behavior. Environment
+notes:
+
+- `frontend/.env` must set `VITE_API_BASE_URL` to an absolute URL including
+  the scheme, and `VITE_GOOGLE_MAPS_API_KEY` to a browser key with the Maps
+  JavaScript API enabled (restrict by HTTP referrer in Google Cloud Console).
+- `backend/.env` optional keys: `APP_GROQ_API_KEY` (report + design agent +
+  quote audit), `APP_GOOGLE_SOLAR_API_KEY` (roof-level solar data),
+  `APP_GOOGLE_CLOUD_VISION_API_KEY` (quote OCR), `APP_GOOGLE_MAPS_API_KEY`
+  (server key for PDF satellite imagery — falls back to keyless Esri tiles).
 
 ### 2. Backend
 
