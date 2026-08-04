@@ -4,13 +4,15 @@ const QUESTION_START =
 const GENERAL_QUESTION =
   /\b(work without|without a battery|without battery|without storage|without an energy storage|need a battery|need battery|do i need|can solar|will the system work|will it work|how about at night|what about at night|at night|what got rejected|what was rejected|why not|why didn't|why didnt)\b/i;
 const CHANGE_VERB =
-  /\b(add|remove|swap|change|update|optimi[sz]e|increase|decrease|make it|make this|more|fewer|less|extra|drop|include|maximi[sz]e|ensure|upgrade|downgrade|switch|use|try|set|generate|create|get me|give me|show me a)\b/i;
+  /\b(add|remove|swap|change|update|optimi[sz]e|increase|decrease|reduce|lessen|lower|cut|make it|make this|more|fewer|less|extra|drop|include|maximi[sz]e|ensure|upgrade|downgrade|switch|use|try|set|generate|create|get me|give me|show me a)\b/i;
 const CHANGE_NOUN =
   /\b(panel|panels|battery|batteries|inverter|budget|backup|independence|storage|blackout|brownout|kwp|system|quotation|quote|bom)\b/i;
 const QUOTATION_REQUEST =
   /\b(quotation|quote|price breakdown|line item|bom|bill of materials)\b/i;
 const AGENT_DIAGNOSTIC =
   /\b(reject|rejected|failed|catalog|compatible|list panels|list inverters|list batteries)\b/i;
+const CATALOG_PRICE_QUESTION =
+  /\b(cheapest|lowest.?price|least expensive|most affordable|what.*available|which.*available)\b/i;
 
 export type DesignChatIntent = "question" | "change";
 
@@ -26,6 +28,12 @@ export function classifyMessageIntent(text: string): DesignChatIntent {
   const quotationRequest = QUOTATION_REQUEST.test(trimmed);
   const agentDiagnostic = AGENT_DIAGNOSTIC.test(trimmed);
   const hasChangeCue = CHANGE_VERB.test(trimmed) || CHANGE_NOUN.test(trimmed);
+  const catalogPriceQuestion =
+    CATALOG_PRICE_QUESTION.test(trimmed) && CHANGE_NOUN.test(trimmed);
+
+  if (catalogPriceQuestion) {
+    return "change";
+  }
 
   if (quotationRequest && CHANGE_VERB.test(trimmed)) {
     return "change";

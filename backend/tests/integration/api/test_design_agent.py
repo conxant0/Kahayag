@@ -333,6 +333,126 @@ def test_parse_change_request_detects_battery_and_panels() -> None:
     two_panel_patch = _parse_change_request("Add two more panels")
     assert two_panel_patch["panel_count_delta"] == 2
 
+    lessen_patch = _parse_change_request("lessen the number of panels")
+    assert lessen_patch["panel_count_delta"] == -1
+
+    reduce_patch = _parse_change_request("reduce the number of panels by 2")
+    assert reduce_patch["panel_count_delta"] == -2
+
+
+def test_agent_reduces_panel_count_from_natural_language(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    active = next(
+        build for build in bootstrap["builds"] if build["id"] == bootstrap["active_build_id"]
+    )
+    starting_panels = active["panel_count"]
+    assert starting_panels > 1
+
+    response = run_design_agent_turn(
+        AgentDesignRequest(
+            session=DesignSessionSchema.model_validate(bootstrap),
+            user_text="Please lessen the number of panels",
+        ),
+        client=DisabledDesignAgentClient(),
+    )
+
+    updated_active = next(
+        build
+        for build in response.session.builds
+        if build.id == response.session.active_build_id
+    )
+    assert updated_active.panel_count == starting_panels - 1
+    assert "panel" in response.reply.lower()
+
+
+def test_agent_answers_cheapest_panel_catalog_question(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+
+    response = run_design_agent_turn(
+        AgentDesignRequest(
+            session=DesignSessionSchema.model_validate(bootstrap),
+            user_text="What's the cheapest solar panel available?",
+        ),
+        client=DisabledDesignAgentClient(),
+    )
+
+    assert response.session.agent_audit
+    tool_names = [
+        call["name"] for call in response.session.agent_audit[0].tool_calls
+    ]
+    assert "query_catalog" in tool_names
+    assert "₱" in response.reply
+    assert "catalog" in response.reply.lower()
+
+
+def test_agent_swaps_to_cheaper_panel(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    ai = next(build for build in bootstrap["builds"] if build["source"] == "ai_suggested")
+    mutated = client.post(
+        "/api/v1/designs/mutate",
+        json={
+            "session": bootstrap,
+            "goal": "auto",
+            "locked_panel_id": "panel_022",
+            "locked_inverter_id": next(
+                component["catalog_id"]
+                for component in ai["components"]
+                if component["slot"] == "inverter"
+            ),
+            "seed_panel_count": ai["panel_count"],
+        },
+    ).json()
+    custom = next(build for build in mutated["builds"] if build["source"] == "custom")
+    session = {**mutated, "active_build_id": custom["id"]}
+    panel_before = next(
+        component for component in custom["components"] if component["slot"] == "panel"
+    )
+    assert panel_before["unit_price_php"] > 5300
+
+    response = run_design_agent_turn(
+        AgentDesignRequest(
+            session=DesignSessionSchema.model_validate(session),
+            user_text="Give me a cheaper panel",
+        ),
+        client=DisabledDesignAgentClient(),
+    )
+
+    updated_active = next(
+        build
+        for build in response.session.builds
+        if build.id == response.session.active_build_id
+    )
+    panel_after = next(
+        component for component in updated_active.components if component.slot == "panel"
+    )
+    assert panel_after.catalog_id != panel_before["catalog_id"]
+    assert panel_after.unit_price_php < panel_before["unit_price_php"]
+    assert "panel" in response.reply.lower()
+
 
 def test_normalize_tool_call_uses_active_build_for_quotation(
     completed_assessment_data: dict[str, object],

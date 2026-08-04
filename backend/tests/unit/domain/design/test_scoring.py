@@ -78,6 +78,46 @@ def test_pick_swap_combo_prefers_lower_cost_when_requested() -> None:
     assert picked.inverter_id == "inv_002"
 
 
+def test_pick_swap_combo_allows_panel_swap() -> None:
+    current = ValidCombo(
+        **{
+            **_combo(
+                panel_id="panel_001",
+                inverter_id="inv_001",
+                battery_id=None,
+                panel_count=10,
+                fit_score=95.0,
+            ).__dict__,
+            "estimated_cost_php": 300_000.0,
+        },
+    )
+    alternate_panel = ValidCombo(
+        **{
+            **_combo(
+                panel_id="panel_002",
+                inverter_id="inv_001",
+                battery_id=None,
+                panel_count=10,
+                fit_score=90.0,
+            ).__dict__,
+            "estimated_cost_php": 250_000.0,
+        },
+    )
+
+    picked = pick_swap_combo(
+        (current, alternate_panel),
+        swap_slot="panel",
+        current_panel_id="panel_001",
+        current_inverter_id="inv_001",
+        current_battery_id=None,
+        current_panel_count=10,
+        prefer_cheaper=True,
+    )
+
+    assert picked is not None
+    assert picked.panel_id == "panel_002"
+
+
 def test_pick_alternate_combo_skips_same_equipment_stack() -> None:
     top = _combo(
         panel_id="panel_001",

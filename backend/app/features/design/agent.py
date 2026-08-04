@@ -117,6 +117,32 @@ def _parse_change_request(change_request: str) -> dict[str, object]:
         patch["panel_count_delta"] = 1
     elif any(token in lowered for token in ("fewer panel", "less panel", "remove panel", "decrease panel")):
         patch["panel_count_delta"] = -1
+    elif re.search(
+        r"\b(?:lessen|reduce|lower|cut|decrease|minimi[sz]e|shrink)\b.*\bpanel",
+        lowered,
+    ):
+        count_match = re.search(r"\b(\d+|one|two|three|four|five)\b", lowered)
+        word_counts = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+        if count_match and count_match.group(1).isdigit():
+            count = int(count_match.group(1))
+        elif count_match:
+            count = word_counts.get(count_match.group(1), 1)
+        else:
+            count = 1
+        patch["panel_count_delta"] = -count
+    elif re.search(
+        r"\b(?:increase|raise|boost|expand)\b.*\bpanel",
+        lowered,
+    ):
+        count_match = re.search(r"\b(\d+|one|two|three|four|five)\b", lowered)
+        word_counts = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+        if count_match and count_match.group(1).isdigit():
+            count = int(count_match.group(1))
+        elif count_match:
+            count = word_counts.get(count_match.group(1), 1)
+        else:
+            count = 1
+        patch["panel_count_delta"] = count
     if any(token in lowered for token in ("budget", "cheaper", "afford", "cheapest")):
         patch["goal"] = "budget"
     if any(token in lowered for token in ("independence", "self-sufficient", "off-grid", "off grid")):
@@ -281,6 +307,74 @@ def _session_summary(session: DesignSessionSchema) -> dict[str, object]:
     }
 
 
+def _wants_cheapest_catalog(text: str) -> bool:
+    lowered = text.lower()
+    return any(
+        token in lowered
+        for token in ("cheapest", "lowest price", "least expensive", "most affordable")
+    )
+
+
+def _catalog_items_payload(
+    *,
+    category: str,
+    catalog,
+    sort_cheapest: bool = False,
+    brand: str | None = None,
+    min_wattage_w: int | None = None,
+    battery_compatible: object = None,
+    limit: int = 10,
+) -> list[dict[str, object]]:
+    if category == "inverters":
+        items = filter_inverters(
+            catalog=catalog,
+            battery_compatible=battery_compatible,
+        )
+        payload = [
+            {
+                "id": item.id,
+                "brand": item.brand,
+                "model": item.model,
+                "rated_ac_w": item.rated_ac_output_w,
+                "unit_price_php": item.price_php.mid,
+            }
+            for item in items
+        ]
+    elif category == "batteries":
+        payload = [
+            {
+                "id": item.id,
+                "brand": item.brand,
+                "model": item.model,
+                "usable_kwh": item.usable_capacity_kwh,
+                "unit_price_php": item.price_php.mid,
+            }
+            for item in catalog.batteries.values()
+        ]
+    else:
+        items = filter_panels(
+            catalog=catalog,
+            min_wattage_w=min_wattage_w,
+            brand=brand if isinstance(brand, str) and brand.strip() else None,
+        )
+        payload = [
+            {
+                "id": item.id,
+                "brand": item.brand,
+                "model": item.model,
+                "wattage_w": item.wattage_w,
+                "unit_price_php": item.price_php.mid,
+            }
+            for item in items
+        ]
+    if sort_cheapest:
+        payload = sorted(
+            payload,
+            key=lambda row: float(row.get("unit_price_php") or 0),
+        )
+    return payload[:limit]
+
+
 def _normalize_tool_call(
     call: PlannedToolCall,
     *,
@@ -315,47 +409,19 @@ def _execute_tool(
     if call.name == "query_catalog":
         category = str(call.arguments.get("category", "panels"))
         catalog = load_catalog()
-        if category == "inverters":
-            items = filter_inverters(
-                catalog=catalog,
-                battery_compatible=call.arguments.get("battery_compatible"),
-            )
-            payload = [
-                {
-                    "id": item.id,
-                    "brand": item.brand,
-                    "model": item.model,
-                    "rated_ac_w": item.rated_ac_output_w,
-                }
-                for item in items[:10]
-            ]
-        elif category == "batteries":
-            payload = [
-                {
-                    "id": item.id,
-                    "brand": item.brand,
-                    "model": item.model,
-                    "usable_kwh": item.usable_capacity_kwh,
-                }
-                for item in list(catalog.batteries.values())[:10]
-            ]
-        else:
-            brand = call.arguments.get("brand")
-            items = filter_panels(
-                catalog=catalog,
-                min_wattage_w=_coerce_int(call.arguments.get("min_wattage_w")),
-                brand=brand if isinstance(brand, str) and brand.strip() else None,
-            )
-            payload = [
-                {
-                    "id": item.id,
-                    "brand": item.brand,
-                    "model": item.model,
-                    "wattage_w": item.wattage_w,
-                }
-                for item in items[:10]
-            ]
-        return {"items": payload}, None
+        sort_cheapest = (
+            str(call.arguments.get("sort_by", "")).lower() == "price_asc"
+            or _wants_cheapest_catalog(user_text)
+        )
+        payload = _catalog_items_payload(
+            category=category,
+            catalog=catalog,
+            sort_cheapest=sort_cheapest,
+            brand=call.arguments.get("brand") if isinstance(call.arguments.get("brand"), str) else None,
+            min_wattage_w=_coerce_int(call.arguments.get("min_wattage_w")),
+            battery_compatible=call.arguments.get("battery_compatible"),
+        )
+        return {"items": payload, "sort_cheapest": sort_cheapest}, None
 
     if call.name == "run_solver":
         goal = _coerce_goal(call.arguments.get("goal", "auto"))
@@ -408,6 +474,13 @@ def _execute_tool(
             (build for build in session.builds if build.id == session.active_build_id),
             None,
         )
+        if patch.get("panel_count_delta") is not None and active_before is not None:
+            delta = int(patch.pop("panel_count_delta"))
+            patch["seed_panel_count"] = max(1, active_before.panel_count + delta)
+            if not patch.get("swap_slot"):
+                panel_id = _component_catalog_id_from_build(active_before, "panel")
+                if panel_id:
+                    patch.setdefault("locked_panel_id", panel_id)
         mutate_request = MutateDesignRequest(session=session, **patch)  # type: ignore[arg-type]
         updated = mutate_design_session(mutate_request)
         active = next(

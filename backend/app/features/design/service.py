@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from app.domain.design.bom import _is_microinverter, expand_combo_to_components
-from app.domain.design.catalog import get_inverter, load_catalog
+from app.domain.design.catalog import get_inverter, get_panel, load_catalog
 from app.domain.design.constants import PAYMENT_TERMS, QUOTE_VALIDITY_DAYS
 from app.domain.design.entities import (
     DesignBuild,
@@ -352,6 +352,56 @@ def _active_inverter_line_cost(active: DesignBuildSchema) -> float | None:
     return None
 
 
+def _active_panel_line_cost(active: DesignBuildSchema) -> float | None:
+    for component in active.components:
+        if component.slot == "panel":
+            return component.line_total_php
+    return None
+
+
+def _pick_cheaper_panel_combo(
+    valid: tuple[ValidCombo, ...],
+    *,
+    active: DesignBuildSchema,
+    current_panel_id: str,
+) -> ValidCombo | None:
+    catalog = load_catalog()
+    current_panel = get_panel(current_panel_id, catalog)
+    current_inverter_id = _component_catalog_id(active, "inverter")
+    current_battery_id = _component_catalog_id(active, "battery")
+    current_panel_line = _active_panel_line_cost(active)
+    if current_panel_line is None:
+        current_panel_line = current_panel.price_php.mid * active.panel_count
+
+    candidates: list[ValidCombo] = []
+    for combo in valid:
+        if combo.panel_id == current_panel_id:
+            continue
+        if combo.panel_count != active.panel_count:
+            continue
+        if current_inverter_id and combo.inverter_id != current_inverter_id:
+            continue
+        if current_battery_id and combo.battery_id != current_battery_id:
+            continue
+        if current_battery_id is None and combo.battery_id is not None:
+            continue
+        panel = get_panel(combo.panel_id, catalog)
+        candidate_line = panel.price_php.mid * combo.panel_count
+        if candidate_line >= current_panel_line:
+            continue
+        candidates.append(combo)
+
+    if not candidates:
+        return None
+    return min(
+        candidates,
+        key=lambda combo: (
+            get_panel(combo.panel_id, catalog).price_php.mid,
+            combo.estimated_cost_php,
+        ),
+    )
+
+
 def _pick_cheaper_inverter_combo(
     valid: tuple[ValidCombo, ...],
     *,
@@ -619,6 +669,7 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
             else request.goal == "budget"
         )
         current_inverter_id = _component_catalog_id(active, "inverter")
+        current_panel_id = _component_catalog_id(active, "panel")
         if (
             request.swap_slot == "inverter"
             and prefer_cheaper
@@ -628,6 +679,16 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
                 solve_result.valid,
                 active=active,
                 current_inverter_id=current_inverter_id,
+            )
+        elif (
+            request.swap_slot == "panel"
+            and prefer_cheaper
+            and current_panel_id is not None
+        ):
+            selected_combo = _pick_cheaper_panel_combo(
+                solve_result.valid,
+                active=active,
+                current_panel_id=current_panel_id,
             )
         else:
             valid_combos = solve_result.valid
@@ -666,6 +727,14 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
                 raise NoValidDesignError(
                     "No cheaper inverter is available without changing your panels.",
                 )
+        if (
+            request.swap_slot == "panel"
+            and current_panel_id is not None
+            and selected_combo.panel_id == current_panel_id
+        ):
+            raise NoValidDesignError(
+                _swap_failure_message("panel", prefer_cheaper=prefer_cheaper),
+            )
 
     return _session_with_custom_build(
         existing=request.session,

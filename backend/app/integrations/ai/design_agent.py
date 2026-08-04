@@ -82,7 +82,8 @@ def _is_change_request(text: str) -> bool:
     lowered = text.lower()
     change_verbs = (
         "add", "remove", "swap", "change", "update", "optimi",
-        "increase", "decrease", "make it", "make this", "more", "fewer",
+        "increase", "decrease", "reduce", "lessen", "lower", "cut",
+        "make it", "make this", "more", "fewer",
         "less", "extra", "drop", "include", "maximi", "ensure", "upgrade",
         "downgrade", "switch", "use ", "try ", "set ", "lock ",
     )
@@ -150,12 +151,18 @@ def _plan_disabled_tools(
         for token in (
             "show me", "list", "what panels", "what inverters", "what batteries",
             "catalog", "available", "compatible panel", "compatible inverter",
+            "cheapest", "lowest price", "least expensive", "most affordable",
         )
     ):
         args: dict[str, object] = {"category": _infer_catalog_category(user_text)}
         brand = _infer_catalog_brand(user_text)
         if brand:
             args["brand"] = brand
+        if any(
+            token in lowered
+            for token in ("cheapest", "lowest price", "least expensive", "most affordable")
+        ):
+            args["sort_by"] = "price_asc"
         return (PlannedToolCall(name="query_catalog", arguments=args),)
 
     goal = _infer_goal_from_text(user_text)
@@ -437,6 +444,41 @@ def _find_catalog_panel_by_token(token: str) -> dict[str, object] | None:
                 "wattage_w": panel.wattage_w,
             }
     return None
+
+
+def _explain_cheapest_catalog_item(question: str) -> str | None:
+    lowered = question.strip().lower()
+    if not any(
+        token in lowered
+        for token in ("cheapest", "lowest price", "least expensive", "most affordable")
+    ):
+        return None
+    from app.domain.design.catalog import load_catalog
+
+    catalog = load_catalog()
+    if "inverter" in lowered:
+        cheapest = min(catalog.inverters.values(), key=lambda item: item.price_php.mid)
+        rated_kw = round(cheapest.rated_ac_output_w / 1000, 1)
+        return (
+            f"The lowest-priced inverter in our catalog is the {cheapest.brand} "
+            f"{cheapest.model} ({rated_kw} kW) at about ₱{cheapest.price_php.mid:,.0f} "
+            f"per unit. Use the component picker to see whether it fits your build."
+        )
+    if any(token in lowered for token in ("battery", "storage")):
+        cheapest = min(catalog.batteries.values(), key=lambda item: item.price_php.mid)
+        return (
+            f"The lowest-priced battery in our catalog is the {cheapest.brand} "
+            f"{cheapest.model} ({cheapest.usable_capacity_kwh} kWh usable) at about "
+            f"₱{cheapest.price_php.mid:,.0f}. Use the component picker to check compatibility."
+        )
+    if "panel" not in lowered and "module" not in lowered and "pv" not in lowered:
+        return None
+    cheapest = min(catalog.panels.values(), key=lambda item: item.price_php.mid)
+    return (
+        f"The lowest-priced panel in our catalog is the {cheapest.brand} "
+        f"{cheapest.model} ({cheapest.wattage_w} W) at about ₱{cheapest.price_php.mid:,.0f} "
+        f"per panel. I can swap it into your design if you'd like a cheaper array."
+    )
 
 
 def _alternative_from_snapshot(
@@ -782,6 +824,10 @@ def _route_explain_question(
     if _is_off_topic_question(routing):
         return _explain_off_topic(routing)
 
+    cheapest_catalog = _explain_cheapest_catalog_item(routing)
+    if cheapest_catalog is not None:
+        return cheapest_catalog
+
     if any(token in lowered for token in ("reject", "rejected", "invalid")):
         rejections = snapshot.get("rejections")
         if isinstance(rejections, list) and rejections:
@@ -914,8 +960,24 @@ def _infer_update_build_args(user_text: str, build_id: str) -> dict[str, object]
             change_bits.append(f"remove {count_match.group(1)} panels")
         else:
             change_bits.append("remove one panel")
-    if any(token in lowered for token in ("budget", "cheaper", "afford", "cheapest")):
-        change_bits.append("optimise for budget")
+    elif re.search(
+        r"\b(?:lessen|reduce|lower|cut|decrease|minimi[sz]e|shrink)\b.*\bpanel",
+        lowered,
+    ):
+        count_match = re.search(r"\b(\d+|one|two|three|four|five)\b", lowered)
+        if count_match:
+            change_bits.append(f"remove {count_match.group(1)} panels")
+        else:
+            change_bits.append("remove one panel")
+    if any(token in lowered for token in ("budget", "cheaper", "afford", "cheapest", "less expensive", "lower cost")):
+        if "inverter" in lowered:
+            change_bits.append("swap to a cheaper inverter")
+        elif "panel" in lowered:
+            change_bits.append("swap to a cheaper panel")
+        elif any(token in lowered for token in ("batter", "storage")):
+            change_bits.append("swap to a cheaper battery")
+        else:
+            change_bits.append("optimise for budget")
     swap_verbs = ("swap", "switch", "change", "replace", "upgrade", "downgrade")
     if any(verb in lowered for verb in swap_verbs):
         if "inverter" in lowered:
@@ -1068,12 +1130,29 @@ def build_agent_turn_reply(
             if name == "query_catalog":
                 items = result.get("items")
                 if isinstance(items, list) and items:
+                    sort_cheapest = bool(result.get("sort_cheapest"))
+                    if sort_cheapest and items:
+                        top = items[0]
+                        if isinstance(top, dict):
+                            brand = str(top.get("brand", "")).strip()
+                            model = str(top.get("model", "")).strip()
+                            price = top.get("unit_price_php")
+                            label = f"{brand} {model}".strip()
+                            if label and price is not None:
+                                return (
+                                    f"The cheapest option in our catalog is {label} at about "
+                                    f"₱{float(price):,.0f} per unit. Use the component picker "
+                                    f"on the canvas to swap it into your design."
+                                )
                     names = []
                     for row in items[:5]:
                         if isinstance(row, dict):
-                            names.append(
-                                f"{row.get('brand', '')} {row.get('model', '')}".strip(),
-                            )
+                            label = f"{row.get('brand', '')} {row.get('model', '')}".strip()
+                            price = row.get("unit_price_php")
+                            if label and price is not None:
+                                names.append(f"{label} (₱{float(price):,.0f})")
+                            elif label:
+                                names.append(label)
                     return (
                         "Compatible options include "
                         + ", ".join(name for name in names if name)
@@ -1093,17 +1172,19 @@ def build_agent_turn_reply(
                 return "I re-ran the optimiser on your design."
             if name == "update_build":
                 if (
-                    result.get("swap_slot") == "inverter"
+                    result.get("swap_slot") in {"inverter", "panel"}
                     and result.get("component_changed")
                     and result.get("new_model")
                 ):
+                    slot = str(result.get("swap_slot"))
                     previous = result.get("previous_model")
                     new_model = result.get("new_model")
                     investment = result.get("total_investment_php")
+                    slot_label = "inverter" if slot == "inverter" else "panel"
                     if previous:
-                        reply = f"I swapped the inverter from {previous} to {new_model}."
+                        reply = f"I swapped the {slot_label} from {previous} to {new_model}."
                     else:
-                        reply = f"I swapped the inverter to {new_model}."
+                        reply = f"I swapped the {slot_label} to {new_model}."
                     if investment is not None:
                         reply += f" Total investment is about ₱{float(investment):,.0f}."
                     return reply

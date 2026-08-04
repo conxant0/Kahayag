@@ -101,7 +101,11 @@ def pick_swap_combo(
     for combo in valid:
         if swapped_id(combo) == current_id:
             continue
-        if current_panel_id and combo.panel_id != current_panel_id:
+        if (
+            current_panel_id
+            and combo.panel_id != current_panel_id
+            and swap_slot != "panel"
+        ):
             continue
         if (
             current_panel_count
