@@ -442,3 +442,86 @@ def test_disabled_planner_selects_run_solver(
         call["name"] for call in response.session.agent_audit[0].tool_calls
     ]
     assert "run_solver" in tool_names
+
+
+def test_explain_ignores_inverter_keyword_in_quote_context_prefix(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+
+    response = client.post(
+        "/api/v1/designs/explain",
+        json={
+            "session": bootstrap,
+            "question": (
+                "Context: The homeowner is reviewing an uploaded installer quote.\n"
+                "Audit findings: warning: inverter model differs from benchmark\n"
+                "Question: Can I negotiate using your benchmark?"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    explanation = response.json()["explanation"].lower()
+    assert "negotiat" in explanation or "benchmark" in explanation
+    assert "running at about" not in explanation
+
+
+def test_explain_answers_panel_count_question(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    active = next(
+        build for build in bootstrap["builds"] if build["id"] == bootstrap["active_build_id"]
+    )
+
+    response = client.post(
+        "/api/v1/designs/explain",
+        json={
+            "session": bootstrap,
+            "question": "do I need 12 panels?",
+        },
+    )
+
+    assert response.status_code == 200
+    explanation = response.json()["explanation"]
+    assert str(active["panel_count"]) in explanation
+    assert "matched a" not in explanation.lower()
+
+
+def test_explain_declines_off_topic_questions(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+
+    response = client.post(
+        "/api/v1/designs/explain",
+        json={
+            "session": bootstrap,
+            "question": "What does karachi mean?",
+        },
+    )
+
+    assert response.status_code == 200
+    explanation = response.json()["explanation"].lower()
+    assert "karachi" in explanation
+    assert "running at about" not in explanation
+    assert "matched a" not in explanation

@@ -10,11 +10,16 @@
 // as POST /permits/assess) is applied straight to the page's displayed
 // assessment — the chat can set inputs and refresh the checklist/findings in
 // one round trip, not just answer questions.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Chip } from "../../shared/components/ui";
 import type { ApplicantFormValues } from "./ApplicantForm";
 import type { PermitAssessment } from "./permitTypes";
+import {
+  PERMIT_CHAT_FOLLOW_UP_QUESTIONS,
+  PERMIT_CHAT_SUGGESTED_QUESTIONS,
+  permitChatWelcomeCopy,
+} from "./permitChatViewModel";
 import { fromApiApplicant, toApiApplicant } from "./permitsViewModel";
 import { usePermitChat } from "./usePermitChat";
 
@@ -45,12 +50,6 @@ function SendIcon() {
 }
 
 type ChatTurn = { role: "user" | "assistant"; text: string };
-
-const SUGGESTED_QUESTIONS = [
-  "Do I need a notarized authorization?",
-  "What track am I on?",
-  "I'm not the registered owner — what changes?",
-] as const;
 
 // Rolling transcript cap — keeps the last 10 messages (user + assistant
 // combined) so the sidebar doesn't grow unbounded across a long session.
@@ -83,7 +82,10 @@ export function PermitChatSidebar({
 }: {
   applicant: ApplicantFormValues;
   onApplicantChange: (values: ApplicantFormValues) => void;
-  onAssessmentChange: (assessment: PermitAssessment) => void;
+  onAssessmentChange: (
+    assessment: PermitAssessment,
+    applicant: ApplicantFormValues,
+  ) => void;
   propertyAddress: string;
   systemKwp: number;
   uploads: ReadonlyMap<string, File>;
@@ -91,11 +93,19 @@ export function PermitChatSidebar({
 }) {
   const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
   const chat = usePermitChat();
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node) {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [turns, chat.isPending]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed) {
+    if (!trimmed || chat.isPending) {
       return;
     }
     setDraft("");
@@ -116,33 +126,36 @@ export function PermitChatSidebar({
       if (!applicantEquals(applicant, nextApplicant)) {
         onApplicantChange(nextApplicant);
       }
-      onAssessmentChange(response.assessment);
+      onAssessmentChange(response.assessment, nextApplicant);
     } catch {
       // chat.error surfaces below.
     }
   };
+
+  const showStarterChips = turns.length === 0 && !chat.isPending;
+  const showFollowUps = turns.length > 0 && !chat.isPending;
 
   return (
     <section
       className="flex h-full min-h-0 flex-col gap-4 border-t border-hairline pt-6 print:hidden xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8"
       aria-label="Ask about your permit packet"
     >
-      <header className="flex items-center gap-2 text-ink">
+      <header className="flex shrink-0 items-center gap-2 text-ink">
         <EngineIcon />
         <h2 className="font-sans text-sm font-semibold">Ask about your packet</h2>
       </header>
 
-      <p className="font-sans text-[13px] leading-5 text-secondary">
+      <p className="shrink-0 font-sans text-[13px] leading-5 text-secondary">
         Answers can update your details above — the checklist and findings
         recompute from whatever you confirm here.
       </p>
 
-      {turns.length === 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTED_QUESTIONS.map((question) => (
+      {showStarterChips ? (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {PERMIT_CHAT_SUGGESTED_QUESTIONS.map((question) => (
             <Chip
               key={question}
-              onClick={() => send(question)}
+              onClick={() => void send(question)}
               disabled={chat.isPending}
             >
               {question}
@@ -152,14 +165,13 @@ export function PermitChatSidebar({
       ) : null}
 
       <div
+        ref={scrollRef}
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
         aria-live="polite"
       >
         {turns.length === 0 && !chat.isPending ? (
           <p className="my-auto max-w-[34ch] self-center text-center font-serif text-[15px] leading-6 text-tertiary-ink italic">
-            Ask why a document is required, or tell us something that changes
-            your answers — replies come from the same rules that computed this
-            checklist.
+            {permitChatWelcomeCopy()}
           </p>
         ) : null}
         {turns.map((turn, index) => (
@@ -168,7 +180,7 @@ export function PermitChatSidebar({
             className={
               turn.role === "user"
                 ? "self-end rounded-[14px] bg-[#f2eee4] px-3.5 py-2 font-sans text-sm leading-5 text-ink"
-                : "border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-ink"
+                : "border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 whitespace-pre-wrap text-ink"
             }
           >
             {turn.text}
@@ -181,11 +193,31 @@ export function PermitChatSidebar({
         ) : null}
       </div>
 
+      {showFollowUps ? (
+        <ul className="flex shrink-0 flex-col gap-2">
+          {PERMIT_CHAT_FOLLOW_UP_QUESTIONS.map((question) => (
+            <li key={question}>
+              <button
+                type="button"
+                disabled={chat.isPending}
+                onClick={() => void send(question)}
+                className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-hairline px-3 py-2.5 text-left font-sans text-[13px] text-ink transition-colors hover:border-tertiary disabled:opacity-45"
+              >
+                <span>{question}</span>
+                <span aria-hidden="true" className="text-tertiary-ink">
+                  ›
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       <form
-        className="flex items-center gap-2 rounded-pill border border-hairline bg-white py-1.5 pr-1.5 pl-4"
+        className="flex shrink-0 items-center gap-2 rounded-pill border border-hairline bg-white py-1.5 pr-1.5 pl-4"
         onSubmit={(event) => {
           event.preventDefault();
-          send(draft);
+          void send(draft);
         }}
       >
         <input
@@ -206,7 +238,7 @@ export function PermitChatSidebar({
       </form>
 
       {chat.error ? (
-        <p className="font-sans text-sm text-ember" role="alert">
+        <p className="shrink-0 font-sans text-sm text-ember" role="alert">
           {chat.error.message}
         </p>
       ) : null}

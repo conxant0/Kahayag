@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Chip } from "../../shared/components/ui";
-import { ASK_AI_CHIPS } from "../design/designViewModel";
-import { useDesignAgent, useExplainDesign } from "../design/useDesignActions";
+import type { DesignBuild, QuoteAuditResponse } from "../../shared/api/types";
+import { useExplainDesign } from "../design/useDesignActions";
+import {
+  appendAskEngineTurn,
+  askEngineChangeRedirectCopy,
+  askEngineFollowUpQuestions,
+  askEngineTopChips,
+  askEngineWelcomeCopy,
+  formatQuestionForExplain,
+  isQuotationChangeRequest,
+  type AskEngineMode,
+  type ChatTurn,
+} from "./askEngineViewModel";
 
 function EngineIcon() {
   return (
@@ -52,100 +63,160 @@ function SendIcon() {
   );
 }
 
-const SUGGESTED_QUESTIONS = [
-  "What if VECO rates rise 5%?",
-  "Can I drop the battery later?",
-  "How does fit score work?",
-] as const;
-
-export function AskEngineSidebar() {
-  const [askReply, setAskReply] = useState<string | null>(null);
+export function AskEngineSidebar({
+  mode,
+  activeBuild,
+  activeQuote,
+}: {
+  mode: AskEngineMode;
+  activeBuild: DesignBuild | null;
+  activeQuote: QuoteAuditResponse | null;
+}) {
+  const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
-  const agent = useDesignAgent();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const explain = useExplainDesign();
-  const busy = agent.isPending || explain.isPending;
 
-  const askQuestion = async (question: string) => {
+  const welcome = useMemo(
+    () =>
+      askEngineWelcomeCopy({
+        mode,
+        build: activeBuild,
+        quote: activeQuote,
+      }),
+    [mode, activeBuild, activeQuote],
+  );
+  const topChips = useMemo(() => askEngineTopChips({ mode }), [mode]);
+  const followUps = useMemo(() => askEngineFollowUpQuestions({ mode }), [mode]);
+
+  useEffect(() => {
+    setTurns([]);
+    setDraft("");
+  }, [mode, activeBuild?.id, activeQuote?.filename]);
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node) {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [turns, explain.isPending, welcome]);
+
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || explain.isPending) {
+      return;
+    }
+
+    setDraft("");
+    setTurns((current) => appendAskEngineTurn(current, { role: "user", text: trimmed }));
+
+    if (isQuotationChangeRequest(trimmed)) {
+      setTurns((current) =>
+        appendAskEngineTurn(current, {
+          role: "assistant",
+          text: askEngineChangeRedirectCopy(),
+        }),
+      );
+      return;
+    }
+
     try {
+      const question = formatQuestionForExplain(trimmed, { mode, quote: activeQuote });
       const { explanation } = await explain.mutateAsync(question);
-      setAskReply(explanation);
+      setTurns((current) =>
+        appendAskEngineTurn(current, { role: "assistant", text: explanation }),
+      );
     } catch {
       // explain.error surfaces below.
     }
   };
 
-  const sendCustom = async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      return;
-    }
-    setAskReply(null);
-    setDraft("");
-    try {
-      const { reply } = await agent.mutateAsync({ user_text: trimmed });
-      setAskReply(reply);
-    } catch {
-      // agent.error surfaces below.
-    }
-  };
+  const showPrompts = turns.length === 0 && !explain.isPending;
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-[20px] border border-hairline bg-white p-5 print:hidden"
+      className="flex max-h-[min(42rem,calc(100svh-12rem))] min-h-[22rem] flex-col gap-4 rounded-[20px] border border-hairline bg-white p-5 print:hidden"
       aria-label="Ask the engine"
     >
-      <header className="flex items-center gap-2 text-ink">
+      <header className="shrink-0 flex items-center gap-2 text-ink">
         <EngineIcon />
         <h2 className="font-sans text-sm font-semibold">Ask the engine</h2>
       </header>
 
-      <p className="font-sans text-[13px] leading-5 text-secondary">
+      <p className="shrink-0 font-sans text-[13px] leading-5 text-secondary">
         Answers stay grounded on your frozen design snapshot and solver facts —
         never invented figures.
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        {ASK_AI_CHIPS.map((chip) => (
-          <Chip
-            key={chip}
-            onClick={() => askQuestion(chip)}
-            disabled={busy}
-            className="border-transparent bg-[#fff4cc] text-[12px] text-[#7a5c00] hover:border-transparent hover:text-[#7a5c00]"
-          >
-            {chip}
-          </Chip>
-        ))}
-      </div>
-
-      {askReply ? (
-        <p className="rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-ink">
-          {askReply}
-        </p>
+      {showPrompts ? (
+        <div className="shrink-0 flex flex-wrap gap-2">
+          {topChips.map((chip) => (
+            <Chip
+              key={chip}
+              onClick={() => void send(chip)}
+              disabled={explain.isPending}
+              className="border-transparent bg-[#fff4cc] text-[12px] text-[#7a5c00] hover:border-transparent hover:text-[#7a5c00]"
+            >
+              {chip}
+            </Chip>
+          ))}
+        </div>
       ) : null}
 
-      <ul className="flex flex-col gap-2">
-        {SUGGESTED_QUESTIONS.map((question) => (
-          <li key={question}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => askQuestion(question)}
-              className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-hairline px-3 py-2.5 text-left font-sans text-[13px] text-ink transition-colors hover:border-tertiary disabled:opacity-45"
-            >
-              <span>{question}</span>
-              <span aria-hidden="true" className="text-tertiary">
-                ›
-              </span>
-            </button>
-          </li>
+      <div
+        ref={scrollRef}
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5"
+        aria-live="polite"
+      >
+        <p className="rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-ink">
+          {welcome}
+        </p>
+
+        {turns.map((turn, index) => (
+          <p
+            key={`${turn.role}-${index}`}
+            className={
+              turn.role === "user"
+                ? "self-end rounded-[14px] bg-[#f2eee4] px-3.5 py-2 font-sans text-sm leading-5 text-ink"
+                : "border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-ink whitespace-pre-wrap"
+            }
+          >
+            {turn.text}
+          </p>
         ))}
-      </ul>
+
+        {explain.isPending ? (
+          <p className="border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-tertiary">
+            Thinking…
+          </p>
+        ) : null}
+      </div>
+
+      {showPrompts ? (
+        <ul className="shrink-0 flex flex-col gap-2">
+          {followUps.map((question) => (
+            <li key={question}>
+              <button
+                type="button"
+                disabled={explain.isPending}
+                onClick={() => void send(question)}
+                className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-hairline px-3 py-2.5 text-left font-sans text-[13px] text-ink transition-colors hover:border-tertiary disabled:opacity-45"
+              >
+                <span>{question}</span>
+                <span aria-hidden="true" className="text-tertiary">
+                  ›
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <form
-        className="flex items-center gap-2 rounded-pill border border-hairline bg-[#fcfaf5] py-1.5 pr-1.5 pl-4"
+        className="shrink-0 flex items-center gap-2 rounded-pill border border-hairline bg-[#fcfaf5] py-1.5 pr-1.5 pl-4"
         onSubmit={(event) => {
           event.preventDefault();
-          sendCustom(draft);
+          void send(draft);
         }}
       >
         <input
@@ -153,11 +224,11 @@ export function AskEngineSidebar() {
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Type a question…"
           className="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-tertiary"
-          disabled={busy}
+          disabled={explain.isPending}
         />
         <button
           type="submit"
-          disabled={busy || !draft.trim()}
+          disabled={explain.isPending || !draft.trim()}
           aria-label="Send question"
           className="flex size-10 items-center justify-center rounded-pill bg-ink text-paper disabled:opacity-45"
         >
@@ -165,9 +236,9 @@ export function AskEngineSidebar() {
         </button>
       </form>
 
-      {(agent.error ?? explain.error) ? (
-        <p className="font-sans text-sm text-ember" role="alert">
-          {(agent.error ?? explain.error)?.message}
+      {explain.error ? (
+        <p className="shrink-0 font-sans text-sm text-ember" role="alert">
+          {explain.error.message}
         </p>
       ) : null}
     </section>

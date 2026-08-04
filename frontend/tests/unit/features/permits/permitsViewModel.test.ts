@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PermitAssessment, PermitDocumentChecklistItem } from "../../../../src/features/permits/permitTypes";
-import { officeRunPosition, officeRunStops, unmetPrerequisites } from "../../../../src/features/permits/permitsViewModel";
+import { officeRunPosition, officeRunStops, unmetPrerequisites, canSubmitPacket } from "../../../../src/features/permits/permitsViewModel";
 
 function doc(overrides: Partial<PermitDocumentChecklistItem>): PermitDocumentChecklistItem {
   return {
@@ -101,5 +101,38 @@ describe("unmetPrerequisites", () => {
     const assessment = assessmentWith([solo]);
 
     expect(unmetPrerequisites(solo, assessment)).toEqual([]);
+  });
+});
+
+describe("canSubmitPacket", () => {
+  it("is false when packet_status is incomplete", () => {
+    const assessment = assessmentWith([
+      doc({ document_id: "a", status: "missing" }),
+    ]);
+    expect(canSubmitPacket(assessment)).toBe(false);
+  });
+
+  it("is false when packet_status is ready but a blocking finding remains", () => {
+    const assessment = {
+      ...assessmentWith([doc({ document_id: "a", status: "uploaded" })]),
+      packet_status: "ready" as const,
+      findings: [
+        {
+          document_id: "a",
+          category: "presence" as const,
+          severity: "blocking" as const,
+          message: "Still blocked.",
+        },
+      ],
+    };
+    expect(canSubmitPacket(assessment)).toBe(false);
+  });
+
+  it("is true when packet_status is ready and no blocking findings remain", () => {
+    const assessment = {
+      ...assessmentWith([doc({ document_id: "a", status: "uploaded" })]),
+      packet_status: "ready" as const,
+    };
+    expect(canSubmitPacket(assessment)).toBe(true);
   });
 });

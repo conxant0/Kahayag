@@ -91,6 +91,16 @@ export function PermitsPage() {
   // changed, so treat them as submitted too. Otherwise the next document
   // upload re-triggers the assess effect with the pre-chat snapshot and
   // silently reverts the correction (PR #32 review).
+  const handleChatAssessmentChange = (
+    assessment: PermitAssessment,
+    nextApplicant: ApplicantFormValues,
+  ) => {
+    setLastAssessment(assessment);
+    // A Q&A-only chat turn still produces a real assessment — wire it into
+    // the assess pipeline so later document uploads re-check the packet.
+    setSubmittedApplicant((current) => current ?? nextApplicant);
+  };
+
   const handleChatApplicantChange = (next: ApplicantFormValues) => {
     setApplicant(next);
     setSubmittedApplicant(next);
@@ -155,15 +165,11 @@ export function PermitsPage() {
                   onUpload={handleUpload}
                 />
                 <Rule />
-                <PacketStatusCard assessment={assessment} />
-                {assessment.packet_status === "ready" ? (
-                  <Button
-                    fullWidth
-                    onClick={() => setEgovAcknowledged(true)}
-                  >
-                    Submit to eGov
-                  </Button>
-                ) : null}
+                <PacketStatusCard
+                  assessment={assessment}
+                  onSubmit={() => setEgovAcknowledged(true)}
+                  submitAcknowledged={egovAcknowledged}
+                />
                 {egovAcknowledged ? (
                   <Button
                     variant="ghost"
@@ -190,7 +196,7 @@ export function PermitsPage() {
             <PermitChatSidebar
               applicant={applicant}
               onApplicantChange={handleChatApplicantChange}
-              onAssessmentChange={setLastAssessment}
+              onAssessmentChange={handleChatAssessmentChange}
               propertyAddress={propertyAddress}
               systemKwp={systemKwp}
               uploads={uploads}

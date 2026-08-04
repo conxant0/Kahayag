@@ -26,6 +26,30 @@ def _request_payload(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def test_chat_qa_turn_accepts_empty_applicant_name() -> None:
+    response = client.post(
+        "/api/v1/permits/chat",
+        data={
+            "request": json.dumps(
+                _request_payload(
+                    applicant={
+                        "solar_in_original_permit": "not_sure",
+                        "full_name": "",
+                        "is_registered_owner": True,
+                        "registered_owner_name": None,
+                    },
+                    user_text="What track am I on?",
+                )
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "retrofit" in body["reply"].lower()
+    assert body["applicant"]["full_name"] == ""
+
+
 def test_chat_qa_turn_cites_source_and_flags_unverified() -> None:
     response = client.post(
         "/api/v1/permits/chat",

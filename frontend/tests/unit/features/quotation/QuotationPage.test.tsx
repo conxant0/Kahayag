@@ -10,8 +10,7 @@ import type { QuotationDocument } from "../../../../src/shared/api/types";
 import { useDesignStore } from "../../../../src/state/designStore";
 
 vi.mock("../../../../src/features/design/useDesignActions", () => ({
-  useDesignAgent: () => ({ mutate: vi.fn(), isPending: false, error: null }),
-  useExplainDesign: () => ({ mutate: vi.fn(), isPending: false, error: null }),
+  useExplainDesign: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false, error: null }),
 }));
 
 vi.mock("../../../../src/shared/api/client", () => ({

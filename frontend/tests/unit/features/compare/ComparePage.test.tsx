@@ -65,7 +65,9 @@ describe("ComparePage", () => {
 
     expect(screen.getByText("After AI design · Compare builds")).toBeInTheDocument();
     expect(screen.getByLabelText("Side-by-side build comparison")).toBeInTheDocument();
-    expect(screen.getByText("Nothing to compare")).toBeInTheDocument();
+    expect(screen.getByText("Add to compare")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload quote to audit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start your own build" })).toBeInTheDocument();
     expect(screen.getByText("1 build")).toBeInTheDocument();
     expect(screen.getAllByText("AI suggested").length).toBeGreaterThan(0);
     expect(screen.queryByText("Custom build A")).not.toBeInTheDocument();

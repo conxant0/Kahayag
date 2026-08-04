@@ -60,7 +60,9 @@ export function ApplicantForm({
   onSubmit?: () => void;
   propertyAddress: string;
 }) {
-  const [editing, setEditing] = useState(false);
+  // Incomplete answers start expanded so the homeowner sees what to fill in;
+  // pre-filled fixture/preview data starts collapsed as the one-line summary.
+  const [editing, setEditing] = useState(() => !canSubmitApplicant(values));
   const track = resolveTrack(values.solarInOriginalPermit);
 
   if (!editing) {

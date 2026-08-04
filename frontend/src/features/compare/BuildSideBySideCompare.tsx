@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "../../shared/components/ui";
 import { cn } from "../../shared/lib/cn";
 import { CompareColumnPicker } from "./CompareColumnPicker";
+import { CompareEmptyColumnActions } from "./CompareEmptyColumnActions";
 import type { CompareColumn, CompareMatrixRow } from "./compareColumnsViewModel";
 import { COMPARE_MATRIX_GRID } from "./compareLayout";
 import { MiniSystemDiagram } from "./MiniSystemDiagram";
@@ -91,10 +92,10 @@ function EmptyColumnHeader({ divider = false }: { divider?: boolean }) {
       className="flex min-h-[7.5rem] flex-col items-center justify-center gap-2 px-3 py-4 text-center sm:px-4"
     >
       <h3 className="font-serif text-[20px] leading-tight font-medium text-tertiary sm:text-[22px]">
-        Nothing to compare
+        Add to compare
       </h3>
       <p className="max-w-[12rem] font-sans text-[12px] leading-5 text-tertiary">
-        Add another build on the design page to fill this column.
+        Upload a quote or create another build for this column.
       </p>
     </EmptyBuildCell>
   );
@@ -106,10 +107,8 @@ function EmptyDiagramCell({ divider = false }: { divider?: boolean }) {
       divider={divider}
       className="flex min-h-[14rem] items-center justify-center px-2 py-5 sm:px-3"
     >
-      <div className="flex size-full min-h-[10rem] items-center justify-center rounded-[16px] border-2 border-dashed border-hairline bg-white/70 px-4">
-        <p className="max-w-[10rem] text-center font-sans text-[12px] leading-5 text-tertiary">
-          A second build will appear here once you create one.
-        </p>
+      <div className="flex size-full min-h-[10rem] items-center justify-center rounded-[16px] border-2 border-dashed border-hairline bg-white/70 px-4 py-5">
+        <CompareEmptyColumnActions />
       </div>
     </EmptyBuildCell>
   );
