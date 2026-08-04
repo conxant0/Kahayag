@@ -28,6 +28,7 @@ const DEFAULT_APPLICANT: ApplicantFormValues = {
   fullName: "",
   isRegisteredOwner: "yes",
   registeredOwnerName: "",
+  delegatesFilingToRepresentative: false,
 };
 
 export function PermitsPage() {

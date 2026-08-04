@@ -262,6 +262,7 @@ export function toApiApplicant(values: ApplicantFormValues): ApplicantAnswers {
     is_registered_owner: values.isRegisteredOwner === "yes",
     registered_owner_name:
       values.isRegisteredOwner === "no" ? values.registeredOwnerName || null : null,
+    delegates_filing_to_representative: values.delegatesFilingToRepresentative,
   };
 }
 
@@ -271,6 +272,7 @@ export function fromApiApplicant(answers: ApplicantAnswers): ApplicantFormValues
     fullName: answers.full_name,
     isRegisteredOwner: answers.is_registered_owner ? "yes" : "no",
     registeredOwnerName: answers.registered_owner_name ?? "",
+    delegatesFilingToRepresentative: answers.delegates_filing_to_representative,
   };
 }
 

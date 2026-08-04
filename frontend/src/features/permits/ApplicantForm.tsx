@@ -30,6 +30,10 @@ export interface ApplicantFormValues {
   fullName: string;
   isRegisteredOwner: "yes" | "no";
   registeredOwnerName: string;
+  /** Set only via the chat's `set_delegation_answer` tool, not this form
+   * (CLOSED-ai-surface.md). Carried here so it round-trips through
+   * toApiApplicant/fromApiApplicant across a re-assess. */
+  delegatesFilingToRepresentative: boolean;
 }
 
 function canSubmitApplicant(values: ApplicantFormValues): boolean {

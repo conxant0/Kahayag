@@ -43,6 +43,7 @@ const DEFAULT_APPLICANT: ApplicantFormValues = {
   fullName: "Maria Cruz Santos-Reyes",
   isRegisteredOwner: "no",
   registeredOwnerName: "Juan Cruz Santos",
+  delegatesFilingToRepresentative: false,
 };
 
 function PreviewControl({

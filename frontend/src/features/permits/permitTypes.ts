@@ -20,6 +20,7 @@ export interface ApplicantAnswers {
   full_name: string;
   is_registered_owner: boolean;
   registered_owner_name: string | null;
+  delegates_filing_to_representative: boolean;
 }
 
 export interface PermitFinding {
@@ -73,11 +74,11 @@ export interface PermitAssessment {
 
 /**
  * POST /permits/chat request/response shapes (commit 7ecb4d7). This is the one
- * live call the preview makes — see usePermitChat.ts. The response's
- * `assessment` is real backend output (a different document catalog than this
- * preview's fixture) so it is not rendered directly; only `applicant` feeds
- * back into the form, which the fixture-driven derivation then recomputes
- * from (permitsViewModel.deriveAssessment).
+ * live call the preview makes — see usePermitChat.ts. `applicant` feeds back
+ * into the form, and `assessment` — the same domain output POST
+ * /permits/assess returns — is applied directly to the page's displayed
+ * assessment (PermitChatSidebar.tsx), so the checklist and findings recompute
+ * without a second round trip.
  */
 export interface PermitChatRequest {
   applicant: ApplicantAnswers;
