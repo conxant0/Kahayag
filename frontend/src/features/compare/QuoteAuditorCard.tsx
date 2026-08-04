@@ -141,7 +141,12 @@ export function QuoteAuditorCard() {
             type="file"
             accept=".pdf,.txt,.csv,.md,text/plain,application/pdf"
             className="sr-only"
-            onChange={(event) => handleFile(event.target.files?.[0])}
+            onChange={(event) => {
+              handleFile(event.target.files?.[0]);
+              // Reset so picking the same file again (after a failed audit)
+              // still fires a change event.
+              event.target.value = "";
+            }}
           />
 
           <div className="mt-auto w-full pt-8">

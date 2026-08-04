@@ -75,14 +75,18 @@ export function DesignSummaryBar({
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          <Button
-            variant="ghost"
-            disabled={saveDisabled}
-            onClick={onSave}
-            className="h-11 min-w-[9.5rem] border-hairline bg-white px-5 text-ink"
-          >
-            Save design
-          </Button>
+          {/* Without a handler the button would be an enabled no-op — render
+              it only once saving exists to wire up. */}
+          {onSave ? (
+            <Button
+              variant="ghost"
+              disabled={saveDisabled}
+              onClick={onSave}
+              className="h-11 min-w-[9.5rem] border-hairline bg-white px-5 text-ink"
+            >
+              Save design
+            </Button>
+          ) : null}
           <Button
             disabled={applyDisabled}
             onClick={onApply}
