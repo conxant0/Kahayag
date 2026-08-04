@@ -18,6 +18,8 @@ import {
 } from "../assessment/formatAssessmentResult";
 import { FlowLayout } from "../../shared/components/layout";
 import {
+  Accordion,
+  AccordionItem,
   Button,
   ButtonLink,
   HairlineList,
@@ -89,6 +91,49 @@ export function ResultsPage() {
     flux: cachedFlux?.flux,
   });
 
+  // The sizing card and hairline list are passed to FlowLayout's `children`
+  // slot (not `lead`) so they land after the map in DOM order. `lead` and
+  // `pane` render before `children` in FlowLayout's fixed slot order, which
+  // is also mobile's scroll order, so this alone gets the mobile stack right
+  // — savings figure/caption (lead), map (pane), then this pair and the
+  // accordion (children) — with no CSS reordering needed. On desktop,
+  // `children` lands directly under `lead` in the same rail column exactly
+  // where this pair used to sit, except FlowLayout gives that slot `lg:pt-8`
+  // of its own top padding (for the accordion, which has no sibling above it
+  // today). `lg:-mt-3.5` on the first item cancels that back down to the
+  // `lg:gap-4.5` rhythm the rest of the rail uses, so desktop is unchanged.
+  const sizingCard = (
+    <div className="flex flex-col gap-1.5 rounded-map border border-hairline p-3 lg:-mt-3.5 lg:gap-2 lg:p-4">
+      <InfoPill className="w-fit">
+        {SIZING_HEADLINES[result.recommendation.limiting_constraint] ??
+          "How this was sized"}
+      </InfoPill>
+      <p className="font-sans text-sm leading-relaxed text-secondary lg:text-[15px]">
+        {result.recommendation.rationale}
+      </p>
+    </div>
+  );
+  const hairlineList = (
+    <HairlineList className="pt-1.5">
+      <HairlineRow label="Panels" value={`${panelCount} panels`} />
+      <HairlineRow label="System size" value={formatSystemCapacity(result)} />
+      <HairlineRow
+        label="Yearly yield"
+        value={formatAnnualGeneration(result)}
+      />
+      {shadingImpact ? (
+        <HairlineRow label="Shading" value={shadingImpact} />
+      ) : null}
+      <HairlineRow label="Offset" value={formatOffset(result)} />
+      <HairlineRow label="Payback" value={formatPaybackYears(result)} />
+      <HairlineRow label="Estimated cost" value={formatCostRange(result)} />
+      <HairlineRow
+        label="Back per year"
+        value={`≈ ${formatPeso(result.financials.annual_savings_php)}`}
+      />
+    </HairlineList>
+  );
+
   return (
     <FlowLayout
       step="Your preliminary result"
@@ -122,39 +167,6 @@ export function ResultsPage() {
           <p className="font-sans text-sm font-medium text-tertiary-ink">
             saved every month
           </p>
-          <div className="flex flex-col gap-2 rounded-map border border-hairline p-4">
-            <InfoPill className="w-fit">
-              {SIZING_HEADLINES[result.recommendation.limiting_constraint] ??
-                "How this was sized"}
-            </InfoPill>
-            <p className="font-sans text-[15px] leading-relaxed text-secondary">
-              {result.recommendation.rationale}
-            </p>
-          </div>
-          <HairlineList className="pt-1.5">
-            <HairlineRow label="Panels" value={`${panelCount} panels`} />
-            <HairlineRow
-              label="System size"
-              value={formatSystemCapacity(result)}
-            />
-            <HairlineRow
-              label="Yearly yield"
-              value={formatAnnualGeneration(result)}
-            />
-            {shadingImpact ? (
-              <HairlineRow label="Shading" value={shadingImpact} />
-            ) : null}
-            <HairlineRow label="Offset" value={formatOffset(result)} />
-            <HairlineRow label="Payback" value={formatPaybackYears(result)} />
-            <HairlineRow
-              label="Estimated cost"
-              value={formatCostRange(result)}
-            />
-            <HairlineRow
-              label="Back per year"
-              value={`≈ ${formatPeso(result.financials.annual_savings_php)}`}
-            />
-          </HairlineList>
         </>
       }
       beforeCta={
@@ -163,108 +175,118 @@ export function ResultsPage() {
         </ButtonLink>
       }
     >
-      <section
-        className="flex w-full flex-col gap-4"
-        aria-label="Assessment result"
-      >
-        <HairlineList>
-          <HairlineRow
-            label="Budget compatibility"
-            value={formatBudgetCompatibility(result)}
-            valueClassName={
-              result.financials.budget_compatible ? "text-cobalt" : undefined
-            }
-          />
-          <HairlineRow
-            label="Monthly savings"
-            value={formatMonthlySavings(result)}
-          />
-          <HairlineRow
-            label="Limiting constraint"
-            value={formatLimitingConstraint(result)}
-          />
-          <HairlineRow
-            label="Budget"
-            value={formatPeso(result.inputs.budget_php)}
-          />
-        </HairlineList>
-      </section>
+      {sizingCard}
+      {hairlineList}
 
-      {result.shading ? (
-        <section
-          className="flex w-full flex-col gap-2.5"
-          aria-label="Sunshine visualization"
-        >
-          <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
-            Sunshine visualization
-          </h2>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (cachedFlux) {
-                setShowFlux((visible) => !visible);
-              } else {
-                setFluxError(null);
-                loadFlux();
-              }
-            }}
-          >
-            {cachedFlux
-              ? showFlux
-                ? "Hide sunshine overlay"
-                : "Show sunshine overlay"
-              : "Load sunshine overlay"}
-          </Button>
-          {fluxError ? (
-            <p className="font-sans text-sm text-secondary">{fluxError}</p>
+      {/*
+        Detail content, below the pane on mobile. Bounded and internally
+        scrollable from `lg:` up so an opened accordion panel can never push
+        the CTA action bar (a separate row in FlowLayout) below the fold —
+        the always-visible summary above stays outside this box.
+      */}
+      <div className="w-full lg:max-h-[38svh] lg:overflow-y-auto lg:pr-1">
+        <Accordion>
+          <AccordionItem title="Assessment result details" defaultOpen>
+            <HairlineList>
+              <HairlineRow
+                label="Budget compatibility"
+                value={formatBudgetCompatibility(result)}
+                valueClassName={
+                  result.financials.budget_compatible
+                    ? "text-cobalt"
+                    : undefined
+                }
+              />
+              <HairlineRow
+                label="Monthly savings"
+                value={formatMonthlySavings(result)}
+              />
+              <HairlineRow
+                label="Limiting constraint"
+                value={formatLimitingConstraint(result)}
+              />
+              <HairlineRow
+                label="Budget"
+                value={formatPeso(result.inputs.budget_php)}
+              />
+            </HairlineList>
+          </AccordionItem>
+
+          {result.shading ? (
+            <AccordionItem title="Sunshine visualization">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (cachedFlux) {
+                    setShowFlux((visible) => !visible);
+                  } else {
+                    setFluxError(null);
+                    loadFlux();
+                  }
+                }}
+              >
+                {cachedFlux
+                  ? showFlux
+                    ? "Hide sunshine overlay"
+                    : "Show sunshine overlay"
+                  : "Load sunshine overlay"}
+              </Button>
+              {fluxError ? (
+                <p className="font-sans text-sm text-secondary">
+                  {fluxError}
+                </p>
+              ) : null}
+            </AccordionItem>
           ) : null}
-        </section>
-      ) : null}
 
-      <section className="flex w-full flex-col gap-4" aria-label="Assumptions">
-        <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
-          Assumptions
-        </h2>
-        <HairlineList>
-          <HairlineRow
-            label="Peak sun hours/day"
-            value={Number(result.assumptions.peak_sun_hours_per_day).toFixed(1)}
-          />
-          <HairlineRow
-            label="Performance ratio"
-            value={`${Math.round(Number(result.assumptions.performance_ratio) * 100)}%`}
-          />
-          <HairlineRow
-            label="Solar resource"
-            value={formatSolarResourceSource(result)}
-          />
-          <HairlineRow
-            label="Panel dimensions"
-            value={`${result.assumptions.panel_width_m} × ${result.assumptions.panel_height_m} m`}
-          />
-        </HairlineList>
-        <p className="font-sans text-sm leading-relaxed text-secondary">
-          Cost includes {result.assumptions.cost_inclusions.join(", ")}.
-        </p>
-        <p className="font-sans text-sm leading-relaxed text-secondary">
-          Potential exclusions:{" "}
-          {result.assumptions.potential_exclusions.join(", ")}.
-        </p>
-      </section>
+          <AccordionItem title="Assumptions">
+            <HairlineList>
+              <HairlineRow
+                label="Peak sun hours/day"
+                value={Number(
+                  result.assumptions.peak_sun_hours_per_day,
+                ).toFixed(1)}
+              />
+              <HairlineRow
+                label="Performance ratio"
+                value={`${Math.round(Number(result.assumptions.performance_ratio) * 100)}%`}
+              />
+              <HairlineRow
+                label="Solar resource"
+                value={formatSolarResourceSource(result)}
+              />
+              <HairlineRow
+                label="Panel dimensions"
+                value={`${result.assumptions.panel_width_m} × ${result.assumptions.panel_height_m} m`}
+              />
+            </HairlineList>
+            <p className="font-sans text-sm leading-relaxed text-secondary">
+              Cost includes {result.assumptions.cost_inclusions.join(", ")}.
+            </p>
+            <p className="font-sans text-sm leading-relaxed text-secondary">
+              Potential exclusions:{" "}
+              {result.assumptions.potential_exclusions.join(", ")}.
+            </p>
+          </AccordionItem>
 
-      <section className="flex w-full flex-col gap-2.5" aria-label="Limitations">
-        <h2 className="font-sans text-sm font-semibold tracking-[1.2px] text-cobalt uppercase">
-          {result.is_provisional ? "Preliminary assessment" : "Limitations"}
-        </h2>
-        {result.limitations.map((limitation) => (
-          <p
-            key={limitation}
-            className="font-sans text-sm leading-relaxed text-secondary"
+          <AccordionItem
+            title={
+              result.is_provisional
+                ? "Preliminary assessment"
+                : "Limitations"
+            }
           >
-            {limitation}
-          </p>
-        ))}
-      </section>
+            {result.limitations.map((limitation) => (
+              <p
+                key={limitation}
+                className="font-sans text-sm leading-relaxed text-secondary"
+              >
+                {limitation}
+              </p>
+            ))}
+          </AccordionItem>
+        </Accordion>
+      </div>
     </FlowLayout>
   );
 }
