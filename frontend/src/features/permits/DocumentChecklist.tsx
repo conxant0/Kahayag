@@ -11,12 +11,13 @@
 // extraction result. Layout settled on the "focus" variant after
 // side-by-side comparison (user call).
 //
-// Guidance facts are transcribed from the submission research chrisb588
-// pasted into PR #32 — office names only, never a floor or room number
-// (sources conflict on those), and the office order is shown as a
-// suggestion, never enforced: slots stay uploadable in any order. The
-// section closes with the suggested office run, listing only stops that
-// still have outstanding documents.
+// Office, steps, and prerequisites come straight off the assessment
+// response (backend/app/domain/permits catalog, issue #37) — this component
+// holds no step copy of its own. The office run derives its order from
+// declared prerequisites (a document's stop never precedes an unmet
+// prerequisite's), and is shown as a suggestion, never enforced: slots stay
+// uploadable in any order. The section closes with the suggested office
+// run, listing only stops that still have outstanding documents.
 import { useRef, useState } from "react";
 
 import { Button, Eyebrow } from "../../shared/components/ui";
@@ -29,11 +30,13 @@ import {
   DOCUMENT_CATALOG,
   documentDisplayStatus,
   documentExtractionSummary,
+  documentRowAnchor,
   documentStatusLabel,
   findingSeverityLabel,
   findingsForDocument,
   officeRunPosition,
   officeRunStops,
+  unmetPrerequisites,
   type DocumentDisplayStatus,
 } from "./permitsViewModel";
 
@@ -77,10 +80,14 @@ const DETAIL_TERM_CLASS =
   "text-[10px] font-semibold tracking-[0.8px] text-tertiary-ink uppercase";
 
 /** Where this document falls on the office run, phrased for the row. */
-function whenToGetIt(documentId: string, totalStops: number): string {
-  const position = officeRunPosition(documentId);
+function whenToGetIt(
+  document: PermitDocumentChecklistItem,
+  assessment: PermitAssessment,
+  totalStops: number,
+): string {
+  const position = officeRunPosition(document.document_id, assessment);
   if (position === null) {
-    return "Any commissioned notary, at any point — no office order to follow.";
+    return "No fixed stop — get it whenever suits you.";
   }
   return `Stop ${position} of ${totalStops} on the suggested office run.`;
 }
@@ -104,6 +111,7 @@ function DocumentRow({
   const [expanded, setExpanded] = useState(false);
   const catalogEntry = DOCUMENT_CATALOG[document.document_id];
   const displayStatus = documentDisplayStatus(document, assessment.findings);
+  const unmetPrereqs = unmetPrerequisites(document, assessment);
   const inlineFindings = findingsForDocument(
     assessment.findings,
     document.document_id,
@@ -111,6 +119,7 @@ function DocumentRow({
 
   return (
     <li
+      id={documentRowAnchor(document.document_id)}
       className={`rounded-[12px] border p-4 ${
         displayStatus === "uploaded"
           ? "border-green-700/20 bg-[#f2faf4]"
@@ -193,30 +202,48 @@ function DocumentRow({
 
       {expanded ? (
         <dl className="mt-3 flex flex-col gap-2.5 border-l-2 border-hairline pl-4 font-sans text-[13px] leading-5">
-          {catalogEntry ? (
-            <div>
-              <dt className={DETAIL_TERM_CLASS}>Where</dt>
-              <dd className="mt-0.5 text-ink">{catalogEntry.issuing_agency}</dd>
-            </div>
-          ) : null}
+          <div>
+            <dt className={DETAIL_TERM_CLASS}>Where</dt>
+            <dd className="mt-0.5 text-ink">{document.issuing_agency}</dd>
+          </div>
           <div>
             <dt className={DETAIL_TERM_CLASS}>When</dt>
             <dd className="mt-0.5 text-ink">
-              {whenToGetIt(document.document_id, totalStops)}
+              {whenToGetIt(document, assessment, totalStops)}
             </dd>
           </div>
+          {unmetPrereqs.length > 0 ? (
+            <div>
+              <dt className={DETAIL_TERM_CLASS}>Before this</dt>
+              <dd className="mt-0.5 text-ember">
+                Get{" "}
+                {unmetPrereqs.map((prereq, index) => (
+                  <span key={prereq.documentId}>
+                    {index > 0 ? " and " : null}
+                    <a
+                      href={`#${documentRowAnchor(prereq.documentId)}`}
+                      className="underline underline-offset-2"
+                    >
+                      {prereq.title}
+                    </a>
+                  </span>
+                ))}{" "}
+                first.
+              </dd>
+            </div>
+          ) : null}
           {catalogEntry?.validity_note ? (
             <div>
               <dt className={DETAIL_TERM_CLASS}>Validity</dt>
               <dd className="mt-0.5 text-ink">{catalogEntry.validity_note}</dd>
             </div>
           ) : null}
-          {catalogEntry?.steps?.length ? (
+          {document.steps.length > 0 ? (
             <div>
               <dt className={DETAIL_TERM_CLASS}>Steps</dt>
               <dd className="mt-0.5">
                 <ol className="flex list-decimal flex-col gap-1 pl-4 text-ink">
-                  {catalogEntry.steps.map((step) => (
+                  {document.steps.map((step) => (
                     <li key={step}>{step}</li>
                   ))}
                 </ol>
@@ -264,13 +291,13 @@ function OfficeRunPlan({ assessment }: { assessment: PermitAssessment }) {
     }))
     .filter((stop) => stop.documents.length > 0);
 
-  const hasNotaryStop = assessment.documents.some(
+  const hasNoFixedStopDoc = assessment.documents.some(
     (doc) =>
-      officeRunPosition(doc.document_id) === null &&
+      officeRunPosition(doc.document_id, assessment) === null &&
       documentDisplayStatus(doc, assessment.findings) !== "uploaded",
   );
 
-  if (stops.length === 0 && !hasNotaryStop) {
+  if (stops.length === 0 && !hasNoFixedStopDoc) {
     return null;
   }
 
@@ -297,29 +324,53 @@ function OfficeRunPlan({ assessment }: { assessment: PermitAssessment }) {
                 {stop.office}
               </p>
               <p className="font-sans text-xs leading-5 text-secondary">
-                {stop.documents.map((doc, index) => (
-                  <span key={doc.documentId}>
-                    {index > 0 ? " · " : null}
-                    {doc.title}{" "}
-                    <span
-                      className={`text-[10px] font-semibold tracking-[0.8px] uppercase ${STATUS_CLASS[doc.status]}`}
-                    >
-                      {documentStatusLabel(doc.status)}
+                {stop.documents.map((doc, index) => {
+                  const fullDoc = assessment.documents.find(
+                    (candidate) => candidate.document_id === doc.documentId,
+                  );
+                  const unmet = fullDoc ? unmetPrerequisites(fullDoc, assessment) : [];
+                  return (
+                    <span key={doc.documentId}>
+                      {index > 0 ? " · " : null}
+                      {doc.title}{" "}
+                      <span
+                        className={`text-[10px] font-semibold tracking-[0.8px] uppercase ${STATUS_CLASS[doc.status]}`}
+                      >
+                        {documentStatusLabel(doc.status)}
+                      </span>
+                      {unmet.length > 0 ? (
+                        <span className="text-ember">
+                          {" "}
+                          — needs{" "}
+                          {unmet.map((prereq, i) => (
+                            <span key={prereq.documentId}>
+                              {i > 0 ? " and " : null}
+                              <a
+                                href={`#${documentRowAnchor(prereq.documentId)}`}
+                                className="underline underline-offset-2"
+                              >
+                                {prereq.title}
+                              </a>
+                            </span>
+                          ))}{" "}
+                          first
+                        </span>
+                      ) : null}
                     </span>
-                  </span>
-                ))}
+                  );
+                })}
               </p>
             </div>
           </li>
         ))}
-        {hasNotaryStop ? (
+        {hasNoFixedStopDoc ? (
           <li className="flex items-baseline gap-3 border-t border-hairline py-2.5 first:border-t-0">
             <span aria-hidden="true" className="shrink-0 font-sans text-[11px] font-semibold text-tertiary-ink">
               —
             </span>
             <p className="font-sans text-xs leading-5 text-secondary">
-              The notarized consent has no fixed stop — any commissioned notary,
-              at any point along the way.
+              Documents with no fixed office (notarized instruments, IDs you
+              already hold) can be handled at any point along the way.
             </p>
           </li>
         ) : null}
