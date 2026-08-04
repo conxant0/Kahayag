@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Navigate } from "react-router-dom";
 
 import { FlowLayout } from "../../shared/components/layout";
-import { Chip, Eyebrow, Rule, UploadCard } from "../../shared/components/ui";
+import { Chip, Eyebrow, Rule } from "../../shared/components/ui";
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { peso } from "../../shared/lib/currency";
 import { useAssessmentStore } from "../../state/assessmentStore";
@@ -150,11 +150,6 @@ export function AssessmentPage() {
         </div>
       }
     >
-      <UploadCard
-        title="Snap a photo of your bill"
-        hint="We’ll read it and fill everything in · optional"
-      />
-
       <RefineInputs
         budgetPhp={energyInputs.budgetPhp}
         electricityRatePhpPerKwh={energyInputs.electricityRatePhpPerKwh}

@@ -26,7 +26,4 @@ export { Reveal } from "./Reveal";
 export { Slider } from "./Slider";
 export { SunLoader } from "./SunLoader";
 
-export { UploadCard } from "./UploadCard";
-export type { UploadCardVariant } from "./UploadCard";
-
-export { CameraIcon, PinIcon } from "./icons";
+export { PinIcon } from "./icons";
