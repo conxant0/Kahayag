@@ -12,6 +12,11 @@ from app.integrations.ai.document_intake import (
     GroqDocumentIntakeClient,
 )
 from app.integrations.ai.groq import GroqAIProvider
+from app.integrations.ai.permit_chat_agent import (
+    DisabledPermitChatClient,
+    GroqPermitChatClient,
+    PermitChatClient,
+)
 from app.integrations.ai.provider import AIReportProvider
 from app.integrations.ai.quote_auditor import (
     DisabledQuoteAuditorClient,
@@ -52,3 +57,12 @@ def get_document_intake_client(settings: Settings) -> DocumentIntakeClient:
             model=settings.groq_model,
         )
     return DisabledDocumentIntakeClient()
+
+
+def get_permit_chat_client(settings: Settings) -> PermitChatClient:
+    if settings.ai_provider == "groq" and settings.groq_api_key:
+        return GroqPermitChatClient(
+            api_key=settings.groq_api_key,
+            model=settings.groq_model,
+        )
+    return DisabledPermitChatClient()
