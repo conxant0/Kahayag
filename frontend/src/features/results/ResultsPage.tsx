@@ -123,8 +123,8 @@ export function ResultsPage() {
       railClassName="lg:gap-4.5"
       backHref={ROUTE_PATHS.energy}
       backLabel="Back to your bill"
-      nextHref={ROUTE_PATHS.invest}
-      nextLabel="See your investment"
+      nextHref={ROUTE_PATHS.design}
+      nextLabel="Design your system"
       pane={
         <ResultsMapPane
           selectedProperty={selectedProperty}
@@ -147,9 +147,14 @@ export function ResultsPage() {
         </>
       }
       beforeCta={
-        <ButtonLink to={ROUTE_PATHS.editLayout} variant="secondary" fullWidth>
-          Edit layout
-        </ButtonLink>
+        <>
+          <ButtonLink to={ROUTE_PATHS.invest} variant="secondary" fullWidth>
+            See your investment
+          </ButtonLink>
+          <ButtonLink to={ROUTE_PATHS.editLayout} variant="secondary" fullWidth>
+            Edit layout
+          </ButtonLink>
+        </>
       }
     >
       {/*

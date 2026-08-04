@@ -254,3 +254,32 @@ export interface QuotationDocument {
   warranty_summary: string;
   is_draft: boolean;
 }
+
+export type QuoteAuditSeverity = "info" | "warning" | "positive";
+
+export interface QuoteAuditFinding {
+  category: string;
+  severity: QuoteAuditSeverity;
+  message: string;
+}
+
+export interface QuoteAuditResponse {
+  filename: string;
+  extracted_total_php: number | null;
+  extracted_system_kwp: number | null;
+  benchmark_total_php: number;
+  benchmark_system_kwp: number;
+  findings: QuoteAuditFinding[];
+  summary: string;
+}
+
+export interface MutateDesignPayload {
+  session: DesignSession;
+  goal?: SolverGoal;
+  budget_php?: number;
+  require_battery?: boolean;
+  min_battery_kwh?: number;
+  locked_panel_id?: string;
+  locked_inverter_id?: string;
+  panel_count_delta?: number;
+}

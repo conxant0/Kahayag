@@ -113,23 +113,28 @@ def _can_partition_strings(
     if panel_count < min_series:
         return False, f"need at least {min_series} panels for MPPT minimum voltage"
 
-    remaining = panel_count
-    strings_used = 0
-    while remaining > 0 and strings_used < mppt_count:
-        take = min(remaining, max_series)
-        if take < min_series and strings_used == 0 and remaining <= mppt_count * max_series:
-            take = remaining
-        if take < min_series:
-            return False, "cannot form valid string within MPPT voltage window"
-        if panel.imp_a > inverter.max_input_current_per_mppt_a:
-            return False, "panel Imp exceeds inverter max input current per MPPT"
-        remaining -= take
-        strings_used += 1
+    if panel.imp_a > inverter.max_input_current_per_mppt_a:
+        return False, "panel Imp exceeds inverter max input current per MPPT"
 
-    if remaining > 0:
-        return False, f"panel count exceeds {mppt_count} MPPT string capacity"
+    def can_split(remaining: int, strings_left: int) -> bool:
+        if remaining == 0:
+            return strings_left == 0
+        if strings_left <= 0:
+            return False
 
-    return True, "ok"
+        min_remaining = (strings_left - 1) * min_series
+        max_remaining = (strings_left - 1) * max_series
+        lo = max(min_series, remaining - max_remaining)
+        hi = min(max_series, remaining - min_remaining)
+        for take in range(lo, hi + 1):
+            if can_split(remaining - take, strings_left - 1):
+                return True
+        return False
+
+    if can_split(panel_count, mppt_count):
+        return True, "ok"
+
+    return False, "cannot form valid string within MPPT voltage window"
 
 
 def _evaluate_combo(
@@ -154,6 +159,9 @@ def _evaluate_combo(
         inverter_utilisation_pct = round(
             min(100.0, dc_w / inverter.max_dc_input_w * 100), 1
         )
+
+    ratio_min = 1.05 if constraints.require_battery else DC_AC_RATIO_MIN
+    ratio_max = DC_AC_RATIO_MAX
 
     if constraints.locked_panel_id and panel.id != constraints.locked_panel_id:
         return None, make_rejection(
@@ -190,14 +198,14 @@ def _evaluate_combo(
             usable_m2=constraints.usable_roof_area_m2,
         )
 
-    if dc_ac_ratio < DC_AC_RATIO_MIN or dc_ac_ratio > DC_AC_RATIO_MAX:
+    if dc_ac_ratio < ratio_min or dc_ac_ratio > ratio_max:
         return None, make_rejection(
             key,
             "dc_ac_oversizing",
-            f"DC:AC ratio {dc_ac_ratio} outside {DC_AC_RATIO_MIN}–{DC_AC_RATIO_MAX} window",
+            f"DC:AC ratio {dc_ac_ratio} outside {ratio_min}–{ratio_max} window",
             dc_ac_ratio=dc_ac_ratio,
-            min_ratio=DC_AC_RATIO_MIN,
-            max_ratio=DC_AC_RATIO_MAX,
+            min_ratio=ratio_min,
+            max_ratio=ratio_max,
         )
 
     if _is_microinverter(inverter):
@@ -329,8 +337,13 @@ def _panel_count_candidates(constraints: SolverConstraints) -> range:
         center = target + constraints.panel_count_delta
         return range(max(1, center - 2), min(base_max, center + 2) + 1)
     target_count = max(1, round(constraints.target_kwp * 1000 / 440))
-    low = max(1, target_count - 2)
+    if constraints.require_battery:
+        low = max(1, target_count - 8)
+    else:
+        low = max(1, target_count - 2)
     high = base_max
+    if low > high:
+        low = 1
     return range(low, high + 1)
 
 

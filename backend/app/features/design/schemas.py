@@ -109,7 +109,9 @@ class DesignSessionSchema(ContractModel):
     property_ref: str
     assessment_fingerprint: str
     active_build_id: str
-    builds: tuple[DesignBuildSchema, ...]
+    # A session with no builds has nothing to mutate, optimise, or benchmark —
+    # rejecting it at the schema (422) beats an IndexError (500) downstream.
+    builds: tuple[DesignBuildSchema, ...] = Field(min_length=1)
     last_solve: SolveResultSchema | None = None
     applied: StrictBool = False
     agent_audit: tuple[AgentAuditEntrySchema, ...] = ()
@@ -164,3 +166,46 @@ class MutateDesignRequest(ContractModel):
 class GenerateQuotationRequest(ContractModel):
     build_id: str = Field(min_length=1)
     session: DesignSessionSchema
+
+
+class AgentDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    user_text: str = Field(min_length=1)
+    dry_run: StrictBool = False
+
+
+class PlannedActionSchema(ContractModel):
+    name: str
+    arguments: dict[str, object] = Field(default_factory=dict)
+
+
+class AgentDesignResponse(ContractModel):
+    session: DesignSessionSchema
+    reply: str
+    requires_confirmation: StrictBool = False
+    planned_actions: tuple[PlannedActionSchema, ...] = ()
+
+
+class ExplainDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    question: str = Field(min_length=1)
+
+
+class ExplainDesignResponse(ContractModel):
+    explanation: str
+
+
+class QuoteAuditFindingSchema(ContractModel):
+    category: str
+    severity: Literal["info", "warning", "positive"]
+    message: str
+
+
+class QuoteAuditResponseSchema(ContractModel):
+    filename: str
+    extracted_total_php: StrictFloat | None = None
+    extracted_system_kwp: StrictFloat | None = None
+    benchmark_total_php: StrictFloat = Field(ge=0)
+    benchmark_system_kwp: StrictFloat = Field(gt=0)
+    findings: tuple[QuoteAuditFindingSchema, ...] = ()
+    summary: str

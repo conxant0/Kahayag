@@ -1,0 +1,15 @@
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  #main,
+  .quotation-document {
+    max-width: none;
+    padding: 0;
+  }
+}
