@@ -80,10 +80,15 @@ export async function apiPostBlob(
   return { blob: await response.blob(), filename };
 }
 
-export async function apiUploadForm<T>(path: string, formData: FormData): Promise<T> {
+export async function apiUploadForm<T>(
+  path: string,
+  formData: FormData,
+  options: { signal?: AbortSignal } = {},
+): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     body: formData,
+    signal: options.signal,
   });
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as {

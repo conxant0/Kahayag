@@ -4,6 +4,7 @@
 // with every document uploaded so far — the backend has no session store, so
 // each call resends the full upload set (same pattern as the chat endpoint).
 import { useMutation } from "@tanstack/react-query";
+import { useRef } from "react";
 
 import { apiUploadForm } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
@@ -20,23 +21,44 @@ export interface AssessPermitInput {
 }
 
 export function useAssessPermit() {
-  return useMutation({
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const mutation = useMutation({
     mutationFn: async (input: AssessPermitInput): Promise<PermitAssessment> => {
-      const formData = new FormData();
-      formData.append(
-        "request",
-        JSON.stringify({
-          applicant: toApiApplicant(input.applicant),
-          system_kwp: input.systemKwp,
-          build_id: input.buildId,
-          property_address: input.propertyAddress,
-        }),
-      );
-      for (const [documentId, file] of input.uploads) {
-        formData.append("slot_ids", documentId);
-        formData.append("files", file);
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const formData = new FormData();
+        formData.append(
+          "request",
+          JSON.stringify({
+            applicant: toApiApplicant(input.applicant),
+            system_kwp: input.systemKwp,
+            build_id: input.buildId,
+            property_address: input.propertyAddress,
+          }),
+        );
+        for (const [documentId, file] of input.uploads) {
+          formData.append("slot_ids", documentId);
+          formData.append("files", file);
+        }
+        return await apiUploadForm<PermitAssessment>(
+          ENDPOINTS.permitsAssess,
+          formData,
+          { signal: controller.signal },
+        );
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
-      return apiUploadForm<PermitAssessment>(ENDPOINTS.permitsAssess, formData);
     },
   });
+
+  return {
+    ...mutation,
+    error: mutation.error?.name === "AbortError" ? null : mutation.error,
+  };
 }
