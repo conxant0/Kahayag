@@ -164,3 +164,22 @@ class MutateDesignRequest(ContractModel):
 class GenerateQuotationRequest(ContractModel):
     build_id: str = Field(min_length=1)
     session: DesignSessionSchema
+
+
+class AgentDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    user_text: str = Field(min_length=1)
+
+
+class AgentDesignResponse(ContractModel):
+    session: DesignSessionSchema
+    reply: str
+
+
+class ExplainDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    question: str = Field(min_length=1)
+
+
+class ExplainDesignResponse(ContractModel):
+    explanation: str
