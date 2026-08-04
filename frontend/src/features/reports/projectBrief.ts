@@ -225,7 +225,8 @@ function computeSizingForPanelClass(
 
   if (recommendation.panel_category_id === panelCategoryId) {
     const annualGenerationKwh = Number(recommendation.annual_generation_kwh);
-    const annualConsumptionKwh = Number(inputs.monthly_consumption_kwh) * 12;
+    const annualConsumptionKwh =
+      Number(result.estimated_monthly_consumption_kwh) * 12;
     const billableGenerationKwh = Math.min(
       annualGenerationKwh,
       annualConsumptionKwh,
@@ -249,7 +250,7 @@ function computeSizingForPanelClass(
 
   const usableAreaM2 = Number(result.roof.usable_area_m2);
   const annualYieldPerKwpKwh = resolveAnnualYieldPerKwpKwh(assumptions);
-  const monthlyConsumptionKwh = Number(inputs.monthly_consumption_kwh);
+  const monthlyConsumptionKwh = Number(result.estimated_monthly_consumption_kwh);
   const annualConsumptionKwh = monthlyConsumptionKwh * 12;
   const consumptionLimitedSystemSizeKwp =
     annualConsumptionKwh / annualYieldPerKwpKwh;

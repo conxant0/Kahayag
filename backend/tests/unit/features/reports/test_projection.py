@@ -23,7 +23,7 @@ def test_projection_holds_savings_flat_while_self_consumption_cap_binds(
     # Generation (4730 kWh) exceeds annual consumption (3600 kWh), so the
     # self-consumption cap binds from year 1 onward even as generation
     # degrades. Savings must track the cap, not decay independently of it.
-    completed_assessment_data["inputs"]["monthly_consumption_kwh"] = "300.00"
+    completed_assessment_data["estimated_monthly_consumption_kwh"] = "300.00"
     completed_assessment_data["financials"]["annual_savings_php"] = 21600
     completed_assessment_data["financials"]["monthly_savings_php"] = 1800
     assessment = CompletedAssessment.model_validate(completed_assessment_data)

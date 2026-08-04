@@ -422,7 +422,7 @@ def render_report_pdf(
                     [
                         ["Input", "Value", "Source"],
                         ["Monthly electricity bill", _money(report.inputs.monthly_bill_php), "User-provided"],
-                        ["Monthly consumption", f"{report.inputs.monthly_consumption_kwh} kWh", "Calculated or supplied"],
+                        ["Monthly consumption", f"{report.estimated_monthly_consumption_kwh} kWh", "Calculated or supplied"],
                         ["Electricity tariff", f"PHP {report.inputs.electricity_rate_php_per_kwh}/kWh", "Assessment input"],
                         ["Budget", _money(report.inputs.budget_php or 0), "User-provided"],
                         ["Usable roof area", f"{report.roof.usable_area_m2} m2", "Roof trace"],
@@ -467,7 +467,7 @@ def render_report_pdf(
                 _table(
                     [
                         ["Measure", "Estimate"],
-                        ["Annual consumption", f"{Decimal(report.inputs.monthly_consumption_kwh) * 12} kWh"],
+                        ["Annual consumption", f"{Decimal(report.estimated_monthly_consumption_kwh) * 12} kWh"],
                         ["Annual solar production", f"{report.recommendation.annual_generation_kwh} kWh"],
                         ["Consumption offset", f"{report.recommendation.annual_consumption_offset_ratio * 100}%"],
                         ["Annual savings", _money(report.financials.annual_savings_php)],
