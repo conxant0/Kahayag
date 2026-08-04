@@ -145,7 +145,7 @@ def assess_permit_documents(
                     document_id=doc.id,
                     category="presence",
                     severity="blocking",
-                    message=f"{doc.title} has not been uploaded yet.",
+                    message=f"This slot requires {doc.title}. No file has been uploaded. Upload {doc.title} to continue.",
                 )
             )
             checklist.append(
@@ -172,8 +172,8 @@ def assess_permit_documents(
                     category="unreadable",
                     severity="blocking",
                     message=(
-                        f"{doc.title} could not be read (likely a scan or photo). "
-                        "Needs manual review."
+                        f"We could not read any text from the uploaded {doc.title}. "
+                        "Re-upload a clearer scan or photo so we can check the name and address."
                     ),
                 )
             )
@@ -213,9 +213,8 @@ def assess_permit_documents(
                     category="wrong_slot",
                     severity="warning",
                     message=(
-                        f"The file uploaded for {doc.title} does not mention any of "
-                        f"the expected terms ({', '.join(keywords)}). Check it is the "
-                        "right document."
+                        f"This slot expects {doc.title}. The uploaded file does not "
+                        f"look like {doc.title}. Upload the correct {doc.title}."
                     ),
                 )
             )
@@ -232,8 +231,10 @@ def assess_permit_documents(
                         category="address_mismatch",
                         severity="warning",
                         message=(
-                            f"{doc.title} lists the address '{extracted_address}', which "
-                            f"does not match the property address '{property_address}'."
+                            f"The property address on {doc.title} is '{extracted_address}', "
+                            f"which does not match '{property_address}'. Upload a document "
+                            f"that lists the same property address, or correct the property "
+                            f"address if your records are wrong."
                         ),
                     )
                 )
@@ -250,8 +251,10 @@ def assess_permit_documents(
                             category="name_mismatch",
                             severity="warning",
                             message=(
-                                f"{doc.title} lists the owner as '{extracted_name}', which "
-                                f"does not match the applicant name '{expected_owner_name}'."
+                                f"{doc.title} lists the owner as '{extracted_name}', but "
+                                f"this packet is for '{expected_owner_name}'. Upload a "
+                                f"document that names the same person, or correct the name "
+                                f"you entered if it is wrong."
                             ),
                         )
                     )
@@ -267,25 +270,29 @@ def assess_permit_documents(
                         category="expiry",
                         severity="warning",
                         message=(
-                            f"{doc.title} was issued {issue_date.isoformat()} "
-                            f"({doc.expiry_note}). It may no longer be valid for "
-                            "this year's application."
+                            f"{doc.title} must be issued for the current year. It was "
+                            f"issued {issue_date.isoformat()} ({doc.expiry_note}). "
+                            f"Get a current-year copy before submitting."
                         ),
                     )
                 )
 
     # 5b. Name mismatch across documents
+    title_by_id = {doc.id: doc.title for doc in docs}
     for i, (doc_id_a, name_a) in enumerate(extracted_owner_names):
         for doc_id_b, name_b in extracted_owner_names[i + 1 :]:
             if not _names_match(name_a, name_b):
+                title_a = title_by_id.get(doc_id_a, doc_id_a)
+                title_b = title_by_id.get(doc_id_b, doc_id_b)
                 findings.append(
                     PermitFindingSchema(
                         document_id=None,
                         category="name_mismatch",
                         severity="warning",
                         message=(
-                            f"Owner name differs between documents: '{name_a}' "
-                            f"(from {doc_id_a}) versus '{name_b}' (from {doc_id_b})."
+                            f"The registered owner name differs between {title_a} and "
+                            f"{title_b}: '{name_a}' versus '{name_b}'. Upload documents "
+                            f"that show the same owner."
                         ),
                     )
                 )

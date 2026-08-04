@@ -269,7 +269,24 @@ function DocumentRow({
           <div>
             <dt className={DETAIL_TERM_CLASS}>What we found</dt>
             <dd className="mt-0.5 text-ink">
-              {documentExtractionSummary(document, assessment.findings)}
+              {(() => {
+                const explanations = findingsForDocument(
+                  assessment.findings,
+                  document.document_id,
+                ).filter((finding) => finding.severity !== "info");
+                if (explanations.length === 0) {
+                  return documentExtractionSummary(document, assessment.findings);
+                }
+                return (
+                  <ul className="flex list-disc flex-col gap-1 pl-4">
+                    {explanations.map((finding) => (
+                      <li key={`${finding.category}-${finding.message}`}>
+                        {finding.message}
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
             </dd>
           </div>
         </dl>

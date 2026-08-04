@@ -133,7 +133,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       document_id: "tax_declaration",
       category: "presence",
       severity: "blocking",
-      message: "Tax declaration has not been uploaded yet.",
+      message: "This slot requires Tax Declaration. No file has been uploaded. Upload Tax Declaration to continue.",
     },
     {
       document_id: "tax_clearance",
@@ -154,7 +154,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       category: "presence",
       severity: "blocking",
       message:
-        "You told us you are not the registered owner, so a notarized authorization from the registered owner is required and has not been uploaded yet.",
+        "This slot requires a notarized authorization from the registered owner. No file has been uploaded. Upload a notarized authorization from the registered owner to continue.",
     },
     {
       document_id: "cedula",

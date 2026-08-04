@@ -33,6 +33,7 @@ def test_presence_finding_for_missing_document() -> None:
     presence_findings = [f for f in result.findings if f.category == "presence"]
     assert presence_findings
     assert all(f.severity == "blocking" for f in presence_findings)
+    assert all("Upload" in f.message for f in presence_findings)
     assert all(doc.status == "missing" for doc in result.documents)
     assert result.packet_status == "incomplete"
 
@@ -57,6 +58,7 @@ def test_wrong_document_in_slot_flags_missing_keyword() -> None:
     ]
     assert len(wrong_slot) == 1
     assert wrong_slot[0].severity == "warning"
+    assert "Upload the correct" in wrong_slot[0].message
 
 
 def test_unreadable_upload_never_silently_passes() -> None:
@@ -75,6 +77,7 @@ def test_unreadable_upload_never_silently_passes() -> None:
     unreadable = [f for f in result.findings if f.category == "unreadable"]
     assert any(f.document_id == "obo_14_tct" for f in unreadable)
     assert all(f.severity == "blocking" for f in unreadable)
+    assert all("Re-upload" in f.message for f in unreadable)
     doc = next(d for d in result.documents if d.document_id == "obo_14_tct")
     assert doc.status == "needs_review"
 
@@ -99,6 +102,7 @@ def test_address_mismatch_reports_raw_strings() -> None:
     assert len(mismatches) == 1
     assert ADDRESS in mismatches[0].message
     assert "456 Different Street, Mandaue City" in mismatches[0].message
+    assert "Upload a document" in mismatches[0].message
 
 
 def test_name_mismatch_reports_raw_strings_not_normalised() -> None:
@@ -121,6 +125,7 @@ def test_name_mismatch_reports_raw_strings_not_normalised() -> None:
     assert len(mismatches) == 1
     assert "Juan Dela Cruz" in mismatches[0].message
     assert "Maria Santos" in mismatches[0].message
+    assert "Upload a document" in mismatches[0].message
 
 
 def test_name_normalisation_accepts_middle_initial_and_punctuation() -> None:
@@ -163,6 +168,7 @@ def test_expiry_finding_for_annual_document_with_stale_issue_date() -> None:
     expiry = [f for f in result.findings if f.category == "expiry"]
     assert len(expiry) == 1
     assert expiry[0].document_id == "obo_16_tax_clearance_lot"
+    assert "current-year" in expiry[0].message
 
 
 def test_expiry_skipped_where_catalog_leaves_validity_unspecified() -> None:
@@ -213,6 +219,9 @@ def test_cross_document_name_mismatch() -> None:
     )
     cross_doc = [f for f in result.findings if f.category == "name_mismatch" and f.document_id is None]
     assert cross_doc
+    assert "Certified True Copy of Lot Title (TCT)" in cross_doc[0].message
+    assert "Certified True Copy of Lot Tax Declaration" in cross_doc[0].message
+    assert "Upload documents" in cross_doc[0].message
 
 
 def test_fully_uploaded_and_matching_documents_pass_without_blocking_findings() -> None:

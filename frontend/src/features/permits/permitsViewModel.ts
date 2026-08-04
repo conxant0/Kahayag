@@ -354,7 +354,7 @@ export function deriveAssessment(
           document_id: OWNER_MISMATCH_DOCUMENT_ID,
           category: "presence",
           severity: "blocking",
-          message: `You told us you are not the registered owner, so a notarized authorization from ${ownerName} is required and has not been uploaded yet.`,
+          message: `This slot requires a notarized authorization from ${ownerName}. No file has been uploaded. Upload a notarized authorization from ${ownerName} to continue.`,
         },
       ];
     }
@@ -491,17 +491,17 @@ export function documentExtractionSummary(
   document: PermitDocumentChecklistItem,
   findings: readonly PermitFinding[],
 ): string {
-  if (document.status === "missing") {
-    return "Nothing extracted yet — this slot is still empty.";
-  }
   const openFindings = findingsForDocument(findings, document.document_id).filter(
     (finding) => finding.severity !== "info",
   );
   if (openFindings.length > 0) {
     return openFindings.map((finding) => finding.message).join(" ");
   }
+  if (document.status === "missing") {
+    return "Nothing extracted yet — this slot is still empty.";
+  }
   if (document.status === "needs_review") {
-    return "Uploaded, but this document is flagged for manual review.";
+    return `Uploaded, but ${document.title} could not be read. Re-upload a clearer scan or photo.`;
   }
   return "Extracted cleanly — name and address matched what you entered, nothing flagged.";
 }
