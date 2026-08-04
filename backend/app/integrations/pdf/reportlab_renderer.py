@@ -19,6 +19,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from app.features.design.schemas import QuotationDocumentSchema
 from app.features.reports.schemas import (
     GeoPoint,
     ProjectionRow,
@@ -29,17 +30,22 @@ from app.features.reports.schemas import (
 from app.integrations.maps.static_map import (
     MAP_HEIGHT,
     MAP_WIDTH,
-    MAP_ZOOM,
+    StaticMapImage,
     map_center,
     mercator_pixel,
 )
 
-_INK = colors.HexColor("#262A33")
-_COBALT = colors.HexColor("#315ACB")
-_SUN = colors.HexColor("#F5C84C")
-_HAIRLINE = colors.HexColor("#D9D8D2")
-_SKY = colors.HexColor("#EEF3FF")
-_PAPER = colors.HexColor("#FAFBFD")
+# The Kahayag palette, straight from the frontend's design tokens
+# (frontend/src/shared/styles/index.css) so the PDF reads as the same
+# product: ink for voice, cobalt for engine output, sun for money and
+# action, paper and hairline for ground and separation.
+_INK = colors.HexColor("#1A1917")
+_COBALT = colors.HexColor("#2144C7")
+_SUN = colors.HexColor("#FFC400")
+_HAIRLINE = colors.HexColor("#E8E4DA")
+_SKY = colors.HexColor("#F2F4FC")  # cobalt wash over white
+_PAPER = colors.HexColor("#FCFAF5")
+_SECONDARY = colors.HexColor("#5C574D")
 
 
 def _money(value: int) -> str:
@@ -100,7 +106,7 @@ def _styles() -> dict[str, ParagraphStyle]:
             fontName="Helvetica",
             fontSize=7.5,
             leading=10,
-            textColor=colors.HexColor("#5D616D"),
+            textColor=_SECONDARY,
         ),
         "notice": ParagraphStyle(
             "KahayagNotice",
@@ -214,7 +220,7 @@ def _notice(text: str, styles: dict[str, ParagraphStyle]) -> Table:
     notice.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF1B8")),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF4CC")),
                 ("BOX", (0, 0), (-1, -1), 0.5, _SUN),
                 ("LEFTPADDING", (0, 0), (-1, -1), 6),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 6),
@@ -248,7 +254,7 @@ class _RoofLayout(Flowable):
     def __init__(
         self,
         request: ReportPDFRequest,
-        satellite_image: bytes | None,
+        satellite: StaticMapImage | None,
         *,
         width: float = 165 * mm,
         height: float = 102 * mm,
@@ -257,21 +263,36 @@ class _RoofLayout(Flowable):
         self.width = width
         self.height = height
         self.request = request
-        self.satellite_image = satellite_image
+        self.satellite = satellite
 
     def wrap(self, _available_width, _available_height):
         return self.width, self.height
 
+    def _cover_transform(self) -> tuple[float, float, float]:
+        """Uniform scale and centring offsets that make the photo cover the
+        frame. Stretching each axis independently squashed the imagery when
+        the frame's aspect differed from the 4:3 source."""
+        scale = max(self.width / MAP_WIDTH, self.height / MAP_HEIGHT)
+        offset_x = (self.width - MAP_WIDTH * scale) / 2
+        offset_y = (self.height - MAP_HEIGHT * scale) / 2
+        return scale, offset_x, offset_y
+
     def _point(self, point: GeoPoint) -> tuple[float, float]:
-        if self.satellite_image:
+        if self.satellite:
+            # Projected at the zoom the image was actually served at — the
+            # provider may have stepped down where imagery runs out.
             pixel_x, pixel_y = mercator_pixel(
                 point,
                 center=map_center(self.request.roof_polygon),
-                zoom=MAP_ZOOM,
+                zoom=self.satellite.zoom,
                 width=MAP_WIDTH,
                 height=MAP_HEIGHT,
             )
-            return pixel_x / MAP_WIDTH * self.width, self.height - pixel_y / MAP_HEIGHT * self.height
+            scale, offset_x, offset_y = self._cover_transform()
+            return (
+                offset_x + pixel_x * scale,
+                offset_y + (MAP_HEIGHT - pixel_y) * scale,
+            )
         longitudes = [float(item.longitude) for item in self.request.roof_polygon]
         latitudes = [float(item.latitude) for item in self.request.roof_polygon]
         min_longitude, max_longitude = min(longitudes), max(longitudes)
@@ -291,40 +312,135 @@ class _RoofLayout(Flowable):
         self.canv.drawPath(path, stroke=1, fill=1 if fill else 0)
 
     def draw(self) -> None:
-        if self.satellite_image:
+        if self.satellite:
+            scale, offset_x, offset_y = self._cover_transform()
+            self.canv.saveState()
+            clip = self.canv.beginPath()
+            clip.rect(0, 0, self.width, self.height)
+            self.canv.clipPath(clip, stroke=0, fill=0)
             self.canv.drawImage(
-                ImageReader(BytesIO(self.satellite_image)),
-                0,
-                0,
-                width=self.width,
-                height=self.height,
+                ImageReader(BytesIO(self.satellite.image)),
+                offset_x,
+                offset_y,
+                width=MAP_WIDTH * scale,
+                height=MAP_HEIGHT * scale,
             )
+            self.canv.restoreState()
         else:
             self.canv.setFillColor(colors.HexColor("#E5E3DF"))
             self.canv.rect(0, 0, self.width, self.height, stroke=0, fill=1)
 
-        self.canv.setStrokeColor(colors.HexColor("#F58C00"))
-        self.canv.setFillColor(colors.Color(1, 0.55, 0, alpha=0.22))
+        # The same colours the app's results map draws with (cobalt trace,
+        # gold panels), so the PDF's figure is recognisably the same layout.
+        self.canv.setStrokeColor(_COBALT)
+        self.canv.setFillColor(colors.Color(33 / 255, 68 / 255, 199 / 255, alpha=0.18))
         self.canv.setLineWidth(2)
         self._polygon(self.request.roof_polygon, fill=True)
-        self.canv.setStrokeColor(_INK)
-        self.canv.setFillColor(colors.Color(0.15, 0.16, 0.2, alpha=0.84))
+        self.canv.setStrokeColor(colors.HexColor("#1C1C1C"))
+        self.canv.setFillColor(colors.Color(199 / 255, 144 / 255, 12 / 255, alpha=0.88))
         self.canv.setLineWidth(0.8)
         for panel in self.request.panel_polygons:
             self._polygon(panel.corners, fill=True)
-        if not self.satellite_image:
+        if not self.satellite:
             self.canv.setFillColor(colors.white)
             self.canv.rect(6, self.height - 20, 205, 14, stroke=0, fill=1)
             self.canv.setFillColor(_INK)
             self.canv.setFont("Helvetica", 8)
             self.canv.drawString(10, self.height - 16, "Satellite imagery unavailable - schematic layout shown")
-        self.canv.setFillColor(colors.white if self.satellite_image else _INK)
+        self.canv.setFillColor(colors.white if self.satellite else _INK)
         self.canv.setFont("Helvetica-Bold", 8)
         self.canv.drawString(8, 8, "N")
         self.canv.line(11, 15, 11, 28)
-        if self.satellite_image:
+        if self.satellite:
             self.canv.setFont("Helvetica", 6)
-            self.canv.drawRightString(self.width - 6, 6, "Imagery: Esri World Imagery")
+            self.canv.drawRightString(self.width - 6, 6, self.satellite.attribution)
+
+
+# The same slot order and headers the design canvas draws, so the printed
+# diagram is recognisably the system the homeowner assembled on screen.
+_DIAGRAM_SLOTS = ("panel", "inverter", "protection", "battery")
+_DIAGRAM_HEADERS = {
+    "panel": "PV equipment",
+    "inverter": "Power hub",
+    "protection": "Protection layer",
+    "battery": "Energy store",
+}
+
+
+def _system_diagram_table(build) -> Table:
+    by_slot = {component.slot: component for component in build.components}
+    models: list[str] = []
+    quantities: list[str] = []
+    for slot in _DIAGRAM_SLOTS:
+        component = by_slot.get(slot)
+        if component is None:
+            models.append("Not included" if slot == "battery" else "Pending")
+            quantities.append("-")
+        else:
+            models.append(f"{component.brand} {component.model}")
+            quantities.append(f"{component.qty:g} {component.unit}")
+    return _table(
+        [
+            [_DIAGRAM_HEADERS[slot] for slot in _DIAGRAM_SLOTS],
+            models,
+            quantities,
+        ]
+    )
+
+
+def _design_quotation_content(
+    request: ReportPDFRequest,
+    quotation: QuotationDocumentSchema,
+    styles: dict[str, ParagraphStyle],
+) -> list:
+    build = request.design_build
+    assert build is not None
+    battery = f"{build.battery_kwh} kWh" if build.battery_kwh else "None"
+    return [
+        Paragraph(_escape(build.insight), styles["body"]),
+        _metric_strip(
+            [
+                ("Chosen build", build.label),
+                ("System", f"{build.panel_count} panels / {build.system_kwp} kWp"),
+                ("Inverter", f"{build.inverter_kw} kW"),
+                ("Battery", battery),
+                ("Total investment", _money(build.total_investment_php)),
+            ]
+        ),
+        Spacer(1, 3 * mm),
+        Paragraph("SYSTEM DIAGRAM", styles["subheading"]),
+        _system_diagram_table(build),
+        Spacer(1, 3 * mm),
+        Paragraph(
+            f"Quotation {quotation.quote_number} | Issued {quotation.quote_date} | Valid {quotation.validity_days} days"
+            + (" | DRAFT" if quotation.is_draft else ""),
+            styles["subheading"],
+        ),
+        _table(
+            [["Item", "Details", "Brand", "Qty", "Amount"]]
+            + [
+                [
+                    line.item,
+                    line.description,
+                    line.brand,
+                    f"{line.qty:g} {line.uom}",
+                    _money(line.amount_php),
+                ]
+                for line in quotation.lines
+            ]
+        ),
+        _table(
+            [
+                ["Subtotal", _money(quotation.subtotal_php)],
+                ["VAT (12%)", _money(quotation.vat_php)],
+                ["Total amount", _money(quotation.total_php)],
+            ],
+            header=False,
+        ),
+        Paragraph(f"Payment terms: {_escape(quotation.payment_terms)}.", styles["body"]),
+        Paragraph(f"Warranties: {_escape(quotation.warranty_summary)}", styles["body"]),
+        _notice("Draft quotation for planning. Final pricing follows the installer's site survey.", styles),
+    ]
 
 
 def _page_title(title: str, styles: dict[str, ParagraphStyle]) -> list:
@@ -356,7 +472,7 @@ def _footer(canvas, document) -> None:
     canvas.setStrokeColor(_COBALT)
     canvas.line(document.leftMargin, 12 * mm, A4[0] - document.rightMargin, 12 * mm)
     canvas.setFont("Helvetica", 7)
-    canvas.setFillColor(colors.HexColor("#5D616D"))
+    canvas.setFillColor(_SECONDARY)
     canvas.drawString(document.leftMargin, 8 * mm, "KAHAYAG | PRELIMINARY SOLAR ASSESSMENT")
     canvas.drawRightString(A4[0] - document.rightMargin, 8 * mm, f"PAGE {document.page}")
     canvas.restoreState()
@@ -368,7 +484,8 @@ def render_report_pdf(
     narrative: ResolvedReportNarrative,
     projection: tuple[ProjectionRow, ...],
     sensitivity: tuple[SensitivityCase, ...],
-    satellite_image: bytes | None,
+    satellite: StaticMapImage | None,
+    quotation: QuotationDocumentSchema | None = None,
     report_id: str,
     generated_at: datetime,
 ) -> bytes:
@@ -413,7 +530,7 @@ def render_report_pdf(
             ),
             Spacer(1, 4 * mm),
             Paragraph("PROPOSED ROOF LAYOUT", styles["subheading"]),
-            _RoofLayout(request, satellite_image, width=176 * mm, height=62 * mm),
+            _RoofLayout(request, satellite, width=176 * mm, height=62 * mm),
             Paragraph(
                 f"Illustrative layout with {len(request.panel_polygons)} proposed panels. Installer verification required for final spacing and setbacks.",
                 styles["small"],
@@ -574,8 +691,26 @@ def render_report_pdf(
             ],
         ),
     ]
+    if request.design_build is not None and quotation is not None:
+        after_costs = (
+            next(
+                index
+                for index, (title, _content) in enumerate(pages)
+                if title == "Cost and payback"
+            )
+            + 1
+        )
+        pages.insert(
+            after_costs,
+            (
+                "Chosen design and quotation",
+                _design_quotation_content(request, quotation, styles),
+            ),
+        )
+
     page_break_before = {
         "Assumptions, limitations, and environmental note",
+        "Chosen design and quotation",
     }
     for title, content in pages:
         if title in page_break_before:

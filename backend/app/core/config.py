@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     solar_provider: str = "disabled"  # google | disabled
     google_solar_api_key: str = ""
 
+    # Server-side Static Maps key for the PDF's satellite photo; the report
+    # falls back to Esri World Imagery when empty or when the call fails.
+    google_maps_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
