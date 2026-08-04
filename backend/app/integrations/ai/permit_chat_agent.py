@@ -160,15 +160,50 @@ _GENERIC_TITLE_WORDS = frozenset(
 )
 
 
+# Question phrasings that ask for a conceptual explanation of a catalog entry
+# rather than a status update about the user's own packet.
+_EXPLANATION_QUESTION_PATTERNS = (
+    re.compile(r"\bwhat is\b", re.IGNORECASE),
+    re.compile(r"\bwhat's\b", re.IGNORECASE),
+    re.compile(r"\bwhat .*\bis .*\bfor\b", re.IGNORECASE),
+    re.compile(r"\bwhat .*\bfor\?\s*$", re.IGNORECASE),
+    re.compile(r"\bwho issues\b", re.IGNORECASE),
+    re.compile(r"\bwhat does .*\bmean\b", re.IGNORECASE),
+)
+
+
 def _distinguishing_tokens(label: str) -> list[str]:
     tokens = [token for token in re.split(r"\W+", label.lower()) if len(token) > 3]
     return [token for token in tokens if token not in _GENERIC_TITLE_WORDS]
+
+
+def _normalize_label(label: str) -> str:
+    return " ".join(token for token in re.split(r"\W+", label.lower()) if token)
 
 
 def _match_catalog_entry(
     lowered_question: str, grounding: dict[str, object]
 ) -> dict[str, object] | None:
     candidates = list(grounding.get("documents", [])) + list(grounding.get("permits", []))
+    # Prefer entries whose full title/name appears in the question.
+    normalized_question = _normalize_label(lowered_question)
+    full_match: dict[str, object] | None = None
+    full_match_length = 0
+    for entry in candidates:
+        if not isinstance(entry, dict):
+            continue
+        label = str(entry.get("title") or entry.get("name") or "")
+        normalized_label = _normalize_label(label)
+        if (
+            normalized_label
+            and normalized_label in normalized_question
+            and len(normalized_label) > full_match_length
+        ):
+            full_match = entry
+            full_match_length = len(normalized_label)
+    if full_match is not None:
+        return full_match
+
     for entry in candidates:
         if not isinstance(entry, dict):
             continue
@@ -210,6 +245,138 @@ def _cite(entry: dict[str, object], *, message: str) -> str:
             f"be checked with the issuing office. {reply}"
         )
     return reply
+
+
+def _is_explanation_question(lowered: str) -> bool:
+    return any(pattern.search(lowered) for pattern in _EXPLANATION_QUESTION_PATTERNS)
+
+
+def _explain_catalog_entry(entry: dict[str, object]) -> str:
+    label = str(entry.get("title") or entry.get("name") or "this requirement")
+    legal_basis = str(entry.get("legal_basis", ""))
+
+    if entry.get("obo_item") is not None or "track" in entry:
+        # Document entry
+        track = str(entry.get("track", ""))
+        group = str(entry.get("group") or "")
+        condition = str(entry.get("condition") or "")
+        parts = [f"{label} is a required document for the {track} track."]
+        if group == "owner_authorization":
+            parts.append(
+                "It belongs to the owner-authorization set, needed when the "
+                "applicant is not the registered owner or is delegating filing."
+            )
+        elif group == "renovation_proof":
+            parts.append(
+                "It proves the existing structure is legally occupied or "
+                "tax-current for a renovation project."
+            )
+        if condition == "owner_mismatch":
+            parts.append("It is required only when the applicant is not the registered owner.")
+        elif condition == "owner_mismatch_or_delegation":
+            parts.append(
+                "It is required when the applicant is not the registered owner, "
+                "or when the registered owner delegates filing to a representative."
+            )
+        if legal_basis:
+            parts.append(f"It is required under {legal_basis}.")
+        message = " ".join(parts)
+    else:
+        # Permit entry
+        issuing_agency = str(entry.get("issuing_agency", ""))
+        processing_time_note = entry.get("processing_time_note")
+        parts = [f"{label} is a permit issued by {issuing_agency}."]
+        if legal_basis:
+            parts.append(f"It is required under {legal_basis}.")
+        if processing_time_note:
+            parts.append(f"Processing note: {processing_time_note}")
+        message = " ".join(parts)
+
+    return _cite(entry, message=message)
+
+
+def _match_assessment_question(
+    lowered: str, grounding: dict[str, object]
+) -> str | None:
+    """Answer questions about the homeowner's own permit assessment: track,
+    required documents, missing/flagged items, packet status, and ownership
+    changes. Returns None when the question is not an assessment question."""
+
+    track = str(grounding.get("track", ""))
+    packet_status = str(grounding.get("packet_status", ""))
+    docs = [d for d in grounding.get("documents", []) if isinstance(d, dict)]
+    findings = [f for f in grounding.get("findings", []) if isinstance(f, dict)]
+    required_ids = {
+        str(doc_id)
+        for doc_id in grounding.get("required_document_ids", [])
+    }
+
+    if re.search(r"\bwhat track\b|\bwhich track\b|\bmy track\b", lowered):
+        reason = (
+            "solar was included in the original building permit"
+            if track == "streamlined"
+            else "solar was not included in the original building permit (or you said you were not sure)"
+        )
+        return f"You are on the {track} track because {reason}."
+
+    if "packet status" in lowered or re.search(r"\bmy status\b", lowered):
+        return f"Your packet status is {packet_status}."
+
+    if re.search(r"\bwhat documents? do i need\b|\bwhich documents? are required\b", lowered):
+        titles = [str(d["title"]) for d in docs if str(d.get("id")) in required_ids]
+        return f"Your {track} track packet requires: {', '.join(titles)}."
+
+    if re.search(r"\bwhat documents? are missing\b|\bwhat am i missing\b", lowered):
+        missing_ids = {
+            str(f.get("document_id"))
+            for f in findings
+            if f.get("category") == "presence"
+        }
+        missing = [str(d["title"]) for d in docs if str(d.get("id")) in missing_ids]
+        if missing:
+            return f"You still need to upload: {', '.join(missing)}."
+        return "You have uploaded all required documents."
+
+    if re.search(r"\bwhat('s| is) (flagged|wrong|the problem)\b", lowered):
+        flagged = [str(f["message"]) for f in findings if f.get("severity") != "info"]
+        if flagged:
+            return " ".join(flagged)
+        return "No warnings or blockers were found in your packet."
+
+    if re.search(r"\bnot the registered owner\b|\bnot the owner\b", lowered) and re.search(
+        r"\bchange\b|\bneed\b|\bwhat\b", lowered
+    ):
+        owner_docs = [
+            d
+            for d in docs
+            if str(d.get("condition")) in ("owner_mismatch", "owner_mismatch_or_delegation")
+        ]
+        if owner_docs:
+            titles = [str(d["title"]) for d in owner_docs]
+            return (
+                "If you are not the registered owner, you need extra "
+                f"owner-authorization documents: {', '.join(titles)}."
+            )
+        return "As the registered owner, no extra owner-authorization documents are required."
+
+    if re.search(r"\bnotarized authorization\b|\bauthorization\b", lowered):
+        owner_docs = [
+            d
+            for d in docs
+            if str(d.get("condition")) in ("owner_mismatch", "owner_mismatch_or_delegation")
+        ]
+        if owner_docs:
+            titles = [str(d["title"]) for d in owner_docs]
+            return (
+                "Yes, for your situation you need the notarized owner-authorization "
+                f"documents: {', '.join(titles)}."
+            )
+        return (
+            "No notarized owner-authorization document is required for your "
+            "situation — you are the registered owner and are not delegating filing."
+        )
+
+    return None
 
 
 class DisabledPermitChatClient:
@@ -312,11 +479,18 @@ class DisabledPermitChatClient:
     ) -> str:
         lowered = user_text.lower()
 
+        assessment_reply = _match_assessment_question(lowered, grounding)
+        if assessment_reply is not None:
+            return assessment_reply
+
+        entry = _match_catalog_entry(lowered, grounding)
+        if entry is not None and _is_explanation_question(lowered):
+            return _explain_catalog_entry(entry)
+
         finding, doc = _match_finding(lowered, grounding)
         if finding is not None and doc is not None:
             return _cite(doc, message=str(finding["message"]))
 
-        entry = _match_catalog_entry(lowered, grounding)
         if entry is not None:
             label = entry.get("title") or entry.get("name")
             basis = entry.get("legal_basis", "")
@@ -325,8 +499,7 @@ class DisabledPermitChatClient:
 
         return (
             "The permit catalog doesn't cover that question. Ask about a "
-            "specific document or permit, such as the barangay clearance or "
-            "the OBO building permit."
+            "specific document or permit, your track, or your packet status."
         )
 
     def generate_turn_reply(

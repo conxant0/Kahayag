@@ -5,6 +5,7 @@ import re
 
 import httpx
 
+from app.domain.permits.catalog import load_catalog
 from app.domain.permits.entities import ApplicantAnswers, PermitBuildSpec
 from app.features.permits.chat import _execute_tool, run_permit_chat_turn
 from app.features.permits.intake import UploadedDocument
@@ -343,8 +344,6 @@ def test_no_op_tool_call_does_not_produce_updated_reply() -> None:
 
 
 def test_groq_qa_passes_through_a_compliant_reply(monkeypatch) -> None:
-    from app.domain.permits.catalog import load_catalog
-
     barangay_doc = next(
         doc for doc in load_catalog().documents if doc.id == "obo_12_barangay_clearance"
     )
@@ -372,3 +371,63 @@ def test_groq_qa_passes_through_a_compliant_reply(monkeypatch) -> None:
         intake_client=CLIENT,
     )
     assert response.reply == compliant_reply
+
+
+# Mirrors frontend/src/features/permits/PermitChatSidebar.tsx. Keep in sync.
+SUGGESTED_QUESTIONS = (
+    "Do I need a notarized authorization?",
+    "What track am I on?",
+    "I'm not the registered owner — what changes?",
+)
+
+
+def test_suggested_sidebar_chips_return_grounded_answers() -> None:
+    """Every chip shown in the chat sidebar must get a grounded answer and
+    must not silently rewrite the applicant form."""
+    for user_text in SUGGESTED_QUESTIONS:
+        applicant = _retrofit_applicant()
+        response = run_permit_chat_turn(
+            applicant=applicant,
+            build=BUILD,
+            property_address=ADDRESS,
+            uploads=(),
+            user_text=user_text,
+            chat_client=CHAT_CLIENT,
+            intake_client=CLIENT,
+        )
+        assert "doesn't cover that question" not in response.reply.lower(), user_text
+        assert response.applicant.full_name == applicant.full_name, user_text
+        assert response.applicant.is_registered_owner == applicant.is_registered_owner, user_text
+        assert response.applicant.registered_owner_name == applicant.registered_owner_name, user_text
+        assert response.applicant.solar_in_original_permit == applicant.solar_in_original_permit, user_text
+
+
+def test_catalog_document_explanations_cover_every_document() -> None:
+    """Each catalog document can be asked "What is <title>?" and the reply is
+    sourced from the catalog, with a citation."""
+    catalog = load_catalog()
+    for doc in catalog.documents:
+        response = run_permit_chat_turn(
+            applicant=_retrofit_applicant(),
+            build=BUILD,
+            property_address=ADDRESS,
+            uploads=(),
+            user_text=f"What is {doc.title}?",
+            chat_client=CHAT_CLIENT,
+            intake_client=CLIENT,
+        )
+        assert doc.title in response.reply, doc.id
+        assert "http" in response.reply, doc.id
+
+
+def test_off_topic_question_gets_redirect() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="What is the best restaurant in Cebu?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "doesn't cover that question" in response.reply.lower()
