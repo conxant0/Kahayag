@@ -111,7 +111,11 @@ function DocumentRow({
 
   return (
     <li
-      className={`border-t border-hairline py-4 first:border-t-0 ${
+      className={`rounded-[12px] border p-4 ${
+        displayStatus === "uploaded"
+          ? "border-green-700/20 bg-[#f2faf4]"
+          : "border-hairline"
+      } ${
         quiet
           ? "opacity-70 transition-opacity duration-150 ease-brand hover:opacity-100 focus-within:opacity-100"
           : ""
@@ -370,7 +374,7 @@ export function DocumentChecklist({
           <p className="mt-5 font-sans text-[11px] font-semibold tracking-[0.8px] text-ember uppercase">
             Still needs you
           </p>
-          <ul className="mt-1">
+          <ul className="mt-2 flex flex-col gap-2.5">
             {outstanding.map((document) => renderRow(document, false))}
           </ul>
         </>
@@ -392,7 +396,7 @@ export function DocumentChecklist({
             </span>
           </button>
           {showUploaded ? (
-            <ul className="mt-1">
+            <ul className="mt-2 flex flex-col gap-2.5">
               {done.map((document) => renderRow(document, true))}
             </ul>
           ) : null}
