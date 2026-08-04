@@ -1,13 +1,16 @@
 // Defines the document checklist: one row per required document, each with
 // its own upload slot (CLOSED-doc-slots.md — the slot itself tells us what a
 // file is, no AI classification). Reuses the upload visual language from
-// `frontend/src/features/compare/QuoteAuditorCard.tsx`.
-import { useRef } from "react";
+// `frontend/src/features/compare/QuoteAuditorCard.tsx`. Rows expand to show
+// legal basis, source excerpt, and what was extracted (item 3) —
+// `CanvasComponentCard`'s "View details" pattern.
+import { useRef, useState } from "react";
 
 import type { PermitAssessment, PermitDocumentChecklistItem } from "./permitTypes";
 import {
   DOCUMENT_CATALOG,
   documentDisplayStatus,
+  documentExtractionSummary,
   documentStatusLabel,
   type DocumentDisplayStatus,
 } from "./permitsViewModel";
@@ -51,66 +54,108 @@ function DocumentRow({
   onUpload: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [expanded, setExpanded] = useState(false);
   const catalogEntry = DOCUMENT_CATALOG[document.document_id];
   const displayStatus = documentDisplayStatus(document, assessment.findings);
 
   return (
-    <li className="flex flex-col gap-3 border-b border-hairline py-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-sans text-sm font-semibold text-ink">{document.title}</p>
-          {document.unverified ? (
-            <span
-              className="rounded-pill bg-[#fff4cc] px-2 py-0.5 font-sans text-[10px] font-semibold tracking-[0.4px] text-[#7a5c00] uppercase"
-              title="This entry has not been independently confirmed against a primary source."
-            >
-              Unverified — confirm before relying on this
-            </span>
+    <li className="border-b border-hairline py-4 last:border-b-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-sans text-sm font-semibold text-ink">{document.title}</p>
+            {document.unverified ? (
+              <span
+                className="rounded-pill bg-[#fff4cc] px-2 py-0.5 font-sans text-[10px] font-semibold tracking-[0.4px] text-[#7a5c00] uppercase"
+                title="This entry has not been independently confirmed against a primary source."
+              >
+                Unverified — confirm before relying on this
+              </span>
+            ) : null}
+          </div>
+          {catalogEntry ? (
+            <p className="mt-1 font-sans text-[12px] text-secondary">
+              {catalogEntry.issuing_agency} ·{" "}
+              <a
+                href={catalogEntry.source_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-cobalt underline underline-offset-2"
+              >
+                Source
+              </a>
+            </p>
           ) : null}
+          <button
+            type="button"
+            className="mt-1.5 flex items-center gap-1 font-sans text-[12px] font-semibold text-cobalt hover:underline"
+            onClick={() => setExpanded((open) => !open)}
+            aria-expanded={expanded}
+          >
+            {expanded ? "Hide details" : "Legal basis & what we found"}
+            <span aria-hidden="true">{expanded ? "▲" : "▾"}</span>
+          </button>
         </div>
-        {catalogEntry ? (
-          <p className="mt-1 font-sans text-[12px] text-secondary">
-            {catalogEntry.issuing_agency} ·{" "}
-            <a
-              href={catalogEntry.source_url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-cobalt underline underline-offset-2"
-            >
-              Source
-            </a>
-          </p>
-        ) : null}
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={`rounded-pill border px-2.5 py-1 font-sans text-[11px] font-semibold whitespace-nowrap ${STATUS_CLASS[displayStatus]}`}
+          >
+            {documentStatusLabel(displayStatus)}
+          </span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            className="sr-only"
+            onChange={(event) => {
+              if (event.target.files?.[0]) {
+                onUpload();
+                event.target.value = "";
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-hairline bg-white px-3 font-sans text-[12px] font-semibold text-ink hover:border-tertiary"
+          >
+            <UploadIcon />
+            {uploadedInSession || document.status === "uploaded"
+              ? "Replace"
+              : "Upload"}
+          </button>
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <span
-          className={`rounded-pill border px-2.5 py-1 font-sans text-[11px] font-semibold whitespace-nowrap ${STATUS_CLASS[displayStatus]}`}
-        >
-          {documentStatusLabel(displayStatus)}
-        </span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf,image/*"
-          className="sr-only"
-          onChange={(event) => {
-            if (event.target.files?.[0]) {
-              onUpload();
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-hairline bg-white px-3 font-sans text-[12px] font-semibold text-ink hover:border-tertiary"
-        >
-          <UploadIcon />
-          {uploadedInSession || document.status === "uploaded"
-            ? "Replace"
-            : "Upload"}
-        </button>
-      </div>
+      {expanded ? (
+        <dl className="mt-3 grid gap-2 rounded-[12px] border border-hairline bg-[#fcfaf5] p-3 font-sans text-[12px] leading-5">
+          {catalogEntry ? (
+            <>
+              <div>
+                <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+                  Legal basis
+                </dt>
+                <dd className="mt-0.5 text-ink">{catalogEntry.legal_basis}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+                  Source excerpt
+                </dt>
+                <dd className="mt-0.5 text-secondary italic">{catalogEntry.source_excerpt}</dd>
+              </div>
+            </>
+          ) : null}
+          <div>
+            <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+              What we found
+            </dt>
+            <dd className="mt-0.5 text-ink">
+              {documentExtractionSummary(document, assessment.findings)}
+            </dd>
+          </div>
+        </dl>
+      ) : null}
     </li>
   );
 }
@@ -137,7 +182,7 @@ export function DocumentChecklist({
       </h2>
       <p className="mt-2 font-sans text-[13px] leading-5 text-secondary">
         Each row has its own upload slot — where you drop a file is how we
-        know what it is.
+        know what it is. This list changes with your answers above.
       </p>
 
       <ul className="mt-4">

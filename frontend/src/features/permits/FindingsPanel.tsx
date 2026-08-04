@@ -1,9 +1,18 @@
 // Defines the findings panel: the AI summary sits above deterministic
 // findings, never replaces them (CLOSED-verdict-source.md — rules decide,
 // AI only phrases). Mismatch findings quote both strings in their message so
-// the user sees exactly what disagrees.
-import type { FindingSeverity, PermitAssessment } from "./permitTypes";
-import { findingSeverityLabel } from "./permitsViewModel";
+// the user sees exactly what disagrees. Rows expand to show legal basis,
+// source excerpt, and what was extracted from the underlying document (item
+// 3) — the same `CanvasComponentCard`-style "View details" disclosure used
+// in `DocumentChecklist.tsx`.
+import { useState } from "react";
+
+import type { FindingSeverity, PermitAssessment, PermitFinding } from "./permitTypes";
+import {
+  DOCUMENT_CATALOG,
+  documentExtractionSummary,
+  findingSeverityLabel,
+} from "./permitsViewModel";
 
 const SEVERITY_CLASS: Record<FindingSeverity, string> = {
   blocking: "border-ember/30 bg-[#fff5f2] text-ember",
@@ -11,11 +20,78 @@ const SEVERITY_CLASS: Record<FindingSeverity, string> = {
   info: "border-hairline bg-[#fcfaf5] text-secondary",
 };
 
-export function FindingsPanel({ assessment }: { assessment: PermitAssessment }) {
-  const documentTitle = (documentId: string | null) =>
-    assessment.documents.find((document) => document.document_id === documentId)
-      ?.title ?? null;
+function FindingRow({
+  finding,
+  assessment,
+}: {
+  finding: PermitFinding;
+  assessment: PermitAssessment;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const document = assessment.documents.find(
+    (candidate) => candidate.document_id === finding.document_id,
+  );
+  const catalogEntry = finding.document_id ? DOCUMENT_CATALOG[finding.document_id] : undefined;
 
+  return (
+    <li className={`rounded-[12px] border p-3 font-sans text-[13px] leading-5 ${SEVERITY_CLASS[finding.severity]}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold uppercase tracking-[0.4px] text-[10px]">
+          {findingSeverityLabel(finding.severity)}
+        </span>
+        {document ? (
+          <span className="text-[11px] text-secondary">{document.title}</span>
+        ) : null}
+      </div>
+      <p className="mt-1">{finding.message}</p>
+
+      {catalogEntry || document ? (
+        <button
+          type="button"
+          className="mt-1.5 flex items-center gap-1 font-sans text-[12px] font-semibold text-cobalt hover:underline"
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Hide details" : "Legal basis & what we found"}
+          <span aria-hidden="true">{expanded ? "▲" : "▾"}</span>
+        </button>
+      ) : null}
+
+      {expanded ? (
+        <dl className="mt-3 grid gap-2 rounded-[12px] border border-hairline bg-white/60 p-3 text-[12px] leading-5">
+          {catalogEntry ? (
+            <>
+              <div>
+                <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+                  Legal basis
+                </dt>
+                <dd className="mt-0.5 text-ink">{catalogEntry.legal_basis}</dd>
+              </div>
+              <div>
+                <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+                  Source excerpt
+                </dt>
+                <dd className="mt-0.5 text-secondary italic">{catalogEntry.source_excerpt}</dd>
+              </div>
+            </>
+          ) : null}
+          {document ? (
+            <div>
+              <dt className="font-semibold tracking-[0.4px] text-tertiary uppercase text-[10px]">
+                What we found
+              </dt>
+              <dd className="mt-0.5 text-ink">
+                {documentExtractionSummary(document, assessment.findings)}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+    </li>
+  );
+}
+
+export function FindingsPanel({ assessment }: { assessment: PermitAssessment }) {
   return (
     <section
       aria-label="Findings"
@@ -44,22 +120,11 @@ export function FindingsPanel({ assessment }: { assessment: PermitAssessment }) 
       ) : (
         <ul className="mt-4 grid gap-2">
           {assessment.findings.map((finding) => (
-            <li
+            <FindingRow
               key={`${finding.document_id ?? "general"}-${finding.category}-${finding.message}`}
-              className={`rounded-[12px] border p-3 font-sans text-[13px] leading-5 ${SEVERITY_CLASS[finding.severity]}`}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold uppercase tracking-[0.4px] text-[10px]">
-                  {findingSeverityLabel(finding.severity)}
-                </span>
-                {finding.document_id ? (
-                  <span className="text-[11px] text-secondary">
-                    {documentTitle(finding.document_id) ?? finding.document_id}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1">{finding.message}</p>
-            </li>
+              finding={finding}
+              assessment={assessment}
+            />
           ))}
         </ul>
       )}

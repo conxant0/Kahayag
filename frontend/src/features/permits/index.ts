@@ -3,13 +3,20 @@ export { ApplicantForm } from "./ApplicantForm";
 export type { ApplicantFormValues } from "./ApplicantForm";
 export { DocumentChecklist } from "./DocumentChecklist";
 export { FindingsPanel } from "./FindingsPanel";
+export { PermitChatSidebar } from "./PermitChatSidebar";
 export { VerdictBanner } from "./VerdictBanner";
 export { PacketStatusCard } from "./PacketStatusCard";
+export { usePermitChat } from "./usePermitChat";
 export {
+  deriveAssessment,
   documentDisplayStatus,
   documentStatusLabel,
   findingSeverityLabel,
   findingsForDocument,
+  fromApiApplicant,
+  progressSummary,
+  resolveTrack,
+  toApiApplicant,
   verdictBannerCopy,
   packetStatusCopy,
   DOCUMENT_CATALOG,
