@@ -11,7 +11,10 @@ import {
   Rule,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
+import { useDesignStore } from "../../state/designStore";
+import { getActiveBuild } from "../design/designViewModel";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
+import { ContactDetailsCard } from "./components/ContactDetailsCard";
 import { buildReportPreview } from "./projectBrief";
 import { buildReportRequest } from "./buildReportRequest";
 import { useDownloadReport } from "./hooks/useDownloadReport";
@@ -29,9 +32,18 @@ export function ReportPage() {
   );
   const roofPolygon = useAssessmentStore((state) => state.roofPolygon);
   const energyInputs = useAssessmentStore((state) => state.energyInputs);
+  const contactDetails = useAssessmentStore((state) => state.contactDetails);
+  const setContactDetails = useAssessmentStore(
+    (state) => state.setContactDetails,
+  );
+  const reset = useAssessmentStore((state) => state.reset);
   const result = readAssessmentResult(rawResult);
 
+  const designSession = useDesignStore((state) => state.designSession);
+  const activeBuild = getActiveBuild(designSession);
+
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [isStartingOver, setIsStartingOver] = useState(false);
   const { mutateAsync: downloadReport, isPending } = useDownloadReport();
 
   const report = useMemo(
@@ -51,7 +63,13 @@ export function ReportPage() {
   const handleDownload = async () => {
     setDownloadError(null);
     try {
-      await downloadReport(buildReportRequest({ result, roofPolygon }));
+      await downloadReport(
+        buildReportRequest({
+          result,
+          roofPolygon,
+          designBuild: activeBuild ?? null,
+        }),
+      );
     } catch (error) {
       setDownloadError(
         error instanceof Error
@@ -60,6 +78,10 @@ export function ReportPage() {
       );
     }
   };
+
+  if (isStartingOver) {
+    return <Navigate to={ROUTE_PATHS.landing} replace />;
+  }
 
   if (!result) {
     return <Navigate to={ROUTE_PATHS.energy} replace />;
@@ -105,6 +127,17 @@ export function ReportPage() {
             <CtaArrow />
           </ButtonLink>
 
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => {
+              setIsStartingOver(true);
+              reset();
+            }}
+          >
+            Start another assessment
+          </Button>
+
           {/* Ember interrupts — the one place on this screen that does. */}
           {downloadError ? (
             <p
@@ -129,7 +162,10 @@ export function ReportPage() {
         </p>
 
         <ul className="flex list-none flex-col gap-4 p-0 lg:gap-5.25">
-          {report.contents.map((item) => (
+          {(activeBuild
+            ? [...report.contents, "Chosen design & quotation"]
+            : report.contents
+          ).map((item) => (
             <li key={item} className="flex flex-col gap-4 lg:gap-5.25">
               <Rule className="lg:h-px" />
               <span className="flex items-start gap-3">
@@ -147,6 +183,11 @@ export function ReportPage() {
           ))}
         </ul>
       </article>
+
+      <ContactDetailsCard
+        contact={contactDetails}
+        onChange={setContactDetails}
+      />
 
       <div className="hidden min-h-0 flex-1 lg:block" />
     </ContentScreen>
