@@ -83,7 +83,11 @@ export function RecommendationPage() {
   }, [baseline, cost, mutateAsync, rate, result, usage]);
 
   if (!result || !defaults || !bounds || !baseline) {
-    return <Navigate to={ROUTE_PATHS.energy} replace />;
+    // The result lives in memory only, so a refresh or direct visit lands
+    // here without one. /loading recomputes it from the persisted inputs
+    // (and its own guard walks further back if those are missing) — far
+    // better than silently dumping the visitor on the bill screen.
+    return <Navigate to={ROUTE_PATHS.loading} replace />;
   }
 
   const isDefault =
@@ -201,7 +205,10 @@ export function RecommendationPage() {
               />
             </HairlineList>
             <section aria-label="Payback timeline" className="flex w-full flex-col">
-              <HairlineRow label="Year 0 · Installation" value={`−${formatPeso(projection.system_cost_php).slice(1)}`} />
+              <HairlineRow
+                label="Year 0 · Installation"
+                value={formatTimelinePeso(-projection.system_cost_php)}
+              />
               <HairlineRow label="Break-even" value={formatBreakEvenYear(breakEvenYear)} valueClassName="text-cobalt" />
               <HairlineRow label="Year 10 · Positive return" value={formatTimelinePeso(projection.year_10_net_php)} />
               <HairlineRow label="Year 25 · Warranty end" value={formatTimelinePeso(projection.year_25_net_php)} />
@@ -221,7 +228,11 @@ export function RecommendationPage() {
             Calculating projection…
           </p>
         )}
-        {projectionError ? <p role="alert">{projectionError}</p> : null}
+        {projectionError ? (
+          <p role="alert" className="font-sans text-sm leading-6 text-ember">
+            {projectionError}
+          </p>
+        ) : null}
       </section>
     </ContentScreen>
   );

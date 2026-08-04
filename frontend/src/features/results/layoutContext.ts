@@ -28,12 +28,19 @@ export function resolveLayoutContext({
   const panelHeightM = positiveNumber(result.assumptions.panel_height_m, 1.76);
   const currentPanelCount = result.recommendation.panel_count;
 
-  // ponytail: bounded geometry scan is enough for residential roofs; use a
-  // packing solver only if real layouts exceed this small physical search space.
+  // The scan ceiling is what the traced area could hold if packing were
+  // perfect (area ÷ panel area) — per the PRD, roof capacity is what
+  // establishes the maximum panel count, so no fixed constant can clamp a
+  // large roof short. The placement scan then reports how many actually fit.
+  const panelAreaSqm = panelWidthM * panelHeightM;
+  const scanCeiling = Math.max(
+    1,
+    Math.ceil(positiveNumber(roofPolygon?.areaSquareMeters, 0) / panelAreaSqm),
+  );
   const maxPanels = coordinates.length
     ? layoutPanelsInPolygon({
         coordinates,
-        panelCount: 200,
+        panelCount: scanCeiling,
         panelWidthM,
         panelHeightM,
       }).length

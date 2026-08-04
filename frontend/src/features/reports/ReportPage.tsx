@@ -10,7 +10,9 @@ import {
   Rule,
 } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
+import { useDesignStore } from "../../state/designStore";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
+import { getActiveBuild } from "../design/designViewModel";
 import { buildReportPreview } from "./projectBrief";
 import { buildReportRequest } from "./buildReportRequest";
 import { ContactDetailsCard } from "./components/ContactDetailsCard";
@@ -36,6 +38,11 @@ export function ReportPage() {
   const reset = useAssessmentStore((state) => state.reset);
   const result = readAssessmentResult(rawResult);
 
+  // The chosen design rides along so the PDF can print it with its
+  // quotation; without one the report simply omits that section.
+  const designSession = useDesignStore((state) => state.designSession);
+  const activeBuild = getActiveBuild(designSession);
+
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [isStartingOver, setIsStartingOver] = useState(false);
   const { mutateAsync: downloadReport, isPending } = useDownloadReport();
@@ -57,7 +64,9 @@ export function ReportPage() {
   const handleDownload = async () => {
     setDownloadError(null);
     try {
-      await downloadReport(buildReportRequest({ result, roofPolygon }));
+      await downloadReport(
+        buildReportRequest({ result, roofPolygon, designBuild: activeBuild }),
+      );
     } catch (error) {
       setDownloadError(
         error instanceof Error
@@ -148,7 +157,10 @@ export function ReportPage() {
         </p>
 
         <ul className="flex list-none flex-col gap-4 p-0 lg:gap-5.25">
-          {report.contents.map((item) => (
+          {(activeBuild
+            ? [...report.contents, "Chosen design & quotation"]
+            : report.contents
+          ).map((item) => (
             <li key={item} className="flex flex-col gap-4 lg:gap-5.25">
               <Rule className="lg:h-px" />
               <span className="flex items-start gap-3">
