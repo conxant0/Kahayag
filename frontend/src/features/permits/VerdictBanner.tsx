@@ -14,7 +14,7 @@ import {
 } from "./permitsViewModel";
 
 export function VerdictBanner({ assessment }: { assessment: PermitAssessment }) {
-  const { ready, heading } = verdictBannerCopy(assessment);
+  const { ready, heading, body } = verdictBannerCopy(assessment);
   const progress = progressSummary(assessment);
   const outstanding = outstandingDocumentTitles(assessment);
 
@@ -24,6 +24,7 @@ export function VerdictBanner({ assessment }: { assessment: PermitAssessment }) 
       <h2 className="mt-2 font-serif text-[26px] leading-tight font-medium text-balance text-ink lg:text-[30px]">
         {heading}
       </h2>
+      <p className="mt-3 max-w-2xl font-sans text-sm leading-6 text-ink">{body}</p>
       <p className="mt-3 max-w-2xl font-sans text-[13px] leading-5 font-semibold text-tertiary-ink">
         {ready ? (
           <>All {progress.total} documents resolved.</>
