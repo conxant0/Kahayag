@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from reportlab.lib.units import mm
 from reportlab.platypus import CondPageBreak, Spacer, Table
@@ -12,6 +13,7 @@ from app.features.reports.service import (
 )
 from app.features.reports.validator import build_report_input
 from app.integrations.pdf.reportlab_renderer import (
+    _kwh,
     _metric_strip,
     _notice,
     _page_title,
@@ -132,3 +134,9 @@ def test_notice_uses_the_same_content_width_as_tables() -> None:
 
     assert isinstance(notice, Table)
     assert width == 176 * mm
+
+
+def test_kwh_formats_repeating_and_exact_decimals_without_scientific_notation() -> None:
+    assert _kwh(Decimal("5000") / Decimal("11.50")) == "434.78 kWh"
+    assert _kwh(Decimal("6000") / Decimal("12.00")) == "500.00 kWh"
+    assert _kwh(Decimal("5000") / Decimal("10.00")) == "500.00 kWh"
