@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/features/design/fixtures/mockDesignSession";
 import {
   canvasBomGroups,
   canvasSlots,
@@ -42,9 +42,12 @@ describe("designViewModel", () => {
     );
   });
 
-  it("lists both solver builds and uploaded quotes as diagram sources", () => {
+  it("lists AI suggested and custom builds when present", () => {
     const withoutQuote = diagramSourceOptions(mockDesignSession, []);
-    expect(withoutQuote.map((option) => option.label)).toEqual([
+    expect(withoutQuote.map((option) => option.label)).toEqual(["AI suggested"]);
+
+    const withCustom = diagramSourceOptions(mockDesignSessionWithCustom, []);
+    expect(withCustom.map((option) => option.label)).toEqual([
       "AI suggested",
       "Custom build A",
     ]);
@@ -60,7 +63,7 @@ describe("designViewModel", () => {
       summary: "Quote summary",
       diagram_components: mockDesignSession.builds[0]!.components.slice(0, 4),
     };
-    const withQuote = diagramSourceOptions(mockDesignSession, [quote]);
+    const withQuote = diagramSourceOptions(mockDesignSessionWithCustom, [quote]);
     expect(withQuote).toHaveLength(3);
     expect(withQuote[2]).toMatchObject({
       value: quoteAuditId(quote, 0),

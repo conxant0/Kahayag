@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { peso } from "../../../../src/shared/lib/currency";
 import {
   compareBuilds,
@@ -8,18 +8,24 @@ import {
 } from "../../../../src/features/compare/compareViewModel";
 
 describe("compareViewModel", () => {
-  it("orders AI suggested before custom build A", () => {
-    const views = compareBuilds(mockDesignSession);
+  it("orders AI suggested before custom builds", () => {
+    const views = compareBuilds(mockDesignSessionWithCustom);
     expect(views).toHaveLength(2);
     expect(views[0]?.isSuggested).toBe(true);
     expect(views[0]?.build.label).toBe("AI suggested");
     expect(views[1]?.build.label).toBe("Custom build A");
   });
 
-  it("computes distinct overview metrics per build", () => {
+  it("returns only AI suggested before a custom build exists", () => {
     const views = compareBuilds(mockDesignSession);
-    const suggested = mockDesignSession.builds[0]!;
-    const custom = mockDesignSession.builds[1]!;
+    expect(views).toHaveLength(1);
+    expect(views[0]?.build.label).toBe("AI suggested");
+  });
+
+  it("computes distinct overview metrics per build", () => {
+    const views = compareBuilds(mockDesignSessionWithCustom);
+    const suggested = mockDesignSessionWithCustom.builds[0]!;
+    const custom = mockDesignSessionWithCustom.builds[1]!;
     expect(views[0]?.metrics.find((row) => row.label === "Total cost")?.value).toBe(
       peso(suggested.total_investment_php),
     );

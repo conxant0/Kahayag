@@ -1,7 +1,7 @@
 // Defines a mock design session for UI-first development and Person 3 imports.
 import type { DesignSession } from "../../../shared/api/types";
 
-export const mockDesignSession: DesignSession = {
+export const mockDesignSessionFull = {
   "property_ref": "demo-property-1",
   "assessment_fingerprint": "f5ec50c9b7f57bfe",
   "active_build_id": "6ef90fb7-4b35-4e31-9ed4-2d17056e4a69",
@@ -838,3 +838,12 @@ export const mockDesignSession: DesignSession = {
   "applied": false,
   "agent_audit": []
 } as DesignSession;
+
+export const mockCustomBuild = mockDesignSessionFull.builds[1]!;
+
+export const mockDesignSession: DesignSession = {
+  ...mockDesignSessionFull,
+  builds: [mockDesignSessionFull.builds[0]!],
+};
+
+export const mockDesignSessionWithCustom: DesignSession = mockDesignSessionFull;

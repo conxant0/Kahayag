@@ -118,17 +118,23 @@ export function ComparePage() {
         </div>
 
         {layout === "matrix" ? (
-          <BuildSideBySideCompare
-            allColumns={columns}
-            selectedColumns={selectedColumns}
-            rows={matrixRows}
-            leftId={leftColumnId}
-            rightId={rightColumnId}
-            onLeftChange={setLeftColumnId}
-            onRightChange={setRightColumnId}
-            onSelectBuild={handleSelect}
-            onSelectQuote={handleSelectQuote}
-          />
+          selectedColumns.length >= 2 ? (
+            <BuildSideBySideCompare
+              allColumns={columns}
+              selectedColumns={selectedColumns}
+              rows={matrixRows}
+              leftId={leftColumnId}
+              rightId={rightColumnId}
+              onLeftChange={setLeftColumnId}
+              onRightChange={setRightColumnId}
+              onSelectBuild={handleSelect}
+              onSelectQuote={handleSelectQuote}
+            />
+          ) : buildViews[0] ? (
+            <section aria-label="Build options" className="max-w-xl">
+              <BuildCompareCard view={buildViews[0]} onSelect={handleSelect} />
+            </section>
+          ) : null
         ) : (
           <section
             aria-label="Build options"

@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { QuotationPage } from "../../../../src/features/quotation/QuotationPage";
 import { apiPost } from "../../../../src/shared/api/client";
 import type { QuotationDocument } from "../../../../src/shared/api/types";
@@ -109,7 +109,9 @@ describe("QuotationPage", () => {
     renderQuotation();
 
     expect(await screen.findByText("Draft")).toBeInTheDocument();
-    expect(screen.getByLabelText("Choose build for quotation")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Choose build for quotation"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "#KH-1A2B3C4D" }),
     ).toBeInTheDocument();
@@ -125,8 +127,8 @@ describe("QuotationPage", () => {
   });
 
   it("switches quotation when another build is chosen", async () => {
-    useDesignStore.getState().setDesignSession(mockDesignSession);
-    const customBuild = mockDesignSession.builds[1]!;
+    useDesignStore.getState().setDesignSession(mockDesignSessionWithCustom);
+    const customBuild = mockDesignSessionWithCustom.builds[1]!;
     mockedApiPost.mockImplementation(async (path) => {
       const buildId = String(path).split("/").pop()!;
       return backendQuoteFor(buildId);

@@ -2,7 +2,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { ComparePage } from "../../../../src/features/compare/ComparePage";
 import { useDesignStore } from "../../../../src/state/designStore";
 
@@ -43,8 +43,23 @@ describe("ComparePage", () => {
     );
   });
 
-  it("shows two builds and flips a card to technical specs", () => {
+  it("shows only AI suggested before a custom build exists", () => {
     useDesignStore.getState().setDesignSession(mockDesignSession);
+
+    const router = createMemoryRouter([{ path: "/compare", element: <ComparePage /> }], {
+      initialEntries: ["/compare"],
+    });
+
+    render(<RouterProvider router={router} />);
+
+    expect(screen.getByText("After AI design · Compare builds")).toBeInTheDocument();
+    expect(screen.getAllByText("AI suggested").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Custom build A")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Compare custom")).toBeInTheDocument();
+  });
+
+  it("shows two builds and flips a card to technical specs", () => {
+    useDesignStore.getState().setDesignSession(mockDesignSessionWithCustom);
 
     const router = createMemoryRouter([{ path: "/compare", element: <ComparePage /> }], {
       initialEntries: ["/compare"],
@@ -110,7 +125,7 @@ describe("ComparePage", () => {
   });
 
   it("selects a build and navigates to quotation", async () => {
-    useDesignStore.getState().setDesignSession(mockDesignSession);
+    useDesignStore.getState().setDesignSession(mockDesignSessionWithCustom);
 
     const router = createMemoryRouter(
       [
@@ -128,7 +143,7 @@ describe("ComparePage", () => {
       expect(router.state.location.pathname).toBe("/quotation"),
     );
     expect(useDesignStore.getState().designSession?.active_build_id).toBe(
-      mockDesignSession.builds[1]!.id,
+      mockDesignSessionWithCustom.builds[1]!.id,
     );
   });
 

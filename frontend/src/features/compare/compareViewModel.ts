@@ -43,12 +43,11 @@ export function compareBuilds(session: DesignSession): CompareBuildView[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
     [...session.builds].sort((a, b) => b.fit_score - a.fit_score)[0];
-  const alternate =
-    session.builds.find((build) => build.source === "custom") ??
-    session.builds.find((build) => build.id !== suggested?.id);
+  const customBuilds = session.builds.filter((build) => build.source === "custom");
 
-  const ordered = [suggested, alternate].filter(
-    (build): build is DesignBuild => build !== undefined,
+  const ordered = [suggested, ...customBuilds].filter(
+    (build, index, builds): build is DesignBuild =>
+      build !== undefined && builds.indexOf(build) === index,
   );
 
   return ordered.map((build) => {

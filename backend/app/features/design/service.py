@@ -24,7 +24,6 @@ from app.domain.design.financials import (
     build_design_build,
 )
 from app.domain.design.mutations import apply_constraint_patch, goal_constraints
-from app.domain.design.scoring import pick_alternate_combo
 from app.domain.design.solver import constraints_from_sizing, run_solver
 from app.features.design.schemas import (
     AgentAuditEntrySchema,
@@ -263,29 +262,50 @@ def _session_from_solve(
         ai_suggested=True,
     )
 
-    builds: list[DesignBuild] = [ai_build]
-    alternate = pick_alternate_combo(top, solve_result.valid)
-    if alternate is not None:
-        builds.append(
-            _build_from_combo(
-                alternate,
-                solve_id=solve_result.solve_id,
-                label="Custom build A",
-                tags=("ALTERNATE",),
-                source="custom",
-                annual_consumption_kwh=annual_consumption_kwh,
-                annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
-                resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
-            )
-        )
-
     return DesignSession(
         property_ref=property_ref,
         assessment_fingerprint=assessment_fingerprint,
         active_build_id=ai_build.id,
-        builds=tuple(builds),
+        builds=(ai_build,),
         last_solve=solve_result,
         applied=False,
+    )
+
+
+def _session_with_custom_build(
+    *,
+    existing: DesignSessionSchema,
+    solve_result: SolveResult,
+    annual_consumption_kwh: float,
+    annual_yield_per_kwp_kwh: float,
+    resolved_tariff_php_per_kwh: float,
+) -> DesignSessionSchema:
+    if len(solve_result.valid) < 1:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
+
+    preserved = tuple(build for build in existing.builds if build.source != "custom")
+    if not preserved:
+        raise NoValidDesignError("Session has no builds to preserve.")
+
+    top = solve_result.valid[0]
+    custom_build = _build_from_combo(
+        top,
+        solve_id=solve_result.solve_id,
+        label="Custom build A",
+        tags=("ALTERNATE",),
+        source="custom",
+        annual_consumption_kwh=annual_consumption_kwh,
+        annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
+        resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
+    )
+
+    return existing.model_copy(
+        update={
+            "builds": preserved + (_to_build_schema(custom_build),),
+            "active_build_id": custom_build.id,
+            "last_solve": _to_solve_result_schema(solve_result),
+            "applied": False,
+        }
     )
 
 
@@ -421,17 +441,13 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
     solve_result = run_solver(patched)
     if not solve_result.valid and patched.budget_php is not None:
         solve_result = run_solver(replace(patched, budget_php=None))
-    session = _session_from_solve(
+    return _session_with_custom_build(
+        existing=request.session,
         solve_result=solve_result,
-        property_ref=request.session.property_ref,
-        assessment_fingerprint=request.session.assessment_fingerprint,
         annual_consumption_kwh=domain_constraints.annual_consumption_kwh,
         annual_yield_per_kwp_kwh=domain_constraints.annual_yield_per_kwp_kwh,
         resolved_tariff_php_per_kwh=domain_constraints.resolved_tariff_php_per_kwh,
     )
-    if not session.builds:
-        raise NoValidDesignError("Solver found no valid equipment combinations.")
-    return _to_session_schema(session)
 
 
 def get_rejections_for_solve(

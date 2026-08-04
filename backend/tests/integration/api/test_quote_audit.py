@@ -114,5 +114,6 @@ def test_mutate_reruns_solver_with_panel_delta(
 
     assert response.status_code == 200
     body = response.json()
-    assert len(body["builds"]) >= 2
+    assert len(body["builds"]) == 2
+    assert any(build["source"] == "custom" for build in body["builds"])
     assert body["last_solve"] is not None

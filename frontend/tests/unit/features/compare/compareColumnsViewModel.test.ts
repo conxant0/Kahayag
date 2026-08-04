@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
+import { mockDesignSession, mockDesignSessionWithCustom } from "../../../../src/features/design/fixtures/mockDesignSession";
 import {
   compareColumns,
   comparisonMatrix,
@@ -24,20 +24,26 @@ const sampleQuote = {
 describe("compareColumnsViewModel", () => {
   it("builds solver columns and adds quote when diagram components exist", () => {
     const columns = compareColumns(mockDesignSession, []);
-    expect(columns).toHaveLength(2);
-    expect(columns.map((column) => column.label)).toEqual([
-      "AI suggested",
-      "Custom build A",
-    ]);
+    expect(columns).toHaveLength(1);
+    expect(columns.map((column) => column.label)).toEqual(["AI suggested"]);
 
-    const withQuote = compareColumns(mockDesignSession, [sampleQuote]);
+    const withQuote = compareColumns(mockDesignSessionWithCustom, [sampleQuote]);
 
     expect(withQuote).toHaveLength(3);
     expect(withQuote[2]?.label).toBe("installer.pdf");
   });
 
+  it("includes custom builds only when present in the session", () => {
+    const columns = compareColumns(mockDesignSessionWithCustom, []);
+    expect(columns).toHaveLength(2);
+    expect(columns.map((column) => column.label)).toEqual([
+      "AI suggested",
+      "Custom build A",
+    ]);
+  });
+
   it("aligns spec values across columns in a matrix", () => {
-    const columns = compareColumns(mockDesignSession, []);
+    const columns = compareColumns(mockDesignSessionWithCustom, []);
     const pair = resolveComparePair(
       columns,
       columns[0]!.id,
@@ -58,7 +64,7 @@ describe("compareColumnsViewModel", () => {
   });
 
   it("defaults to suggested vs quote when a quote diagram exists", () => {
-    const columns = compareColumns(mockDesignSession, [sampleQuote]);
+    const columns = compareColumns(mockDesignSessionWithCustom, [sampleQuote]);
 
     const [left, right] = defaultComparePair(columns);
     expect(left).toBe(columns[0]!.id);
@@ -71,7 +77,7 @@ describe("compareColumnsViewModel", () => {
       filename: "installer-b.pdf",
       extracted_total_php: 260_000,
     };
-    const columns = compareColumns(mockDesignSession, [sampleQuote, secondQuote]);
+    const columns = compareColumns(mockDesignSessionWithCustom, [sampleQuote, secondQuote]);
 
     expect(columns.filter((column) => column.kind === "quote")).toHaveLength(2);
     const [left, right] = defaultComparePair(columns);
