@@ -22,6 +22,40 @@ export const completedAssessment = JSON.parse(
 /** Matches the store's key. A different key would seed nothing, silently. */
 export const SESSION_STORAGE_KEY = "kahayag-assessment-session";
 
+/**
+ * Shading in the backend's `ShadingSummary` shape.
+ *
+ * Hand-built rather than read from a fixture because no backend fixture carries
+ * one — `completed_assessment.json` has no `shading` key at all, which is
+ * exactly why the flux refusal below went unreached while claiming to cover the
+ * failure path. Keep it in step with `ShadingSummary` in
+ * `backend/app/features/assessment/schemas.py`.
+ *
+ * `flux_visualization` is deliberately absent: its absence is what sends the
+ * app to `/solar/flux/prepare`, which is the call the refusal answers.
+ */
+const SHADING = {
+  shading_impact: "moderate",
+  sunshine_retention_ratio: "0.84",
+  whole_roof_median_sunshine_hours_per_year: "1408.8",
+  max_sunshine_hours_per_year: "1677.2",
+  data_source: "google_solar_api",
+  applied_to_generation: true,
+  roof_segments: [],
+};
+
+/**
+ * What the stubs were actually asked for.
+ *
+ * Returned so a spec can assert the route it mocked was reached. A stub nobody
+ * calls looks exactly like a passing test, which is how the flux refusal sat
+ * here claiming coverage it never had.
+ */
+export type StubbedCalls = {
+  assessments: number;
+  fluxPrepare: number;
+};
+
 export type SeededSession = {
   selectedProperty: Record<string, unknown>;
   roofPolygon: Record<string, unknown>;
@@ -95,26 +129,44 @@ export async function seedTracedSession(
  * Everything under `/api/` is routed, so a call this suite did not anticipate
  * fails loudly as an unroutable request rather than silently reaching a real
  * service and making the run depend on the network.
+ *
+ * `withShading` decides whether the assessment carries shading data, which is
+ * what the app reads to decide it needs a flux map at all. The fixture has
+ * none, so the default answer never reaches the flux route — the specs assert
+ * which of the two happened rather than assuming.
  */
-export async function mockAssessmentApi(page: Page): Promise<void> {
+export async function mockAssessmentApi(
+  page: Page,
+  { withShading = false }: { withShading?: boolean } = {},
+): Promise<StubbedCalls> {
+  const calls: StubbedCalls = { assessments: 0, fluxPrepare: 0 };
+
   await page.route("**/api/v1/assessments", async (route) => {
+    calls.assessments += 1;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(completedAssessment),
+      body: JSON.stringify(
+        withShading
+          ? { ...completedAssessment, shading: SHADING }
+          : completedAssessment,
+      ),
     });
   });
 
   // The flux map is optional by design, and preparing it needs Google's solar
   // rasters. Refusing it here exercises the path the product actually promises:
-  // the assessment stands on its own and the journey continues without it.
+  // the assessment stands on its own and the journey can go on without it.
   await page.route("**/api/v1/solar/flux/**", async (route) => {
+    calls.fluxPrepare += 1;
     await route.fulfill({
       status: 503,
       contentType: "application/json",
       body: JSON.stringify({ detail: "Flux is unavailable in this run." }),
     });
   });
+
+  return calls;
 }
 
 /** Fails the assessment call, for the specs that assert the error path. */
