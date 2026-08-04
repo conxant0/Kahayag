@@ -148,6 +148,7 @@ export interface DesignComponent {
   warranty_note: string;
   badges: string[];
   specs: Record<string, string | number>;
+  product_image?: string | null;
 }
 
 export interface RejectionReason {
@@ -202,6 +203,8 @@ export interface DesignBuild {
   annual_savings_php: number;
   payback_years: number | null;
   total_investment_php: number;
+  total_investment_low_php: number;
+  total_investment_high_php: number;
   subtotal_php: number;
   vat_php: number;
   inverter_utilisation_pct: number;
@@ -250,7 +253,54 @@ export interface QuotationDocument {
   subtotal_php: number;
   vat_php: number;
   total_php: number;
+  total_low_php: number;
+  total_high_php: number;
   payment_terms: string;
   warranty_summary: string;
   is_draft: boolean;
+}
+
+export type QuoteAuditSeverity = "info" | "warning" | "positive";
+
+export interface QuoteAuditFinding {
+  category: string;
+  severity: QuoteAuditSeverity;
+  message: string;
+}
+
+export interface QuoteAuditResponse {
+  filename: string;
+  extracted_total_php: number | null;
+  extracted_system_kwp: number | null;
+  extracted_panel_count: number | null;
+  benchmark_total_php: number;
+  benchmark_system_kwp: number;
+  findings: QuoteAuditFinding[];
+  summary: string;
+  diagram_components: DesignComponent[];
+}
+
+export interface MutateDesignPayload {
+  session: DesignSession;
+  goal?: SolverGoal;
+  budget_php?: number;
+  require_battery?: boolean;
+  min_battery_kwh?: number;
+  locked_panel_id?: string;
+  locked_inverter_id?: string;
+  locked_battery_id?: string;
+  panel_count_delta?: number;
+}
+
+export type CatalogPickerSlot = "panel" | "inverter" | "battery";
+export type CatalogOptionStatus = "selected" | "recommended" | "compatible" | "incompatible";
+
+export interface CatalogOption {
+  id: string;
+  brand: string;
+  model: string;
+  summary: string;
+  status: CatalogOptionStatus;
+  reason: string | null;
+  specs: Record<string, string | number>;
 }

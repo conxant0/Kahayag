@@ -2,6 +2,7 @@
 
 import hashlib
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -41,6 +42,8 @@ from app.features.design.schemas import (
     ValidComboSchema,
 )
 
+MAX_SESSION_REJECTIONS = 200
+
 
 class NoValidDesignError(Exception):
     pass
@@ -67,7 +70,8 @@ def _extract_sizing_inputs(assessment: dict[str, object]) -> tuple[float, int, f
     catalog = load_catalog()
     min_footprint = min(_panel_footprint_m2(panel) for panel in catalog.panels.values())
     max_by_roof = max(1, int(usable_roof_area_m2 // min_footprint))
-    max_panel_count = max(int(recommendation["panel_count"]) + 4, max_by_roof)
+    recommended_ceiling = int(recommendation["panel_count"]) + 4
+    max_panel_count = max(1, min(max_by_roof, recommended_ceiling))
     budget_raw = inputs.get("budget_php")
     budget_php = float(budget_raw) if budget_raw is not None else None
 
@@ -129,7 +133,10 @@ def _to_solve_result_schema(result: SolveResult) -> SolveResultSchema:
         solve_id=result.solve_id,
         constraints=_to_constraints_schema(result.constraints),
         valid=tuple(_to_valid_combo_schema(combo) for combo in result.valid),
-        rejections=tuple(_to_rejection_schema(r) for r in result.rejections),
+        rejections=tuple(
+            _to_rejection_schema(r)
+            for r in result.rejections[:MAX_SESSION_REJECTIONS]
+        ),
     )
 
 
@@ -148,6 +155,7 @@ def _to_component_schema(component: DesignComponent) -> DesignComponentSchema:
         warranty_note=component.warranty_note,
         badges=component.badges,
         specs=component.specs,
+        product_image=component.product_image,
     )
 
 
@@ -166,6 +174,8 @@ def _to_build_schema(build: DesignBuild) -> DesignBuildSchema:
         annual_savings_php=build.annual_savings_php,
         payback_years=build.payback_years,
         total_investment_php=build.total_investment_php,
+        total_investment_low_php=build.total_investment_low_php,
+        total_investment_high_php=build.total_investment_high_php,
         subtotal_php=build.subtotal_php,
         vat_php=build.vat_php,
         inverter_utilisation_pct=build.inverter_utilisation_pct,
@@ -252,29 +262,50 @@ def _session_from_solve(
         ai_suggested=True,
     )
 
-    builds: list[DesignBuild] = [ai_build]
-    if len(solve_result.valid) >= 2:
-        alternate = solve_result.valid[1]
-        builds.append(
-            _build_from_combo(
-                alternate,
-                solve_id=solve_result.solve_id,
-                label="Custom build A",
-                tags=("ALTERNATE",),
-                source="custom",
-                annual_consumption_kwh=annual_consumption_kwh,
-                annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
-                resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
-            )
-        )
-
     return DesignSession(
         property_ref=property_ref,
         assessment_fingerprint=assessment_fingerprint,
         active_build_id=ai_build.id,
-        builds=tuple(builds),
+        builds=(ai_build,),
         last_solve=solve_result,
         applied=False,
+    )
+
+
+def _session_with_custom_build(
+    *,
+    existing: DesignSessionSchema,
+    solve_result: SolveResult,
+    annual_consumption_kwh: float,
+    annual_yield_per_kwp_kwh: float,
+    resolved_tariff_php_per_kwh: float,
+) -> DesignSessionSchema:
+    if len(solve_result.valid) < 1:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
+
+    preserved = tuple(build for build in existing.builds if build.source != "custom")
+    if not preserved:
+        raise NoValidDesignError("Session has no builds to preserve.")
+
+    top = solve_result.valid[0]
+    custom_build = _build_from_combo(
+        top,
+        solve_id=solve_result.solve_id,
+        label="Custom build A",
+        tags=("ALTERNATE",),
+        source="custom",
+        annual_consumption_kwh=annual_consumption_kwh,
+        annual_yield_per_kwp_kwh=annual_yield_per_kwp_kwh,
+        resolved_tariff_php_per_kwh=resolved_tariff_php_per_kwh,
+    )
+
+    return existing.model_copy(
+        update={
+            "builds": preserved + (_to_build_schema(custom_build),),
+            "active_build_id": custom_build.id,
+            "last_solve": _to_solve_result_schema(solve_result),
+            "applied": False,
+        }
     )
 
 
@@ -324,26 +355,55 @@ def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSc
     return _to_session_schema(session)
 
 
+def _domain_constraints_from_session(
+    base: SolverConstraintsSchema,
+    *,
+    session: DesignSessionSchema,
+) -> SolverConstraints:
+    active = next(
+        (build for build in session.builds if build.id == session.active_build_id),
+        session.builds[0],
+    )
+    tariff = 12.0
+    annual_consumption = 6000.0
+    annual_yield = 1400.0
+    if active.system_kwp > 0 and active.annual_savings_php > 0:
+        annual_consumption = max(
+            active.system_kwp * annual_yield * 0.85,
+            active.annual_savings_php / tariff,
+        )
+        annual_yield = max(annual_yield, active.annual_savings_php / tariff / active.system_kwp)
+
+    return SolverConstraints(
+        target_kwp=base.target_kwp,
+        max_panel_count=base.max_panel_count,
+        usable_roof_area_m2=base.usable_roof_area_m2,
+        budget_php=base.budget_php,
+        require_battery=base.require_battery,
+        min_battery_kwh=base.min_battery_kwh,
+        goal=base.goal,
+        annual_consumption_kwh=annual_consumption,
+        resolved_tariff_php_per_kwh=tariff,
+        annual_yield_per_kwp_kwh=annual_yield,
+    )
+
+
 def optimise_design_session(request: OptimiseDesignRequest) -> DesignSessionSchema:
     if request.session.last_solve is None:
         raise NoValidDesignError("Session has no prior solve to optimise from.")
 
-    base_constraints = request.session.last_solve.constraints
-    domain_constraints = SolverConstraints(
-        target_kwp=base_constraints.target_kwp,
-        max_panel_count=base_constraints.max_panel_count,
-        usable_roof_area_m2=base_constraints.usable_roof_area_m2,
-        budget_php=base_constraints.budget_php,
-        require_battery=base_constraints.require_battery,
-        min_battery_kwh=base_constraints.min_battery_kwh,
-        goal=base_constraints.goal,
+    domain_constraints = _domain_constraints_from_session(
+        request.session.last_solve.constraints,
+        session=request.session,
     )
     updated = goal_constraints(request.goal, domain_constraints)
     solve_result = run_solver(updated)
+    if not solve_result.valid and updated.budget_php is not None:
+        solve_result = run_solver(replace(updated, budget_php=None))
 
-    annual_consumption = 6000.0
-    tariff = 12.0
-    annual_yield = 1400.0
+    annual_consumption = domain_constraints.annual_consumption_kwh
+    tariff = domain_constraints.resolved_tariff_php_per_kwh
+    annual_yield = domain_constraints.annual_yield_per_kwp_kwh
 
     session = _session_from_solve(
         solve_result=solve_result,
@@ -353,6 +413,8 @@ def optimise_design_session(request: OptimiseDesignRequest) -> DesignSessionSche
         annual_yield_per_kwp_kwh=annual_yield,
         resolved_tariff_php_per_kwh=tariff,
     )
+    if not session.builds:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
     return _to_session_schema(session)
 
 
@@ -361,14 +423,9 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         raise NoValidDesignError("Session has no prior solve to mutate.")
 
     base = request.session.last_solve.constraints
-    domain_constraints = SolverConstraints(
-        target_kwp=base.target_kwp,
-        max_panel_count=base.max_panel_count,
-        usable_roof_area_m2=base.usable_roof_area_m2,
-        budget_php=base.budget_php,
-        require_battery=base.require_battery,
-        min_battery_kwh=base.min_battery_kwh,
-        goal=base.goal,
+    domain_constraints = _domain_constraints_from_session(
+        base,
+        session=request.session,
     )
     patched = apply_constraint_patch(
         domain_constraints,
@@ -378,18 +435,19 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         min_battery_kwh=request.min_battery_kwh,
         locked_panel_id=request.locked_panel_id,
         locked_inverter_id=request.locked_inverter_id,
+        locked_battery_id=request.locked_battery_id,
         panel_count_delta=request.panel_count_delta,
     )
     solve_result = run_solver(patched)
-    session = _session_from_solve(
+    if not solve_result.valid and patched.budget_php is not None:
+        solve_result = run_solver(replace(patched, budget_php=None))
+    return _session_with_custom_build(
+        existing=request.session,
         solve_result=solve_result,
-        property_ref=request.session.property_ref,
-        assessment_fingerprint=request.session.assessment_fingerprint,
-        annual_consumption_kwh=6000.0,
-        annual_yield_per_kwp_kwh=1400.0,
-        resolved_tariff_php_per_kwh=12.0,
+        annual_consumption_kwh=domain_constraints.annual_consumption_kwh,
+        annual_yield_per_kwp_kwh=domain_constraints.annual_yield_per_kwp_kwh,
+        resolved_tariff_php_per_kwh=domain_constraints.resolved_tariff_php_per_kwh,
     )
-    return _to_session_schema(session)
 
 
 def get_rejections_for_solve(
@@ -412,6 +470,13 @@ def generate_quotation(request: GenerateQuotationRequest) -> QuotationDocumentSc
     if build is None:
         raise NoValidDesignError(f"Build {request.build_id} not found in session.")
 
+    return compose_quotation(build)
+
+
+def compose_quotation(build: DesignBuildSchema) -> QuotationDocumentSchema:
+    """Composes the quotation document for a build. The PDF report reuses
+    this so a quote rendered into the report is authored by the same domain
+    path as the one served on /quotation, never re-stated by the client."""
     lines = tuple(
         QuotationLine(
             item=component.summary,
@@ -435,6 +500,8 @@ def generate_quotation(request: GenerateQuotationRequest) -> QuotationDocumentSc
         subtotal_php=build.subtotal_php,
         vat_php=build.vat_php,
         total_php=build.total_investment_php,
+        total_low_php=build.total_investment_low_php,
+        total_high_php=build.total_investment_high_php,
         payment_terms=PAYMENT_TERMS,
         warranty_summary="Component warranties per manufacturer; installation workmanship 1 year.",
         is_draft=True,
@@ -461,6 +528,8 @@ def generate_quotation(request: GenerateQuotationRequest) -> QuotationDocumentSc
         subtotal_php=quote.subtotal_php,
         vat_php=quote.vat_php,
         total_php=quote.total_php,
+        total_low_php=quote.total_low_php,
+        total_high_php=quote.total_high_php,
         payment_terms=quote.payment_terms,
         warranty_summary=quote.warranty_summary,
         is_draft=quote.is_draft,

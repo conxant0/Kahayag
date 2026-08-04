@@ -127,7 +127,9 @@ export function EditLayoutPage() {
   ]);
 
   if (!result || !layoutContext) {
-    return <Navigate to={ROUTE_PATHS.energy} replace />;
+    // Memory-only result: recompute via /loading rather than dropping the
+    // visitor on the bill screen after a refresh.
+    return <Navigate to={ROUTE_PATHS.loading} replace />;
   }
   const recommendation =
     candidateAdjustment?.recommendation ?? result.recommendation;
@@ -188,25 +190,8 @@ export function EditLayoutPage() {
         formatValue={(value) => `${value} of ${maxPanels} max`}
       />
 
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="ghost"
-          onClick={() =>
-            handlePanelCountChange(result.recommendation.panel_count)
-          }
-          disabled={requestedPanelCount === result.recommendation.panel_count}
-        >
-          Set recommended
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => handlePanelCountChange(initialPanelCount)}
-          disabled={requestedPanelCount === initialPanelCount}
-        >
-          <span aria-hidden="true">↺</span> Reset layout
-        </Button>
-      </div>
-
+      {/* The figures the slider drives sit directly under it — cause and
+          effect adjacent — with the corrective actions demoted below. */}
       <section
         className="flex w-full flex-col gap-2.5 pt-1"
         aria-label="Live results"
@@ -243,8 +228,29 @@ export function EditLayoutPage() {
         </dl>
       </section>
 
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          fullWidth
+          onClick={() =>
+            handlePanelCountChange(result.recommendation.panel_count)
+          }
+          disabled={requestedPanelCount === result.recommendation.panel_count}
+        >
+          Set recommended
+        </Button>
+        <Button
+          variant="ghost"
+          fullWidth
+          onClick={() => handlePanelCountChange(initialPanelCount)}
+          disabled={requestedPanelCount === initialPanelCount}
+        >
+          <span aria-hidden="true">↺</span> Reset layout
+        </Button>
+      </div>
+
       {adjustmentError ? (
-        <p className="font-sans text-sm text-red-700" role="alert">
+        <p className="font-sans text-sm text-ember" role="alert">
           {adjustmentError}
         </p>
       ) : null}

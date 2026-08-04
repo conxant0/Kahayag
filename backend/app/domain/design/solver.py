@@ -2,6 +2,7 @@
 
 import uuid
 
+from app.domain.design.bom import estimate_balance_of_system_cost_php
 from app.domain.design.catalog import (
     CatalogBattery,
     CatalogInverter,
@@ -47,31 +48,13 @@ def _estimate_combo_cost_php(
     inverter_cost = inverter.price_php.mid * inverter_units
     battery_cost = battery.price_php.mid if battery else 0.0
 
-    mount = catalog.mounting_kits["mount_001"]
-    cable = catalog.cabling["cable_001"]
-    install = catalog.misc_bom_items["misc_001"]
-    permits = catalog.misc_bom_items["misc_002"]
-    protection_id = "prot_002" if inverter.battery_compatible else "prot_001"
-    protection = catalog.protections[protection_id]
-
-    mount_cost = (mount.price_php_per_kwp.mid if mount.price_php_per_kwp else 0) * system_kwp
-    cable_cost = (cable.price_php_per_kwp.mid if cable.price_php_per_kwp else 0) * system_kwp
-    install_cost = (
-        install.price_php_per_kwp.mid if install.price_php_per_kwp else 0
-    ) * system_kwp
-    permits_cost = permits.price_php.mid if permits.price_php else 0
-    protection_cost = protection.price_php.mid if protection.price_php else 0
-
-    return (
-        panel_cost
-        + inverter_cost
-        + battery_cost
-        + mount_cost
-        + cable_cost
-        + install_cost
-        + permits_cost
-        + protection_cost
+    bos_cost = estimate_balance_of_system_cost_php(
+        system_kwp,
+        hybrid=inverter.battery_compatible,
+        catalog=catalog,
     )
+
+    return panel_cost + inverter_cost + battery_cost + bos_cost
 
 
 def _annual_offset_ratio(system_kwp: float, constraints: SolverConstraints) -> float:
@@ -113,23 +96,28 @@ def _can_partition_strings(
     if panel_count < min_series:
         return False, f"need at least {min_series} panels for MPPT minimum voltage"
 
-    remaining = panel_count
-    strings_used = 0
-    while remaining > 0 and strings_used < mppt_count:
-        take = min(remaining, max_series)
-        if take < min_series and strings_used == 0 and remaining <= mppt_count * max_series:
-            take = remaining
-        if take < min_series:
-            return False, "cannot form valid string within MPPT voltage window"
-        if panel.imp_a > inverter.max_input_current_per_mppt_a:
-            return False, "panel Imp exceeds inverter max input current per MPPT"
-        remaining -= take
-        strings_used += 1
+    if panel.imp_a > inverter.max_input_current_per_mppt_a:
+        return False, "panel Imp exceeds inverter max input current per MPPT"
 
-    if remaining > 0:
-        return False, f"panel count exceeds {mppt_count} MPPT string capacity"
+    def can_split(remaining: int, strings_left: int) -> bool:
+        if remaining == 0:
+            return strings_left == 0
+        if strings_left <= 0:
+            return False
 
-    return True, "ok"
+        min_remaining = (strings_left - 1) * min_series
+        max_remaining = (strings_left - 1) * max_series
+        lo = max(min_series, remaining - max_remaining)
+        hi = min(max_series, remaining - min_remaining)
+        for take in range(lo, hi + 1):
+            if can_split(remaining - take, strings_left - 1):
+                return True
+        return False
+
+    if can_split(panel_count, mppt_count):
+        return True, "ok"
+
+    return False, "cannot form valid string within MPPT voltage window"
 
 
 def _evaluate_combo(
@@ -155,6 +143,9 @@ def _evaluate_combo(
             min(100.0, dc_w / inverter.max_dc_input_w * 100), 1
         )
 
+    ratio_min = 1.05 if constraints.require_battery else DC_AC_RATIO_MIN
+    ratio_max = DC_AC_RATIO_MAX
+
     if constraints.locked_panel_id and panel.id != constraints.locked_panel_id:
         return None, make_rejection(
             key,
@@ -169,6 +160,16 @@ def _evaluate_combo(
             "locked_inverter",
             f"Inverter {inverter.id} does not match locked inverter",
             inverter_id=inverter.id,
+        )
+
+    if constraints.locked_battery_id and (
+        battery is None or battery.id != constraints.locked_battery_id
+    ):
+        return None, make_rejection(
+            key,
+            "locked_battery",
+            f"Battery must be {constraints.locked_battery_id}",
+            battery_id=battery.id if battery else None,
         )
 
     if panel_count > constraints.max_panel_count:
@@ -190,14 +191,14 @@ def _evaluate_combo(
             usable_m2=constraints.usable_roof_area_m2,
         )
 
-    if dc_ac_ratio < DC_AC_RATIO_MIN or dc_ac_ratio > DC_AC_RATIO_MAX:
+    if dc_ac_ratio < ratio_min or dc_ac_ratio > ratio_max:
         return None, make_rejection(
             key,
             "dc_ac_oversizing",
-            f"DC:AC ratio {dc_ac_ratio} outside {DC_AC_RATIO_MIN}–{DC_AC_RATIO_MAX} window",
+            f"DC:AC ratio {dc_ac_ratio} outside {ratio_min}–{ratio_max} window",
             dc_ac_ratio=dc_ac_ratio,
-            min_ratio=DC_AC_RATIO_MIN,
-            max_ratio=DC_AC_RATIO_MAX,
+            min_ratio=ratio_min,
+            max_ratio=ratio_max,
         )
 
     if _is_microinverter(inverter):
@@ -329,8 +330,13 @@ def _panel_count_candidates(constraints: SolverConstraints) -> range:
         center = target + constraints.panel_count_delta
         return range(max(1, center - 2), min(base_max, center + 2) + 1)
     target_count = max(1, round(constraints.target_kwp * 1000 / 440))
-    low = max(1, target_count - 2)
+    if constraints.require_battery:
+        low = max(1, target_count - 8)
+    else:
+        low = max(1, target_count - 2)
     high = base_max
+    if low > high:
+        low = 1
     return range(low, high + 1)
 
 
@@ -352,6 +358,9 @@ def run_solver(
 
     if constraints.require_battery:
         batteries = list(cat.batteries.values())
+        if constraints.locked_battery_id:
+            locked = cat.batteries.get(constraints.locked_battery_id)
+            batteries = [locked] if locked is not None else []
 
     for panel in panels:
         for inverter in inverters:

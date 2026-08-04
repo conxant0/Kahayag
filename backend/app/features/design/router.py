@@ -1,14 +1,27 @@
-# Defines design REST API endpoints (no agent loop).
+# Defines design REST API endpoints including the thin agent loop.
 
-from fastapi import APIRouter, HTTPException
+import json
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
+from app.core.config import Settings, get_settings
+from app.features.design.agent import explain_design_session, run_design_agent_turn
+from app.features.design.catalog_options import get_catalog_options
+from app.features.design.quote_audit import audit_uploaded_quote
 from app.features.design.schemas import (
+    AgentDesignRequest,
+    AgentDesignResponse,
     BootstrapDesignRequest,
+    CatalogOptionSchema,
+    CatalogOptionsRequest,
     DesignSessionSchema,
+    ExplainDesignRequest,
+    ExplainDesignResponse,
     GenerateQuotationRequest,
     MutateDesignRequest,
     OptimiseDesignRequest,
     QuotationDocumentSchema,
+    QuoteAuditResponseSchema,
     RejectionReasonSchema,
 )
 from app.features.design.service import (
@@ -19,8 +32,12 @@ from app.features.design.service import (
     mutate_design_session,
     optimise_design_session,
 )
+from app.integrations.ai import get_design_agent_client, get_quote_auditor_client
+from app.integrations.quote_parsing import get_quote_image_transcriber
 
 router = APIRouter(prefix="/designs", tags=["designs"])
+
+DependsSettings = Depends(get_settings)
 
 
 @router.post("/bootstrap", response_model=DesignSessionSchema)
@@ -47,6 +64,11 @@ def mutate_design(request: MutateDesignRequest) -> DesignSessionSchema:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
 
+@router.post("/catalog-options", response_model=tuple[CatalogOptionSchema, ...])
+def catalog_options(request: CatalogOptionsRequest) -> tuple[CatalogOptionSchema, ...]:
+    return get_catalog_options(request)
+
+
 @router.get(
     "/solves/{solve_id}/rejections",
     response_model=tuple[RejectionReasonSchema, ...],
@@ -66,3 +88,59 @@ def create_quotation(
         return generate_quotation(request)
     except NoValidDesignError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.post("/agent", response_model=AgentDesignResponse)
+def design_agent_turn(
+    request: AgentDesignRequest,
+    settings: Settings = DependsSettings,
+) -> AgentDesignResponse:
+    try:
+        return run_design_agent_turn(
+            request,
+            client=get_design_agent_client(settings),
+        )
+    except NoValidDesignError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/explain", response_model=ExplainDesignResponse)
+def explain_design(
+    request: ExplainDesignRequest,
+    settings: Settings = DependsSettings,
+) -> ExplainDesignResponse:
+    return explain_design_session(
+        request,
+        client=get_design_agent_client(settings),
+    )
+
+
+@router.post("/quote-audit", response_model=QuoteAuditResponseSchema)
+async def audit_quote(
+    session: str = Form(...),
+    file: UploadFile = File(...),  # noqa: B008
+    settings: Settings = DependsSettings,
+) -> QuoteAuditResponseSchema:
+    try:
+        session_payload = DesignSessionSchema.model_validate(json.loads(session))
+    except (json.JSONDecodeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail="Invalid session payload.") from error
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    try:
+        quote_client = get_quote_auditor_client(settings)
+        return audit_uploaded_quote(
+            filename=file.filename or "upload.txt",
+            content=content,
+            session=session_payload,
+            client=quote_client,
+            image_transcriber=get_quote_image_transcriber(
+                settings,
+                quote_client=quote_client,
+            ),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error

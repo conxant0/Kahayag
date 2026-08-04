@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import Field, StrictBool, StrictFloat, StrictInt
+from pydantic import Field, StrictBool, StrictFloat, StrictInt, model_validator
 
 from app.shared.schemas import ContractModel
 
@@ -33,6 +33,7 @@ class DesignComponentSchema(ContractModel):
     warranty_note: str
     badges: tuple[str, ...] = ()
     specs: dict[str, str | float | int] = Field(default_factory=dict)
+    product_image: str | None = None
 
 
 class RejectionReasonSchema(ContractModel):
@@ -87,6 +88,8 @@ class DesignBuildSchema(ContractModel):
     annual_savings_php: StrictFloat = Field(ge=0)
     payback_years: StrictFloat | None = Field(default=None, ge=0)
     total_investment_php: StrictFloat = Field(ge=0)
+    total_investment_low_php: StrictFloat = Field(ge=0)
+    total_investment_high_php: StrictFloat = Field(ge=0)
     subtotal_php: StrictFloat = Field(ge=0)
     vat_php: StrictFloat = Field(ge=0)
     inverter_utilisation_pct: StrictFloat = Field(ge=0)
@@ -95,6 +98,12 @@ class DesignBuildSchema(ContractModel):
     insight: str
     components: tuple[DesignComponentSchema, ...]
     source: BuildSource
+
+    @model_validator(mode="after")
+    def validate_investment_range(self) -> "DesignBuildSchema":
+        if self.total_investment_high_php < self.total_investment_low_php:
+            raise ValueError("total_investment_high_php must be >= total_investment_low_php")
+        return self
 
 
 class AgentAuditEntrySchema(ContractModel):
@@ -109,7 +118,9 @@ class DesignSessionSchema(ContractModel):
     property_ref: str
     assessment_fingerprint: str
     active_build_id: str
-    builds: tuple[DesignBuildSchema, ...]
+    # A session with no builds has nothing to mutate, optimise, or benchmark —
+    # rejecting it at the schema (422) beats an IndexError (500) downstream.
+    builds: tuple[DesignBuildSchema, ...] = Field(min_length=1)
     last_solve: SolveResultSchema | None = None
     applied: StrictBool = False
     agent_audit: tuple[AgentAuditEntrySchema, ...] = ()
@@ -135,6 +146,8 @@ class QuotationDocumentSchema(ContractModel):
     subtotal_php: StrictFloat = Field(ge=0)
     vat_php: StrictFloat = Field(ge=0)
     total_php: StrictFloat = Field(ge=0)
+    total_low_php: StrictFloat = Field(ge=0)
+    total_high_php: StrictFloat = Field(ge=0)
     payment_terms: str
     warranty_summary: str
     is_draft: StrictBool = True
@@ -158,9 +171,74 @@ class MutateDesignRequest(ContractModel):
     min_battery_kwh: StrictFloat | None = Field(default=None, gt=0)
     locked_panel_id: str | None = None
     locked_inverter_id: str | None = None
+    locked_battery_id: str | None = None
     panel_count_delta: StrictInt | None = None
+
+
+CatalogOptionStatus = Literal["selected", "recommended", "compatible", "incompatible"]
+CatalogPickerSlot = Literal["panel", "inverter", "battery"]
+
+
+class CatalogOptionSchema(ContractModel):
+    id: str
+    brand: str
+    model: str
+    summary: str
+    status: CatalogOptionStatus
+    reason: str | None = None
+    specs: dict[str, str | float | int] = Field(default_factory=dict)
+
+
+class CatalogOptionsRequest(ContractModel):
+    session: DesignSessionSchema
+    slot: CatalogPickerSlot
 
 
 class GenerateQuotationRequest(ContractModel):
     build_id: str = Field(min_length=1)
     session: DesignSessionSchema
+
+
+class AgentDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    user_text: str = Field(min_length=1)
+    dry_run: StrictBool = False
+
+
+class PlannedActionSchema(ContractModel):
+    name: str
+    arguments: dict[str, object] = Field(default_factory=dict)
+
+
+class AgentDesignResponse(ContractModel):
+    session: DesignSessionSchema
+    reply: str
+    requires_confirmation: StrictBool = False
+    planned_actions: tuple[PlannedActionSchema, ...] = ()
+
+
+class ExplainDesignRequest(ContractModel):
+    session: DesignSessionSchema
+    question: str = Field(min_length=1)
+
+
+class ExplainDesignResponse(ContractModel):
+    explanation: str
+
+
+class QuoteAuditFindingSchema(ContractModel):
+    category: str
+    severity: Literal["info", "warning", "positive"]
+    message: str
+
+
+class QuoteAuditResponseSchema(ContractModel):
+    filename: str
+    extracted_total_php: StrictFloat | None = None
+    extracted_system_kwp: StrictFloat | None = None
+    extracted_panel_count: StrictInt | None = Field(default=None, ge=0)
+    benchmark_total_php: StrictFloat = Field(ge=0)
+    benchmark_system_kwp: StrictFloat = Field(gt=0)
+    findings: tuple[QuoteAuditFindingSchema, ...] = ()
+    summary: str
+    diagram_components: tuple[DesignComponentSchema, ...] = ()
