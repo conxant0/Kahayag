@@ -79,6 +79,28 @@ def test_unreadable_upload_never_silently_passes() -> None:
     assert doc.status == "needs_review"
 
 
+def test_photo_upload_is_treated_as_unreadable_not_decoded_as_text() -> None:
+    # JPEG magic bytes decode to plausible-looking ASCII (e.g. "JFIF") under
+    # errors="ignore", which must not slip past the unreadable guard.
+    jpeg_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+    upload = UploadedDocument(
+        slot_id="obo_14_tct",
+        filename="scan.jpg",
+        content=jpeg_bytes,
+    )
+    result = assess_permit_documents(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(upload,),
+        client=CLIENT,
+    )
+    unreadable = [f for f in result.findings if f.category == "unreadable"]
+    assert any(f.document_id == "obo_14_tct" for f in unreadable)
+    doc = next(d for d in result.documents if d.document_id == "obo_14_tct")
+    assert doc.status == "needs_review"
+
+
 def test_address_mismatch_reports_raw_strings() -> None:
     upload = UploadedDocument(
         slot_id="obo_13_hoa_clearance",
