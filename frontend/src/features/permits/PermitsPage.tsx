@@ -1,5 +1,5 @@
 // Defines the D6 permits step, now the last step in the pipeline
-// (quotation -> brief -> report -> permits). Live data replaces the
+// (quotation -> brief -> permits). Live data replaces the
 // `/permits-preview` fixture: property address
 // and system size come from the assessment/design session, and the checklist
 // is the real POST /permits/assess response — the domain computes, this page
