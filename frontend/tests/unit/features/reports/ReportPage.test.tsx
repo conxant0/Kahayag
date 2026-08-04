@@ -215,36 +215,25 @@ describe("ReportPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears the session before starting another assessment", async () => {
-    const user = userEvent.setup();
+  it("offers a CTA to the permit check below the PDF download", () => {
     seedSession();
-
-    const router = createMemoryRouter(
-      [
-        { path: "/report", element: <ReportPage /> },
-        { path: "/", element: <p>Landing</p> },
-      ],
-      { initialEntries: ["/report"] },
-    );
 
     render(
       <Providers>
-        <RouterProvider router={router} />
+        <MemoryRouter initialEntries={["/report"]}>
+          <ReportPage />
+        </MemoryRouter>
       </Providers>,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Start another assessment" }),
-    );
-
-    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
-    // Left behind entirely: arriving at step one holding the previous roof
-    // would offer to resume what was just abandoned.
-    const session = useAssessmentStore.getState();
-    expect(session.result).toBeNull();
-    expect(session.selectedProperty).toBeNull();
-    expect(session.roofPolygon).toBeNull();
-    expect(session.energyInputs.monthlyBillPhp).toBeNull();
+    const permitLink = screen.getByRole("link", {
+      name: /Check permit requirements/,
+    });
+    expect(permitLink).toBeInTheDocument();
+    expect(permitLink).toHaveAttribute("href", "/permits");
+    expect(
+      screen.queryByRole("button", { name: "Start another assessment" }),
+    ).not.toBeInTheDocument();
   });
 
   it("redirects to energy when no assessment has been run", async () => {

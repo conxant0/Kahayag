@@ -1,5 +1,6 @@
-// Defines the D6 permits step, wired into the design flow after Quotation
-// (T3b). Live data replaces the `/permits-preview` fixture: property address
+// Defines the D6 permits step, now the last step in the pipeline
+// (quotation -> brief -> report -> permits). Live data replaces the
+// `/permits-preview` fixture: property address
 // and system size come from the assessment/design session, and the checklist
 // is the real POST /permits/assess response — the domain computes, this page
 // only renders it (AGENTS.md rule 1). Documents uploaded here are resent on
@@ -10,7 +11,7 @@ import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { DesignFlowStepper } from "../../shared/components/layout/DesignFlowStepper";
-import { ButtonLink, Eyebrow, Rule } from "../../shared/components/ui";
+import { Button, Eyebrow, Rule } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
 import { getActiveBuild } from "../design/designViewModel";
@@ -31,6 +32,7 @@ const DEFAULT_APPLICANT: ApplicantFormValues = {
 
 export function PermitsPage() {
   const selectedProperty = useAssessmentStore((state) => state.selectedProperty);
+  const resetAssessment = useAssessmentStore((state) => state.reset);
   const designSession = useDesignStore((state) => state.designSession);
   const activeBuild = getActiveBuild(designSession);
 
@@ -38,6 +40,8 @@ export function PermitsPage() {
   const [submittedApplicant, setSubmittedApplicant] = useState<ApplicantFormValues | null>(null);
   const [uploads, setUploads] = useState<ReadonlyMap<string, File>>(() => new Map());
   const [lastAssessment, setLastAssessment] = useState<PermitAssessment | null>(null);
+  const [egovAcknowledged, setEgovAcknowledged] = useState(false);
+  const [isStartingOver, setIsStartingOver] = useState(false);
   const assess = useAssessPermit();
 
   const propertyAddress = selectedProperty?.address ?? "";
@@ -56,6 +60,10 @@ export function PermitsPage() {
     // the request's own inputs should re-trigger it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submittedApplicant, uploads, buildId, propertyAddress, systemKwp]);
+
+  if (isStartingOver) {
+    return <Navigate to={ROUTE_PATHS.landing} replace />;
+  }
 
   if (!designSession || !activeBuild) {
     return <Navigate to={ROUTE_PATHS.compare} replace />;
@@ -131,9 +139,24 @@ export function PermitsPage() {
                 />
                 <Rule />
                 <PacketStatusCard assessment={assessment} />
-                <ButtonLink to={ROUTE_PATHS.brief} fullWidth>
-                  Start saving with solar
-                </ButtonLink>
+                <Button
+                  fullWidth
+                  onClick={() => setEgovAcknowledged(true)}
+                >
+                  Submit to eGov
+                </Button>
+                {egovAcknowledged ? (
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    onClick={() => {
+                      setIsStartingOver(true);
+                      resetAssessment();
+                    }}
+                  >
+                    Start another assessment
+                  </Button>
+                ) : null}
               </>
             ) : (
               <p className="font-sans text-sm text-secondary">
