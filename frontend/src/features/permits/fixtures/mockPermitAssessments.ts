@@ -48,7 +48,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
   ],
   documents: [
     {
-      document_id: "tct",
+      document_id: "obo_14_tct",
       title: "Transfer Certificate of Title (TCT)",
       status: "uploaded",
       expires: false,
@@ -62,7 +62,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       prerequisites: [],
     },
     {
-      document_id: "tax_declaration",
+      document_id: "obo_15_tax_declaration_lot",
       title: "Tax Declaration",
       status: "missing",
       expires: false,
@@ -75,7 +75,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       prerequisites: [],
     },
     {
-      document_id: "tax_clearance",
+      document_id: "obo_16_tax_clearance_lot",
       title: "Real Property Tax Clearance",
       status: "needs_review",
       expires: true,
@@ -84,12 +84,11 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       steps: [
         "Go to the City Treasurer's Office at Cebu City Hall and request a real property tax clearance for the lot.",
         "Real property tax must be paid up for the current year — the clearance reflects that payment status.",
-        "Your cedula comes from the same office, so one visit can cover both.",
       ],
-      prerequisites: ["tax_declaration"],
+      prerequisites: ["obo_15_tax_declaration_lot"],
     },
     {
-      document_id: "barangay_clearance",
+      document_id: "obo_12_barangay_clearance",
       title: "Barangay Clearance",
       status: "uploaded",
       expires: true,
@@ -102,20 +101,7 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
       prerequisites: [],
     },
     {
-      document_id: "cedula",
-      title: "Community Tax Certificate (Cedula)",
-      status: "uploaded",
-      expires: true,
-      unverified: true,
-      issuing_agency: "City Treasurer's Office, Cebu City",
-      steps: [
-        "Request a Community Tax Certificate (cedula) at the City Treasurer's Office, Cebu City Hall — the same office that issues the tax clearance, so one visit covers both.",
-        "Check the date before leaving the counter: it must be issued for the current year.",
-      ],
-      prerequisites: [],
-    },
-    {
-      document_id: "notarized_authorization",
+      document_id: "obo_18_consent_and_authority",
       title: "Notarized Consent and Authority to file",
       status: "missing",
       expires: false,
@@ -130,38 +116,31 @@ export const mockPermitAssessmentIncomplete: PermitAssessment = {
   ],
   findings: [
     {
-      document_id: "tax_declaration",
+      document_id: "obo_15_tax_declaration_lot",
       category: "presence",
       severity: "blocking",
       message: "Tax declaration has not been uploaded yet.",
     },
     {
-      document_id: "tax_clearance",
+      document_id: "obo_16_tax_clearance_lot",
       category: "unreadable",
       severity: "warning",
       message:
         "The uploaded tax clearance scan is too low-resolution to extract the property owner's name or expiry date. Re-scan at a higher resolution or take a clearer photo.",
     },
     {
-      document_id: "barangay_clearance",
+      document_id: "obo_12_barangay_clearance",
       category: "name_mismatch",
       severity: "blocking",
       message:
         'The name on this barangay clearance reads "Maria C. Santos", but you entered "Maria Cruz Santos-Reyes" as your full name. Confirm this is the same person, or re-upload the correct document.',
     },
     {
-      document_id: "notarized_authorization",
+      document_id: "obo_18_consent_and_authority",
       category: "presence",
       severity: "blocking",
       message:
         "You told us you are not the registered owner, so a notarized authorization from the registered owner is required and has not been uploaded yet.",
-    },
-    {
-      document_id: "cedula",
-      category: "expiry",
-      severity: "info",
-      message:
-        "Cedulas are issued yearly. Confirm this one is dated for the current year before handing off the packet.",
     },
   ],
   packet_status: "incomplete",
@@ -199,7 +178,7 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
   ],
   documents: [
     {
-      document_id: "tct",
+      document_id: "obo_14_tct",
       title: "Transfer Certificate of Title (TCT)",
       status: "uploaded",
       expires: false,
@@ -212,7 +191,7 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
       prerequisites: [],
     },
     {
-      document_id: "tax_declaration",
+      document_id: "obo_15_tax_declaration_lot",
       title: "Tax Declaration",
       status: "uploaded",
       expires: false,
@@ -225,7 +204,7 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
       prerequisites: [],
     },
     {
-      document_id: "barangay_clearance",
+      document_id: "obo_12_barangay_clearance",
       title: "Barangay Clearance",
       status: "uploaded",
       expires: true,
@@ -240,7 +219,7 @@ export const mockPermitAssessmentComplete: PermitAssessment = {
   ],
   findings: [
     {
-      document_id: "tct",
+      document_id: "obo_14_tct",
       category: "presence",
       severity: "info",
       message: "Owner name on the TCT matches the name you entered.",

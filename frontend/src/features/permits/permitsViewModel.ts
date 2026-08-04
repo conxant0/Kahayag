@@ -44,7 +44,7 @@ export const DOCUMENT_CATALOG: Record<
     validity_note?: string;
   }
 > = {
-  tct: {
+  obo_14_tct: {
     title: "Transfer Certificate of Title (TCT)",
     source_url:
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
@@ -55,7 +55,7 @@ export const DOCUMENT_CATALOG: Record<
     validity_note:
       "No explicit validity window, but it must be a certified true copy — which implies a recent one.",
   },
-  tax_declaration: {
+  obo_15_tax_declaration_lot: {
     title: "Tax Declaration",
     source_url:
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
@@ -63,7 +63,7 @@ export const DOCUMENT_CATALOG: Record<
     source_excerpt:
       '"Certified True Copy of Lot Tax Declaration" — OBO-FM-PII-B-36 v.00, item 15.',
   },
-  tax_clearance: {
+  obo_16_tax_clearance_lot: {
     title: "Real Property Tax Clearance",
     source_url:
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
@@ -73,35 +73,26 @@ export const DOCUMENT_CATALOG: Record<
     validity_note:
       "Annual — reflects current-year real property tax payment status.",
   },
-  barangay_clearance: {
+  obo_12_barangay_clearance: {
     title: "Barangay Clearance",
     source_url:
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
     legal_basis: "Cebu City OBO Building Permit Requirements Checklist, item 12.",
     source_excerpt: '"Barangay Clearance" — OBO-FM-PII-B-36 v.00, item 12.',
   },
-  cedula: {
-    title: "Community Tax Certificate (Cedula)",
-    source_url: "https://cebucity.gov.ph/city-treasurers-office/",
-    legal_basis:
-      "Local Government Code (RA 7160) community tax certificate requirement, commonly requested alongside a barangay clearance.",
-    source_excerpt:
-      "Community Tax Certificate (Cedula) — annual, issued by the City Treasurer's Office.",
-    validity_note: "Issued yearly — must be dated for the current year.",
-  },
-  valid_id: {
+  veco_valid_government_id: {
     title: "Valid Government-Issued ID",
     source_url: "https://www.visayanelectric.com/customer-services/apply-electrical-connection-1",
     legal_basis:
       'Visayan Electric net-metering application requirements — "Valid IDs & Proof of Ownership".',
     source_excerpt: "VECO customer service page, Apply for Electrical Connection.",
   },
-  notarized_authorization: {
-    title: "Notarized Consent and Authority to file",
+  obo_18_consent_and_authority: {
+    title: "Consent and Authority (notarized)",
     source_url:
       "https://www.cebucity.gov.ph/wp-content/uploads/2023/09/OBO-FM-PII-B-36-v.00-Requirements-Checklist-Building-Permit.pdf",
     legal_basis:
-      "Cebu City OBO Building Permit Requirements Checklist, item 18 (Consent and Authority, notarized) — required only if the applicant is not the registered owner.",
+      "Cebu City OBO Building Permit Requirements Checklist, item 18 — required only if the applicant is not the registered owner.",
     source_excerpt: '"Consent and Authority (notarized)" — OBO-FM-PII-B-36 v.00, item 18.',
   },
 };
@@ -242,15 +233,18 @@ export function documentRowAnchor(documentId: string): string {
 
 /** Homeowner-facing document sets per track (app.domain.permits.catalog.documents_for_track,
  * filtered to the homeowner-produced subset per CLOSED-document-scope.md). */
-const STREAMLINED_DOCUMENT_IDS = ["tct", "tax_declaration", "barangay_clearance"] as const;
-const RETROFIT_DOCUMENT_IDS = [
-  "tct",
-  "tax_declaration",
-  "tax_clearance",
-  "barangay_clearance",
-  "cedula",
+const STREAMLINED_DOCUMENT_IDS = [
+  "obo_14_tct",
+  "obo_15_tax_declaration_lot",
+  "obo_12_barangay_clearance",
 ] as const;
-const OWNER_MISMATCH_DOCUMENT_ID = "notarized_authorization";
+const RETROFIT_DOCUMENT_IDS = [
+  "obo_14_tct",
+  "obo_15_tax_declaration_lot",
+  "obo_16_tax_clearance_lot",
+  "obo_12_barangay_clearance",
+] as const;
+const OWNER_MISMATCH_DOCUMENT_ID = "obo_18_consent_and_authority";
 
 /** Mirrors app.domain.permits.rules.resolve_track: "yes" is the only opt-in to
  * the streamlined track; "no" or "not_sure" defaults to the fuller retrofit

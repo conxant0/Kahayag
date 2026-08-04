@@ -148,8 +148,8 @@ describe("PermitChatSidebar", () => {
   it("sends the uploaded documents so the reply is grounded in the real packet", async () => {
     const user = userEvent.setup();
     const uploads = new Map<string, File>([
-      ["tct", new File(["x"], "title.pdf", { type: "application/pdf" })],
-      ["cedula", new File(["y"], "cedula.pdf", { type: "application/pdf" })],
+      ["obo_14_tct", new File(["x"], "title.pdf", { type: "application/pdf" })],
+      ["obo_16_tax_clearance_lot", new File(["y"], "tax_clearance.pdf", { type: "application/pdf" })],
     ]);
     renderSidebar({ uploads, buildId: "build-1" });
 
@@ -158,7 +158,7 @@ describe("PermitChatSidebar", () => {
 
     await waitFor(() => expect(apiUploadForm).toHaveBeenCalledTimes(1));
     const formData = apiUploadForm.mock.calls[0]![1] as FormData;
-    expect(formData.getAll("slot_ids")).toEqual(["tct", "cedula"]);
+    expect(formData.getAll("slot_ids")).toEqual(["obo_14_tct", "obo_16_tax_clearance_lot"]);
     expect(formData.getAll("files")).toHaveLength(2);
     expect(JSON.parse(String(formData.get("request"))).build_id).toBe("build-1");
   });
