@@ -9,10 +9,9 @@ import { getActiveBuild } from "../design/designViewModel";
 import { AskEngineSidebar } from "./AskEngineSidebar";
 import { WhatHappensNext } from "./WhatHappensNext";
 import {
-  PAYMENT_TERMS_LINES,
-  WARRANTY_LINES,
   formatIssuedDate,
   quoteMetrics,
+  termsLines,
   whyThisPaysCopy,
 } from "./quotationViewModel";
 import { useQuotation } from "./useQuotation";
@@ -65,7 +64,9 @@ export function QuotationPage() {
         id="main"
         className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 pt-6 pb-28 lg:gap-8 lg:px-10 lg:pt-10 lg:pb-16"
       >
-        <DesignFlowStepper activeStep={5} />
+        <div className="print:hidden">
+          <DesignFlowStepper activeStep={5} />
+        </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
           <article className="quotation-document rounded-[20px] border border-hairline bg-white p-5 shadow-[0_8px_24px_rgba(26,23,18,0.04)] lg:p-8">
@@ -146,7 +147,10 @@ export function QuotationPage() {
             {quote ? (
               <>
                 <div className="mt-6 overflow-x-auto">
-                  <table className="hidden w-full min-w-[40rem] border-collapse font-sans text-sm lg:table">
+                  {/* Print always gets the formal table: the print viewport is
+                      paper-width (~800px), so `lg:` alone would never match
+                      and the PDF would carry the mobile pill list. */}
+                  <table className="hidden w-full min-w-[40rem] border-collapse font-sans text-sm lg:table print:table">
                     <thead>
                       <tr className="border-b border-hairline text-left text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
                         <th className="py-2 pr-2">Sr</th>
@@ -186,7 +190,7 @@ export function QuotationPage() {
                     </tbody>
                   </table>
 
-                  <div className="flex flex-col gap-4 lg:hidden">
+                  <div className="flex flex-col gap-4 lg:hidden print:hidden">
                     <Eyebrow>Line items · {quote.lines.length}</Eyebrow>
                     {quote.lines.map((line, index) => (
                       <div
@@ -222,10 +226,12 @@ export function QuotationPage() {
 
                 <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                   <div className="flex flex-col gap-5">
+                    {/* Terms come from the quotation document the backend
+                        composed — the page never authors contractual copy. */}
                     <section aria-label="Payment terms">
                       <Eyebrow>Payment terms</Eyebrow>
                       <ul className="mt-2 flex flex-col gap-2">
-                        {PAYMENT_TERMS_LINES.map((line) => (
+                        {termsLines(quote.payment_terms).map((line) => (
                           <li
                             key={line}
                             className="flex gap-2 font-sans text-[13px] leading-5 text-secondary"
@@ -239,7 +245,7 @@ export function QuotationPage() {
                     <section aria-label="Warranty">
                       <Eyebrow>Warranties</Eyebrow>
                       <ul className="mt-2 flex flex-col gap-2">
-                        {WARRANTY_LINES.map((line) => (
+                        {termsLines(quote.warranty_summary).map((line) => (
                           <li
                             key={line}
                             className="flex gap-2 font-sans text-[13px] leading-5 text-secondary"

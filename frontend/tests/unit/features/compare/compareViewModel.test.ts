@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
-import {
-  compareBuilds,
-  costPerWatt,
-  formatCostPerWatt,
-} from "../../../../src/features/compare/compareViewModel";
+import { compareBuilds } from "../../../../src/features/compare/compareViewModel";
 
 describe("compareViewModel", () => {
   it("orders AI suggested before custom build A", () => {
@@ -26,9 +22,16 @@ describe("compareViewModel", () => {
     );
   });
 
-  it("formats cost per watt from domain totals", () => {
-    const build = mockDesignSession.builds[0]!;
-    expect(costPerWatt(build)).toBeCloseTo(379456 / 5850, 2);
-    expect(formatCostPerWatt(build)).toBe("₱65/W");
+  it("shows no client-computed figures among the metrics", () => {
+    // Hard rule 1: the compare view only formats domain-provided values —
+    // a cost-per-watt (or any other derived money figure) must come from
+    // the build payload, not a client-side division.
+    const views = compareBuilds(mockDesignSession);
+    for (const view of views) {
+      expect(view.metrics.map((row) => row.label)).not.toContain("Cost per watt");
+      expect(view.technicalRows.map((row) => row.label)).not.toContain(
+        "Cost per watt",
+      );
+    }
   });
 });

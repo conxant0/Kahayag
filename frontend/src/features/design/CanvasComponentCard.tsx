@@ -8,6 +8,11 @@ function formatStatLabel(key: string): string {
   return key.replace(/_/g, " ");
 }
 
+/**
+ * Stat pairs come from the component's own catalog data — a missing warranty
+ * renders no warranty stat rather than an invented figure. The domain
+ * supplies the facts; this card only formats them.
+ */
 function statEntries(component: DesignComponent): Array<{ label: string; value: string }> {
   const entries = Object.entries(component.specs).slice(0, 2).map(([key, value]) => ({
     label: formatStatLabel(key),
@@ -27,8 +32,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
             ? `${component.specs.wattage_w} Wp`
             : `${component.qty} pcs`,
       },
-      { label: "Warranty", value: component.warranty_note || "25 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   if (component.slot === "inverter") {
@@ -40,8 +45,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
             ? `${component.specs.efficiency_pct}%`
             : `${component.qty || 1} unit`,
       },
-      { label: "Warranty", value: component.warranty_note || "10 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   if (component.slot === "battery" && component.qty > 0) {
@@ -53,8 +58,8 @@ function statEntries(component: DesignComponent): Array<{ label: string; value: 
           : null;
     return [
       { label: "Capacity", value: kwh ? `${kwh} kWh` : "—" },
-      { label: "Warranty", value: component.warranty_note || "10 yrs" },
-    ];
+      { label: "Warranty", value: component.warranty_note },
+    ].filter((entry) => entry.value);
   }
 
   return entries;
@@ -148,27 +153,11 @@ export function CanvasComponentCard({
           </div>
         ) : null}
 
-        {component.slot === "inverter" && autoSuggested ? (
-          <p className="rounded-pill bg-[#fff4cc] px-3 py-1.5 text-center font-sans text-[11px] font-medium text-[#7a5c00]">
-            Built-in AI arc protection
-          </p>
-        ) : null}
-
-        {component.slot === "protection" ? (
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-pill bg-[#f2eee4] px-2.5 py-1 font-sans text-[10px] font-semibold text-secondary">
-              Compliant with PEC 2024
-            </span>
-            <span className="rounded-pill bg-[#fff4cc] px-2.5 py-1 font-sans text-[10px] font-semibold text-[#7a5c00]">
-              Lifetime support
-            </span>
-          </div>
-        ) : null}
-
         <button
           type="button"
           className="flex items-center gap-1 self-start font-sans text-[12px] font-semibold text-cobalt hover:underline"
           onClick={() => setShowDetails((open) => !open)}
+          aria-expanded={showDetails}
         >
           {showDetails ? "Hide details" : "View details"}
           <span aria-hidden="true">ⓘ</span>

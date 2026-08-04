@@ -27,18 +27,10 @@ export type CompareBuildView = {
   technicalRows: CompareMetric[];
 };
 
-export function costPerWatt(build: DesignBuild): number {
-  const watts = build.system_kwp * 1000;
-  if (watts <= 0) {
-    return 0;
-  }
-  return build.total_investment_php / watts;
-}
-
-export function formatCostPerWatt(build: DesignBuild): string {
-  return `₱${costPerWatt(build).toFixed(0)}/W`;
-}
-
+// No cost-per-watt here on purpose: dividing investment by capacity mints a
+// new financial figure client-side, which hard rule 1 reserves for
+// backend/app/domain/. If the compare page should show it, the domain
+// computes it and the build payload carries it.
 export function compareBuilds(session: DesignSession): CompareBuildView[] {
   const suggested =
     session.builds.find((build) => build.source === "ai_suggested") ??
@@ -123,7 +115,6 @@ function overviewSpecs(build: DesignBuild): CompareSpecRow[] {
 function overviewMetrics(build: DesignBuild): CompareMetric[] {
   return [
     { label: "Total cost", value: peso(build.total_investment_php) },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
     {
       label: "Payback",
       value: build.payback_years ? `${build.payback_years.toFixed(1)} years` : "—",
@@ -181,7 +172,6 @@ function technicalMetrics(build: DesignBuild): CompareMetric[] {
       label: "CO₂ avoided",
       value: `${build.co2_tonnes_avoided_yearly.toFixed(1)} t/yr`,
     },
-    { label: "Cost per watt", value: formatCostPerWatt(build) },
     { label: "Fit score", value: build.fit_score.toFixed(1) },
   ];
 }

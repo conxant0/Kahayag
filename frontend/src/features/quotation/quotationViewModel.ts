@@ -1,24 +1,9 @@
-// Builds quotation documents from solver-backed build BOM lines.
-import type {
-  DesignBuild,
-  DesignComponent,
-  QuotationDocument,
-} from "../../shared/api/types";
+// Derives display values for the quotation page. The document itself —
+// numbers, quote number, dates, payment terms, warranty summary — comes from
+// the backend (`POST /designs/{id}/quotation`); nothing contractual is
+// authored here.
+import type { DesignBuild } from "../../shared/api/types";
 import { peso } from "../../shared/lib/currency";
-
-export const QUOTE_VALIDITY_DAYS = 30;
-export const PAYMENT_TERMS_LINES = [
-  "50% downpayment to lock the build and schedule the survey",
-  "40% on equipment delivery to site",
-  "10% on testing and commissioning",
-] as const;
-export const PAYMENT_TERMS = PAYMENT_TERMS_LINES.join("; ");
-export const WARRANTY_LINES = [
-  "25-year panel performance warranty",
-  "10-year inverter warranty",
-  "5-year workmanship warranty",
-] as const;
-export const WARRANTY_SUMMARY = WARRANTY_LINES.join("; ");
 
 export const NEXT_STEPS = [
   {
@@ -39,54 +24,20 @@ export const NEXT_STEPS = [
   },
 ] as const;
 
-const SLOT_ITEM_LABELS: Record<string, string> = {
-  inverter: "Inverter",
-  panel: "Panels",
-  battery: "Battery storage",
-  structure: "Structure",
-  electrical: "Electrical",
-  protection: "Protection",
-  install: "Installation",
-  installation: "Installation",
-  labor: "Installation",
-};
-
-export function quoteNumberForBuild(buildId: string): string {
-  return `KE-2026-${buildId.slice(0, 4).toUpperCase()}`;
-}
-
-export function lineItemLabel(component: DesignComponent): string {
-  return SLOT_ITEM_LABELS[component.slot] ?? component.summary;
-}
-
-export function buildQuotationFromBuild(build: DesignBuild): QuotationDocument {
-  return {
-    build_id: build.id,
-    quote_number: quoteNumberForBuild(build.id),
-    quote_date: new Date().toISOString().slice(0, 10),
-    validity_days: QUOTE_VALIDITY_DAYS,
-    lines: build.components.map((component) => ({
-      item: lineItemLabel(component),
-      description: component.summary || `${component.brand} ${component.model}`,
-      brand: component.brand,
-      uom: component.unit,
-      qty: component.qty,
-      unit_price_php: component.unit_price_php,
-      amount_php: component.line_total_php,
-      price_as_of: component.price_as_of,
-    })),
-    subtotal_php: build.subtotal_php,
-    vat_php: build.vat_php,
-    total_php: build.total_investment_php,
-    payment_terms: PAYMENT_TERMS,
-    warranty_summary: WARRANTY_SUMMARY,
-    is_draft: true,
-  };
+/** Splits the backend's single-string terms into display bullets. Pure
+ * formatting — the words themselves are the domain's. */
+export function termsLines(terms: string): string[] {
+  return terms
+    .split(/[;,]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 export function quoteValidUntil(quoteDate: string, validityDays: number): string {
-  const start = new Date(`${quoteDate}T00:00:00`);
-  start.setDate(start.getDate() + validityDays);
+  // All-UTC arithmetic: parsing local midnight and printing via toISOString
+  // lands a day early in any timezone ahead of UTC — including PH (+8).
+  const start = new Date(`${quoteDate}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + validityDays);
   return start.toISOString().slice(0, 10);
 }
 
