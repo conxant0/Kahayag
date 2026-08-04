@@ -1,10 +1,26 @@
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
 import { ComparePage } from "../../../../src/features/compare/ComparePage";
 import { useDesignStore } from "../../../../src/state/designStore";
+
+vi.mock("../../../../src/features/compare/useQuoteAudit", () => ({
+  useQuoteAudit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+}));
+
+vi.mock("../../../../src/features/design/useDesignActions", () => ({
+  useMutateDesign: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+}));
 
 afterEach(() => {
   useDesignStore.getState().clearDesign();

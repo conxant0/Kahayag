@@ -16,6 +16,7 @@ export const ENDPOINTS = {
   designsMutate: "/designs/mutate",
   designsRejections: (solveId: string) => `/designs/solves/${solveId}/rejections`,
   designsQuotation: (buildId: string) => `/designs/quotation/${buildId}`,
+  designsQuoteAudit: "/designs/quote-audit",
   designsAgent: "/designs/agent",
   designsExplain: "/designs/explain",
 } as const;

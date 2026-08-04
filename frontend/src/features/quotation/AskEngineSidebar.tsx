@@ -65,22 +65,28 @@ export function AskEngineSidebar() {
   const explain = useExplainDesign();
   const busy = agent.isPending || explain.isPending;
 
-  const askQuestion = (question: string) => {
-    explain.mutate(question, {
-      onSuccess: ({ explanation }) => setAskReply(explanation),
-    });
+  const askQuestion = async (question: string) => {
+    try {
+      const { explanation } = await explain.mutateAsync(question);
+      setAskReply(explanation);
+    } catch {
+      // explain.error surfaces below.
+    }
   };
 
-  const sendCustom = (text: string) => {
+  const sendCustom = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) {
       return;
     }
     setAskReply(null);
     setDraft("");
-    agent.mutate(trimmed, {
-      onSuccess: ({ reply }) => setAskReply(reply),
-    });
+    try {
+      const { reply } = await agent.mutateAsync({ user_text: trimmed });
+      setAskReply(reply);
+    } catch {
+      // agent.error surfaces below.
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
 import { DesignFlowStepper } from "../../shared/components/layout";
@@ -29,7 +29,12 @@ export function DesignPage() {
   const tiles = useMemo(() => summaryTiles(activeBuild), [activeBuild]);
 
   useEffect(() => {
-    if (!result || designSession || bootstrap.isPending) {
+    if (
+      !result ||
+      designSession ||
+      bootstrap.isPending ||
+      bootstrap.isError
+    ) {
       return;
     }
     bootstrap.mutate({
@@ -40,7 +45,9 @@ export function DesignPage() {
         "session-property",
     });
   }, [
-    bootstrap,
+    bootstrap.isError,
+    bootstrap.isPending,
+    bootstrap.mutate,
     designSession,
     rawResult,
     result,
@@ -63,18 +70,9 @@ export function DesignPage() {
   return (
     <>
       <main id="main" className="flex h-svh flex-col bg-paper">
-        <header className="shrink-0 border-b border-hairline bg-paper px-4 pt-4 pb-3 lg:px-8 lg:pt-6">
-          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4">
-            <Link
-              to={ROUTE_PATHS.results}
-              className="w-fit font-sans text-sm font-semibold text-cobalt hover:underline"
-            >
-              ← Back to results
-            </Link>
-
-            <div className="flex justify-center overflow-x-auto">
-              <DesignFlowStepper activeStep={4} />
-            </div>
+        <header className="shrink-0 bg-paper pt-5 pb-4">
+          <div className="mx-auto flex w-full max-w-[1440px] justify-center overflow-x-auto px-4 lg:px-8">
+            <DesignFlowStepper activeStep={4} />
           </div>
         </header>
 
@@ -85,20 +83,20 @@ export function DesignPage() {
           onApply={handleApply}
         />
 
-        <div className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col lg:grid lg:grid-cols-[22rem_1fr]">
-          <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-b border-hairline px-4 py-5 lg:border-r lg:border-b-0 lg:px-6 lg:py-6">
+        <div className="mx-auto grid min-h-0 w-full max-w-[1440px] flex-1 grid-cols-1 lg:grid-cols-[18.5rem_1fr]">
+          <aside className="flex min-h-0 flex-col overflow-hidden border-b border-hairline px-5 py-5 lg:border-r lg:border-b-0 lg:px-5">
             <DesignSidebar />
 
             {bootstrap.error ? (
-              <p className="font-sans text-sm text-ember" role="alert">
+              <p className="mt-4 font-sans text-sm text-ember" role="alert">
                 {bootstrap.error.message}
               </p>
             ) : null}
           </aside>
 
-          <section className="flex min-h-0 flex-1 flex-col px-4 py-5 lg:px-8 lg:py-6">
+          <section className="min-h-0 p-4 lg:p-6">
             {loading ? (
-              <div className="flex h-full items-center justify-center font-sans text-secondary">
+              <div className="flex h-full min-h-[28rem] items-center justify-center rounded-[20px] border border-hairline bg-[#fcfaf5] font-sans text-secondary">
                 Running the design solver…
               </div>
             ) : (

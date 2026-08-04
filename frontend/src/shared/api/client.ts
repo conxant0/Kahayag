@@ -79,3 +79,17 @@ export async function apiPostBlob(
       ?.match(/filename="?([^";]+)"?/)?.[1] ?? FALLBACK_REPORT_FILENAME;
   return { blob: await response.blob(), filename };
 }
+
+export async function apiUploadForm<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as {
+      detail?: unknown;
+    } | null;
+    throw new Error(formatErrorDetail(payload?.detail, response.status));
+  }
+  return response.json() as Promise<T>;
+}

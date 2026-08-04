@@ -10,6 +10,7 @@ import httpx
 from app.integrations.ai.design_tools import (
     DESIGN_AGENT_SYSTEM_PROMPT,
     DESIGN_TOOL_SCHEMAS,
+    EXPLAIN_DESIGN_SYSTEM_PROMPT,
     MAX_TOOL_ITERATIONS,
 )
 from app.integrations.ai.groq import GROQ_CHAT_COMPLETIONS_URL
@@ -34,6 +35,14 @@ class DesignAgentClient(Protocol):
         *,
         question: str,
         snapshot: dict[str, object],
+    ) -> str: ...
+
+    def generate_turn_reply(
+        self,
+        *,
+        user_text: str,
+        tool_audit: list[dict[str, object]],
+        active_build: dict[str, object] | None,
     ) -> str: ...
 
 
@@ -97,12 +106,103 @@ class DisabledDesignAgentClient:
                 "No active build is available yet. Run the solver to generate a "
                 "design before asking for an explanation."
             )
+
+        lowered = question.strip().lower()
+        label = str(build.get("label", "Active build"))
+        kwp = build.get("system_kwp")
+        panels = build.get("panel_count")
+        inverter_kw = build.get("inverter_kw")
+        investment = build.get("total_investment_php")
+        payback = build.get("payback_years")
+        insight = str(build.get("insight", "")).strip()
+
+        if any(token in lowered for token in ("reject", "rejected", "invalid")):
+            rejections = snapshot.get("rejections")
+            if isinstance(rejections, list) and rejections:
+                reasons = []
+                for row in rejections[:3]:
+                    if isinstance(row, dict) and row.get("message"):
+                        reasons.append(str(row["message"]))
+                if reasons:
+                    return (
+                        "The solver rejected other combinations because "
+                        + "; ".join(reasons)
+                        + "."
+                    )
+            return "No rejection details are available for the latest solve yet."
+
+        if "payback" in lowered:
+            return (
+                f"Estimated payback for {label} is {payback} years on an investment "
+                f"of ₱{float(investment):,.0f}. {insight}"
+            ).strip()
+
+        if "inverter" in lowered:
+            return (
+                f"{label} pairs a {inverter_kw} kW inverter with a {kwp} kWp array "
+                f"({panels} panels). {insight}"
+            ).strip()
+
+        if any(
+            token in lowered
+            for token in ("energy store", "battery", "storage", "not included")
+        ):
+            battery = build.get("battery_kwh")
+            if battery is None:
+                goal = "auto"
+                last_solve = snapshot.get("last_solve")
+                if isinstance(last_solve, dict):
+                    constraints = last_solve.get("constraints")
+                    if isinstance(constraints, dict):
+                        goal = str(constraints.get("goal", "auto"))
+                if goal == "budget":
+                    reason = (
+                        "The budget-focused solve prioritised lower upfront cost, "
+                        "so it kept a grid-tied layout without storage."
+                    )
+                elif goal in {"backup", "independence"}:
+                    reason = (
+                        "The solver could not fit a battery within the current roof, "
+                        "budget, or catalog constraints."
+                    )
+                else:
+                    reason = (
+                        "The current auto-optimised layout targets savings first and "
+                        "does not require battery storage."
+                    )
+                return f"No energy store is in this build. {reason}".strip()
+            return (
+                f"{label} includes {battery} kWh of battery storage. {insight}"
+            ).strip()
+
+        if any(token in lowered for token in ("why", "how", "what", "explain")):
+            if insight:
+                return insight
+            return (
+                f"{label} is a {kwp} kWp system ({panels} panels, {inverter_kw} kW "
+                f"inverter) with an estimated payback of {payback} years."
+            )
+
         return (
-            f"{build.get('label', 'Active build')}: {build.get('system_kwp')} kWp, "
-            f"{build.get('panel_count')} panels, inverter {build.get('inverter_kw')} kW, "
-            f"investment ₱{build.get('total_investment_php')}, payback "
-            f"{build.get('payback_years')} years. {build.get('insight', '')} "
-            f"Question: {question.strip()}"
+            f"{label}: {kwp} kWp, {panels} panels, {inverter_kw} kW inverter, "
+            f"investment ₱{float(investment):,.0f}, payback {payback} years. "
+            f"{insight}"
+        ).strip()
+
+    def generate_turn_reply(
+        self,
+        *,
+        user_text: str,
+        tool_audit: list[dict[str, object]],
+        active_build: dict[str, object] | None,
+    ) -> str:
+        if not active_build:
+            return "Design session updated."
+        return (
+            f"Updated design to {active_build.get('system_kwp')} kWp "
+            f"({active_build.get('panel_count')} panels). "
+            f"Investment ₱{float(active_build.get('total_investment_php', 0)):,.0f}; "
+            f"payback {active_build.get('payback_years')} years."
         )
 
 
@@ -128,40 +228,44 @@ class GroqDesignAgentClient:
             },
         ]
         planned: list[PlannedToolCall] = []
-        for _ in range(MAX_TOOL_ITERATIONS):
-            response = httpx.post(
-                GROQ_CHAT_COMPLETIONS_URL,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json={
-                    "model": self._model,
-                    "messages": messages,
-                    "tools": list(DESIGN_TOOL_SCHEMAS),
-                    "tool_choice": "auto",
-                },
-                timeout=15.0,
-            )
-            response.raise_for_status()
-            message = response.json()["choices"][0]["message"]
-            tool_calls = message.get("tool_calls") or []
-            if not tool_calls:
-                break
-            messages.append(message)
-            for call in tool_calls:
-                fn = call["function"]
-                args_raw = fn.get("arguments", "{}")
-                args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
-                planned.append(
-                    PlannedToolCall(name=str(fn["name"]), arguments=dict(args)),
-                )
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": call["id"],
-                        "content": json.dumps({"status": "queued"}),
+        try:
+            for _ in range(MAX_TOOL_ITERATIONS):
+                response = httpx.post(
+                    GROQ_CHAT_COMPLETIONS_URL,
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                    json={
+                        "model": self._model,
+                        "messages": messages,
+                        "tools": list(DESIGN_TOOL_SCHEMAS),
+                        "tool_choice": "auto",
                     },
+                    timeout=15.0,
                 )
-            if len(planned) >= MAX_TOOL_ITERATIONS:
-                break
+                response.raise_for_status()
+                message = response.json()["choices"][0]["message"]
+                tool_calls = message.get("tool_calls") or []
+                if not tool_calls:
+                    break
+                messages.append(message)
+                for call in tool_calls:
+                    fn = call["function"]
+                    args_raw = fn.get("arguments", "{}")
+                    args = json.loads(args_raw) if isinstance(args_raw, str) else args_raw
+                    planned.append(
+                        PlannedToolCall(name=str(fn["name"]), arguments=dict(args)),
+                    )
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": call["id"],
+                            "content": json.dumps({"status": "queued"}),
+                        },
+                    )
+                if len(planned) >= MAX_TOOL_ITERATIONS:
+                    break
+        except (httpx.HTTPError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+            planned.clear()
+
         if not planned:
             return DisabledDesignAgentClient().plan_tool_calls(
                 user_text=user_text,
@@ -182,7 +286,7 @@ class GroqDesignAgentClient:
                 json={
                     "model": self._model,
                     "messages": [
-                        {"role": "system", "content": DESIGN_AGENT_SYSTEM_PROMPT},
+                        {"role": "system", "content": EXPLAIN_DESIGN_SYSTEM_PROMPT},
                         {
                             "role": "user",
                             "content": json.dumps(
@@ -200,4 +304,45 @@ class GroqDesignAgentClient:
             return DisabledDesignAgentClient().explain_snapshot(
                 question=question,
                 snapshot=snapshot,
+            )
+
+    def generate_turn_reply(
+        self,
+        *,
+        user_text: str,
+        tool_audit: list[dict[str, object]],
+        active_build: dict[str, object] | None,
+    ) -> str:
+        if not active_build:
+            return "Design session updated."
+        try:
+            response = httpx.post(
+                GROQ_CHAT_COMPLETIONS_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self._model,
+                    "messages": [
+                        {"role": "system", "content": DESIGN_AGENT_SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": json.dumps(
+                                {
+                                    "user_text": user_text,
+                                    "tool_audit": tool_audit,
+                                    "active_build": active_build,
+                                },
+                                default=str,
+                            ),
+                        },
+                    ],
+                },
+                timeout=15.0,
+            )
+            response.raise_for_status()
+            return str(response.json()["choices"][0]["message"]["content"])
+        except (httpx.HTTPError, KeyError, TypeError, ValueError):
+            return DisabledDesignAgentClient().generate_turn_reply(
+                user_text=user_text,
+                tool_audit=tool_audit,
+                active_build=active_build,
             )

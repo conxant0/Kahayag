@@ -11,6 +11,7 @@ from app.domain.design.catalog import (
     get_panel,
     load_catalog,
 )
+from app.domain.design.mutations import _achievable_battery_kwh
 from app.features.design.schemas import (
     AgentAuditEntrySchema,
     AgentDesignRequest,
@@ -21,8 +22,10 @@ from app.features.design.schemas import (
     GenerateQuotationRequest,
     MutateDesignRequest,
     OptimiseDesignRequest,
+    PlannedActionSchema,
 )
 from app.features.design.service import (
+    NoValidDesignError,
     generate_quotation,
     mutate_design_session,
     optimise_design_session,
@@ -35,10 +38,19 @@ def _parse_change_request(change_request: str) -> dict[str, object]:
     patch: dict[str, object] = {}
     if any(token in lowered for token in ("battery", "storage", "backup")):
         patch["require_battery"] = True
-        patch["min_battery_kwh"] = 5.0
-    if any(token in lowered for token in ("more panel", "add panel", "extra panel")):
+        patch["min_battery_kwh"] = _achievable_battery_kwh(5.0)
+    panel_delta_match = re.search(
+        r"(?:add|remove|fewer|less|extra)\s+(?:(\d+|one|two|three|four|five)\s+)?(?:more\s+)?panels?",
+        lowered,
+    )
+    if panel_delta_match:
+        raw_count = panel_delta_match.group(1)
+        word_counts = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+        count = int(raw_count) if raw_count and raw_count.isdigit() else word_counts.get(raw_count or "one", 1)
+        patch["panel_count_delta"] = count if "remove" not in panel_delta_match.group(0) and "fewer" not in panel_delta_match.group(0) and "less" not in panel_delta_match.group(0) else -count
+    elif any(token in lowered for token in ("more panel", "add panel", "extra panel")):
         patch["panel_count_delta"] = 1
-    if any(token in lowered for token in ("fewer panel", "less panel", "remove panel")):
+    elif any(token in lowered for token in ("fewer panel", "less panel", "remove panel")):
         patch["panel_count_delta"] = -1
     if any(token in lowered for token in ("budget", "cheaper", "afford")):
         patch["goal"] = "budget"
@@ -69,6 +81,31 @@ def _session_summary(session: DesignSessionSchema) -> dict[str, object]:
         if session.last_solve
         else 0,
     }
+
+
+def _normalize_tool_call(
+    call: PlannedToolCall,
+    *,
+    session: DesignSessionSchema,
+    user_text: str,
+) -> PlannedToolCall:
+    if call.name == "update_build":
+        args = dict(call.arguments)
+        args["build_id"] = session.active_build_id
+        if not str(args.get("change_request", "")).strip():
+            args["change_request"] = user_text
+        return PlannedToolCall(name=call.name, arguments=args)
+    if call.name == "generate_quotation":
+        return PlannedToolCall(
+            name=call.name,
+            arguments={"build_id": session.active_build_id},
+        )
+    if call.name == "get_rejection_reasons" and session.last_solve is not None:
+        args = dict(call.arguments)
+        if not args.get("solve_id"):
+            args["solve_id"] = session.last_solve.solve_id
+        return PlannedToolCall(name=call.name, arguments=args)
+    return call
 
 
 def _execute_tool(
@@ -210,6 +247,58 @@ def _append_audit(
     return session.model_copy(update={"agent_audit": session.agent_audit + (entry,)})
 
 
+def _describe_planned_tools(
+    planned: tuple[PlannedToolCall, ...],
+    *,
+    user_text: str,
+    session: DesignSessionSchema,
+) -> tuple[str, tuple[PlannedActionSchema, ...]]:
+    if not planned:
+        return (
+            (
+                "I'm not sure which design change you want yet. You could try:\n"
+                "• Add or remove panels\n"
+                "• Optimise for budget, backup, or independence\n"
+                "• Add battery storage or swap components"
+            ),
+            (),
+        )
+
+    actions: list[PlannedActionSchema] = []
+    lines: list[str] = []
+    for call in planned:
+        normalized = _normalize_tool_call(
+            call,
+            session=session,
+            user_text=user_text,
+        )
+        actions.append(
+            PlannedActionSchema(
+                name=normalized.name,
+                arguments=normalized.arguments,
+            ),
+        )
+        if normalized.name == "run_solver":
+            goal = normalized.arguments.get("goal", "auto")
+            lines.append(f'Re-run the solver with the "{goal}" goal')
+        elif normalized.name == "update_build":
+            change = normalized.arguments.get("change_request", user_text)
+            lines.append(f"Apply design update: {change}")
+        elif normalized.name == "generate_quotation":
+            lines.append("Generate a quotation for the active build")
+        elif normalized.name == "query_catalog":
+            category = normalized.arguments.get("category", "components")
+            lines.append(f"Look up {category} in the catalog")
+        else:
+            lines.append(f"Run {normalized.name.replace('_', ' ')}")
+
+    if len(lines) == 1:
+        reply = f"I can {lines[0][0].lower() + lines[0][1:] if lines[0].startswith('Re-run') else lines[0]}."
+    else:
+        reply = "I can apply these changes:\n" + "\n".join(f"• {line}" for line in lines)
+    return f"{reply} Apply when you're ready.", tuple(actions)
+
+
 def run_design_agent_turn(
     request: AgentDesignRequest,
     *,
@@ -221,16 +310,38 @@ def run_design_agent_turn(
         session_summary=_session_summary(session),
     )
 
+    if request.dry_run:
+        reply, planned_actions = _describe_planned_tools(
+            planned,
+            user_text=request.user_text,
+            session=session,
+        )
+        return AgentDesignResponse(
+            session=session,
+            reply=reply,
+            requires_confirmation=bool(planned),
+            planned_actions=planned_actions,
+        )
+
     tool_audit: list[dict[str, object]] = []
     solve_ids: list[str] = []
     updated_session = session
 
     for call in planned:
-        result, maybe_session = _execute_tool(call, session=updated_session)
+        normalized = _normalize_tool_call(
+            call,
+            session=updated_session,
+            user_text=request.user_text,
+        )
+        try:
+            result, maybe_session = _execute_tool(normalized, session=updated_session)
+        except NoValidDesignError as error:
+            result = {"error": str(error)}
+            maybe_session = None
         tool_audit.append(
             {
-                "name": call.name,
-                "arguments": call.arguments,
+                "name": normalized.name,
+                "arguments": normalized.arguments,
                 "result": result,
             },
         )
@@ -238,6 +349,12 @@ def run_design_agent_turn(
             updated_session = maybe_session
             if maybe_session.last_solve is not None:
                 solve_ids.append(maybe_session.last_solve.solve_id)
+
+    tool_errors = [
+        str(entry["result"]["error"])
+        for entry in tool_audit
+        if isinstance(entry.get("result"), dict) and entry["result"].get("error")
+    ]
 
     active_build = next(
         (
@@ -247,14 +364,13 @@ def run_design_agent_turn(
         ),
         None,
     )
-    reply = (
-        f"Updated design to {active_build.system_kwp} kWp "
-        f"({active_build.panel_count} panels). "
-        f"Investment ₱{active_build.total_investment_php:,.0f}; "
-        f"payback {active_build.payback_years} years."
-        if active_build
-        else "Design session updated."
+    reply = client.generate_turn_reply(
+        user_text=request.user_text,
+        tool_audit=tool_audit,
+        active_build=active_build.model_dump() if active_build else None,
     )
+    if tool_errors:
+        reply = f"{reply} {' '.join(tool_errors)}"
 
     audited = _append_audit(
         updated_session,

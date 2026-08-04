@@ -26,6 +26,16 @@ const SLOT_LABELS: Record<ComponentSlot, string> = {
   installation: "Installation",
 };
 
+const CANVAS_SLOT_HEADERS: Record<ComponentSlot, string> = {
+  panel: "PV equipment",
+  inverter: "Power hub",
+  battery: "Energy store",
+  protection: "Protection layer",
+  structure: "Structure",
+  electrical: "Electrical",
+  installation: "Installation",
+};
+
 export function getActiveBuild(session: DesignSession | null): DesignBuild | null {
   if (!session) {
     return null;
@@ -37,36 +47,28 @@ export function getActiveBuild(session: DesignSession | null): DesignBuild | nul
   );
 }
 
-export function summaryTiles(build: DesignBuild | null) {
+export type DesignSummaryTile = {
+  label: string;
+  value: string;
+};
+
+export function summaryTiles(build: DesignBuild | null): DesignSummaryTile[] {
   if (!build) {
     return [];
   }
-  const panel = build.components.find((c) => c.slot === "panel");
-  const inverter = build.components.find((c) => c.slot === "inverter");
-  const battery = build.components.find((c) => c.slot === "battery");
+
   return [
     {
       label: SLOT_LABELS.panel,
-      value: panel
-        ? `${build.panel_count} × ${panel.brand} ${panel.model}`
-        : `${build.panel_count} panels`,
-      detail: `${build.system_kwp.toFixed(2)} kWp`,
+      value: `${build.panel_count} panels`,
     },
     {
       label: SLOT_LABELS.inverter,
-      value: inverter
-        ? `${inverter.brand} ${inverter.model}`
-        : `${build.inverter_kw} kW inverter`,
-      detail: `${build.inverter_utilisation_pct.toFixed(0)}% utilisation`,
+      value: `${build.inverter_kw} kW inverter`,
     },
     {
       label: SLOT_LABELS.battery,
-      value: battery
-        ? `${battery.brand} ${battery.model}`
-        : build.battery_kwh
-          ? `${build.battery_kwh} kWh`
-          : "None (grid-tie)",
-      detail: build.battery_kwh ? `${build.battery_kwh} kWh usable` : "Optional",
+      value: build.battery_kwh ? `${build.battery_kwh} kWh battery` : "None",
     },
   ];
 }
@@ -94,6 +96,10 @@ export function canvasSlots(build: DesignBuild | null): DesignComponent[] {
         specs: {},
       },
   );
+}
+
+export function canvasSlotHeader(slot: ComponentSlot): string {
+  return CANVAS_SLOT_HEADERS[slot] ?? slot;
 }
 
 export function rejectionsForCombo(

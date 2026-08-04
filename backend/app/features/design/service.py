@@ -2,6 +2,7 @@
 
 import hashlib
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -42,6 +43,9 @@ from app.features.design.schemas import (
 )
 
 
+MAX_SESSION_REJECTIONS = 200
+
+
 class NoValidDesignError(Exception):
     pass
 
@@ -67,7 +71,8 @@ def _extract_sizing_inputs(assessment: dict[str, object]) -> tuple[float, int, f
     catalog = load_catalog()
     min_footprint = min(_panel_footprint_m2(panel) for panel in catalog.panels.values())
     max_by_roof = max(1, int(usable_roof_area_m2 // min_footprint))
-    max_panel_count = max(int(recommendation["panel_count"]) + 4, max_by_roof)
+    recommended_ceiling = int(recommendation["panel_count"]) + 4
+    max_panel_count = max(1, min(max_by_roof, recommended_ceiling))
     budget_raw = inputs.get("budget_php")
     budget_php = float(budget_raw) if budget_raw is not None else None
 
@@ -129,7 +134,10 @@ def _to_solve_result_schema(result: SolveResult) -> SolveResultSchema:
         solve_id=result.solve_id,
         constraints=_to_constraints_schema(result.constraints),
         valid=tuple(_to_valid_combo_schema(combo) for combo in result.valid),
-        rejections=tuple(_to_rejection_schema(r) for r in result.rejections),
+        rejections=tuple(
+            _to_rejection_schema(r)
+            for r in result.rejections[:MAX_SESSION_REJECTIONS]
+        ),
     )
 
 
@@ -324,26 +332,55 @@ def bootstrap_design_session(request: BootstrapDesignRequest) -> DesignSessionSc
     return _to_session_schema(session)
 
 
+def _domain_constraints_from_session(
+    base: SolverConstraintsSchema,
+    *,
+    session: DesignSessionSchema,
+) -> SolverConstraints:
+    active = next(
+        (build for build in session.builds if build.id == session.active_build_id),
+        session.builds[0],
+    )
+    tariff = 12.0
+    annual_consumption = 6000.0
+    annual_yield = 1400.0
+    if active.system_kwp > 0 and active.annual_savings_php > 0:
+        annual_consumption = max(
+            active.system_kwp * annual_yield * 0.85,
+            active.annual_savings_php / tariff,
+        )
+        annual_yield = max(annual_yield, active.annual_savings_php / tariff / active.system_kwp)
+
+    return SolverConstraints(
+        target_kwp=base.target_kwp,
+        max_panel_count=base.max_panel_count,
+        usable_roof_area_m2=base.usable_roof_area_m2,
+        budget_php=base.budget_php,
+        require_battery=base.require_battery,
+        min_battery_kwh=base.min_battery_kwh,
+        goal=base.goal,
+        annual_consumption_kwh=annual_consumption,
+        resolved_tariff_php_per_kwh=tariff,
+        annual_yield_per_kwp_kwh=annual_yield,
+    )
+
+
 def optimise_design_session(request: OptimiseDesignRequest) -> DesignSessionSchema:
     if request.session.last_solve is None:
         raise NoValidDesignError("Session has no prior solve to optimise from.")
 
-    base_constraints = request.session.last_solve.constraints
-    domain_constraints = SolverConstraints(
-        target_kwp=base_constraints.target_kwp,
-        max_panel_count=base_constraints.max_panel_count,
-        usable_roof_area_m2=base_constraints.usable_roof_area_m2,
-        budget_php=base_constraints.budget_php,
-        require_battery=base_constraints.require_battery,
-        min_battery_kwh=base_constraints.min_battery_kwh,
-        goal=base_constraints.goal,
+    domain_constraints = _domain_constraints_from_session(
+        request.session.last_solve.constraints,
+        session=request.session,
     )
     updated = goal_constraints(request.goal, domain_constraints)
     solve_result = run_solver(updated)
+    if not solve_result.valid and updated.budget_php is not None:
+        solve_result = run_solver(replace(updated, budget_php=None))
 
-    annual_consumption = 6000.0
-    tariff = 12.0
-    annual_yield = 1400.0
+    annual_consumption = domain_constraints.annual_consumption_kwh
+    tariff = domain_constraints.resolved_tariff_php_per_kwh
+    annual_yield = domain_constraints.annual_yield_per_kwp_kwh
 
     session = _session_from_solve(
         solve_result=solve_result,
@@ -353,6 +390,8 @@ def optimise_design_session(request: OptimiseDesignRequest) -> DesignSessionSche
         annual_yield_per_kwp_kwh=annual_yield,
         resolved_tariff_php_per_kwh=tariff,
     )
+    if not session.builds:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
     return _to_session_schema(session)
 
 
@@ -361,14 +400,9 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         raise NoValidDesignError("Session has no prior solve to mutate.")
 
     base = request.session.last_solve.constraints
-    domain_constraints = SolverConstraints(
-        target_kwp=base.target_kwp,
-        max_panel_count=base.max_panel_count,
-        usable_roof_area_m2=base.usable_roof_area_m2,
-        budget_php=base.budget_php,
-        require_battery=base.require_battery,
-        min_battery_kwh=base.min_battery_kwh,
-        goal=base.goal,
+    domain_constraints = _domain_constraints_from_session(
+        base,
+        session=request.session,
     )
     patched = apply_constraint_patch(
         domain_constraints,
@@ -381,14 +415,18 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         panel_count_delta=request.panel_count_delta,
     )
     solve_result = run_solver(patched)
+    if not solve_result.valid and patched.budget_php is not None:
+        solve_result = run_solver(replace(patched, budget_php=None))
     session = _session_from_solve(
         solve_result=solve_result,
         property_ref=request.session.property_ref,
         assessment_fingerprint=request.session.assessment_fingerprint,
-        annual_consumption_kwh=6000.0,
-        annual_yield_per_kwp_kwh=1400.0,
-        resolved_tariff_php_per_kwh=12.0,
+        annual_consumption_kwh=domain_constraints.annual_consumption_kwh,
+        annual_yield_per_kwp_kwh=domain_constraints.annual_yield_per_kwp_kwh,
+        resolved_tariff_php_per_kwh=domain_constraints.resolved_tariff_php_per_kwh,
     )
+    if not session.builds:
+        raise NoValidDesignError("Solver found no valid equipment combinations.")
     return _to_session_schema(session)
 
 

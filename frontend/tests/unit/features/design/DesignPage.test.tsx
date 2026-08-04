@@ -16,6 +16,7 @@ vi.mock("../../../../src/features/design/useDesignActions", () => ({
     mutate: vi.fn(),
     isPending: false,
     isSuccess: false,
+    isError: false,
     error: null,
   }),
   useOptimiseDesign: () => ({
@@ -74,7 +75,7 @@ describe("DesignPage", () => {
     expect(screen.getByText("Energy capture")).toBeInTheDocument();
     expect(screen.getByText("Power converter")).toBeInTheDocument();
     expect(screen.queryByText("Active build")).not.toBeInTheDocument();
-    expect(screen.getByText("AI auto-optimise")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "AI auto-optimise" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Apply design" })).toBeInTheDocument();
   });
 });

@@ -8,6 +8,15 @@ DESIGN_AGENT_SYSTEM_PROMPT = (
     "numbers, quote them exactly as returned by tools."
 )
 
+EXPLAIN_DESIGN_SYSTEM_PROMPT = (
+    "You are a solar design assistant for homeowners in the Philippines. "
+    "Answer the homeowner's question directly using ONLY facts from the provided "
+    "snapshot JSON (active build, last_solve constraints, rejections). Never invent "
+    "capacities, prices, payback, savings, or rejection reasons. Quote numbers "
+    "exactly as they appear. Write 2-4 clear sentences in plain language. If "
+    "battery_kwh is null, explain why storage was omitted using constraint/goal facts."
+)
+
 MAX_TOOL_ITERATIONS = 4
 
 DESIGN_TOOL_SCHEMAS: tuple[dict[str, object], ...] = (
