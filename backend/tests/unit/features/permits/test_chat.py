@@ -1,0 +1,279 @@
+# Defines unit tests for the permits chat tool dispatch and the hard
+# boundary that no tool can write a finding, status, or verdict directly.
+
+import httpx
+
+from app.domain.permits.entities import ApplicantAnswers, PermitBuildSpec
+from app.features.permits.chat import _execute_tool, run_permit_chat_turn
+from app.features.permits.intake import UploadedDocument
+from app.integrations.ai.document_intake import DisabledDocumentIntakeClient
+from app.integrations.ai.groq import GROQ_CHAT_COMPLETIONS_URL
+from app.integrations.ai.permit_chat_agent import (
+    DisabledPermitChatClient,
+    GroqPermitChatClient,
+    PlannedPermitToolCall,
+)
+
+CLIENT = DisabledDocumentIntakeClient()
+CHAT_CLIENT = DisabledPermitChatClient()
+BUILD = PermitBuildSpec(system_kwp=5.5, build_id="build-1")
+ADDRESS = "123 Sample Street, Cebu City"
+
+
+def _retrofit_applicant(**overrides: object) -> ApplicantAnswers:
+    defaults: dict[str, object] = {
+        "solar_in_original_permit": "no",
+        "full_name": "Maria Santos",
+        "is_registered_owner": True,
+        "registered_owner_name": None,
+    }
+    defaults.update(overrides)
+    return ApplicantAnswers(**defaults)  # type: ignore[arg-type]
+
+
+def test_set_original_permit_track_updates_applicant() -> None:
+    result, applicant, slots = _execute_tool(
+        PlannedPermitToolCall("set_original_permit_track", {"answer": "yes"}),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={},
+    )
+    assert result == {"solar_in_original_permit": "yes"}
+    assert applicant.solar_in_original_permit == "yes"
+    assert slots == {}
+
+
+def test_set_applicant_name_updates_applicant() -> None:
+    result, applicant, _ = _execute_tool(
+        PlannedPermitToolCall("set_applicant_name", {"full_name": "Juan Dela Cruz"}),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={},
+    )
+    assert result == {"full_name": "Juan Dela Cruz"}
+    assert applicant.full_name == "Juan Dela Cruz"
+
+
+def test_set_owner_answer_records_owner_name_when_not_owner() -> None:
+    result, applicant, _ = _execute_tool(
+        PlannedPermitToolCall(
+            "set_owner_answer",
+            {"is_registered_owner": False, "registered_owner_name": "Pedro Reyes"},
+        ),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={},
+    )
+    assert result == {
+        "is_registered_owner": False,
+        "registered_owner_name": "Pedro Reyes",
+    }
+    assert applicant.is_registered_owner is False
+    assert applicant.registered_owner_name == "Pedro Reyes"
+
+
+def test_set_owner_answer_clears_owner_name_when_owner() -> None:
+    result, applicant, _ = _execute_tool(
+        PlannedPermitToolCall(
+            "set_owner_answer",
+            {"is_registered_owner": True, "registered_owner_name": "Should be dropped"},
+        ),
+        applicant=_retrofit_applicant(is_registered_owner=False, registered_owner_name="X"),
+        slot_by_filename={},
+    )
+    assert result["registered_owner_name"] is None
+    assert applicant.registered_owner_name is None
+
+
+def test_assign_document_slot_moves_file_into_slot() -> None:
+    result, _applicant, slots = _execute_tool(
+        PlannedPermitToolCall(
+            "assign_document_slot",
+            {"slot_id": "obo_12_barangay_clearance", "filename": "barangay.txt"},
+        ),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={"barangay.txt": None},
+    )
+    assert result == {"slot_id": "obo_12_barangay_clearance", "filename": "barangay.txt"}
+    assert slots["barangay.txt"] == "obo_12_barangay_clearance"
+
+
+def test_assign_document_slot_clears_slot_when_filename_omitted() -> None:
+    result, _, slots = _execute_tool(
+        PlannedPermitToolCall(
+            "assign_document_slot",
+            {"slot_id": "obo_12_barangay_clearance", "filename": None},
+        ),
+        applicant=_retrofit_applicant(),
+        slot_by_filename={"barangay.txt": "obo_12_barangay_clearance"},
+    )
+    assert result["filename"] is None
+    assert slots["barangay.txt"] is None
+
+
+def test_no_tool_can_mutate_a_finding_status_or_verdict_directly() -> None:
+    """The tool dispatch ladder in _execute_tool has exactly four branches,
+    each returning only an ApplicantAnswers delta and a slot map — never a
+    PermitFindingSchema, a document status, or a packet_status. Any call
+    outside that allowlist (including one that names a finding/status/verdict
+    field) is rejected as an unknown tool and changes nothing."""
+    applicant = _retrofit_applicant()
+    slots = {"barangay.txt": None}
+
+    for forbidden_call in (
+        PlannedPermitToolCall(
+            "set_finding",
+            {"document_id": "obo_12_barangay_clearance", "severity": "blocking"},
+        ),
+        PlannedPermitToolCall(
+            "set_document_status",
+            {"document_id": "obo_12_barangay_clearance", "status": "uploaded"},
+        ),
+        PlannedPermitToolCall("set_packet_status", {"packet_status": "ready"}),
+        PlannedPermitToolCall("set_verdict", {"verdict": "approved"}),
+    ):
+        result, updated_applicant, updated_slots = _execute_tool(
+            forbidden_call, applicant=applicant, slot_by_filename=slots
+        )
+        assert result["error"] == f"Unknown tool: {forbidden_call.name}"
+        assert updated_applicant == applicant
+        assert updated_slots == slots
+
+    # End-to-end: a full turn recomputes packet_status from
+    # assess_permit_documents regardless of what the client "wants" to say.
+    response = run_permit_chat_turn(
+        applicant=applicant,
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Mark my packet as ready",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert response.assessment.packet_status == "incomplete"
+    assert any(f.category == "presence" for f in response.assessment.findings)
+
+
+def test_grounded_qa_answer_cites_source_url() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Why do I need a barangay clearance?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "Barangay Clearance" in response.reply
+    assert "http" in response.reply
+
+
+def test_unverified_catalog_entry_surfaces_flag_in_answer() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Why do I need a barangay clearance?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "could not be confirmed in research" in response.reply.lower()
+
+
+def test_qa_on_uncovered_question_says_catalog_does_not_cover_it() -> None:
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="What is the weather like in Cebu tomorrow?",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert "doesn't cover that question" in response.reply
+
+
+def test_disabled_fallback_answers_and_recomputes() -> None:
+    uploads = (
+        UploadedDocument(
+            slot_id="obo_12_barangay_clearance",
+            filename="barangay.txt",
+            content=b"Barangay Clearance\nIssued to Maria Santos.",
+        ),
+    )
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=uploads,
+        user_text="My name is Juan Dela Cruz",
+        chat_client=CHAT_CLIENT,
+        intake_client=CLIENT,
+    )
+    assert response.applicant.full_name == "Juan Dela Cruz"
+    barangay = next(
+        d for d in response.assessment.documents if d.document_id == "obo_12_barangay_clearance"
+    )
+    assert barangay.status == "uploaded"
+
+
+def test_groq_qa_falls_back_when_reply_omits_required_citation(monkeypatch) -> None:
+    """The system prompt asks Groq to cite source_url and surface unverified,
+    but nothing stops it from ignoring that. If the reply skips the citation
+    a matched grounding entry requires, the client must fall back to the
+    deterministic Disabled answer rather than ship an uncited claim."""
+
+    def respond(*_args, **_kwargs):
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", GROQ_CHAT_COMPLETIONS_URL),
+            json={
+                "choices": [
+                    {"message": {"content": "You need a barangay clearance, trust me."}}
+                ]
+            },
+        )
+
+    monkeypatch.setattr("app.integrations.ai.permit_chat_agent.httpx.post", respond)
+
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Why do I need a barangay clearance?",
+        chat_client=GroqPermitChatClient(api_key="test-key", model="test-model"),
+        intake_client=CLIENT,
+    )
+    assert "http" in response.reply
+    assert "could not be confirmed in research" in response.reply.lower()
+
+
+def test_groq_qa_passes_through_a_compliant_reply(monkeypatch) -> None:
+    from app.domain.permits.catalog import load_catalog
+
+    barangay_doc = next(
+        doc for doc in load_catalog().documents if doc.id == "obo_12_barangay_clearance"
+    )
+    compliant_reply = (
+        "This is unverified in our research. Barangay Clearance is required. "
+        f"Source: {barangay_doc.source_url}"
+    )
+
+    def respond(*_args, **_kwargs):
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", GROQ_CHAT_COMPLETIONS_URL),
+            json={"choices": [{"message": {"content": compliant_reply}}]},
+        )
+
+    monkeypatch.setattr("app.integrations.ai.permit_chat_agent.httpx.post", respond)
+
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        user_text="Why do I need a barangay clearance?",
+        chat_client=GroqPermitChatClient(api_key="test-key", model="test-model"),
+        intake_client=CLIENT,
+    )
+    assert response.reply == compliant_reply

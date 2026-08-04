@@ -74,3 +74,17 @@ class PermitAssessmentResponseSchema(ContractModel):
     findings: tuple[PermitFindingSchema, ...]
     packet_status: PacketStatus
     summary: str
+
+
+class PermitChatRequestSchema(ContractModel):
+    applicant: ApplicantAnswersSchema
+    system_kwp: StrictFloat = Field(gt=0)
+    build_id: str | None = None
+    property_address: str = Field(min_length=1)
+    user_text: str = Field(min_length=1)
+
+
+class PermitChatResponseSchema(ContractModel):
+    reply: str
+    applicant: ApplicantAnswersSchema
+    assessment: PermitAssessmentResponseSchema
