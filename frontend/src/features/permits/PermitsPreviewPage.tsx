@@ -21,6 +21,7 @@ import { ApplicantForm, type ApplicantFormValues } from "./ApplicantForm";
 import { DocumentChecklist } from "./DocumentChecklist";
 import { PacketStatusCard } from "./PacketStatusCard";
 import { PermitChatSidebar } from "./PermitChatSidebar";
+import { PermitsList } from "./PermitsList";
 import { VerdictBanner } from "./VerdictBanner";
 import {
   MOCK_PROPERTY_ADDRESS,
@@ -135,6 +136,10 @@ export function PermitsPreviewPage() {
               onChange={setApplicant}
               propertyAddress={MOCK_PROPERTY_ADDRESS}
             />
+
+            <Rule />
+
+            <PermitsList assessment={assessment} />
 
             <Rule />
 

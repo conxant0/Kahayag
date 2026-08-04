@@ -11,7 +11,7 @@ export function PacketStatusCard({ assessment }: { assessment: PermitAssessment 
 
   return (
     <section aria-label="Packet status">
-      <Eyebrow>03 · Hand-off</Eyebrow>
+      <Eyebrow>04 · Hand-off</Eyebrow>
       <h2 className="mt-2 font-serif text-2xl font-medium text-ink">{heading}</h2>
       <p className="mt-2 max-w-2xl font-sans text-sm leading-6 text-secondary">
         {body}

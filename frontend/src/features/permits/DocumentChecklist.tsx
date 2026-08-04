@@ -412,7 +412,7 @@ export function DocumentChecklist({
 
   return (
     <section aria-label="Document checklist">
-      <Eyebrow>02 · Checklist</Eyebrow>
+      <Eyebrow>03 · Checklist</Eyebrow>
       <h2 className="mt-2 font-serif text-2xl font-medium text-ink">
         Documents you provide
       </h2>

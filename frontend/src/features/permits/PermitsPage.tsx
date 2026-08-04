@@ -19,6 +19,7 @@ import { ApplicantForm, type ApplicantFormValues } from "./ApplicantForm";
 import { DocumentChecklist } from "./DocumentChecklist";
 import { PacketStatusCard } from "./PacketStatusCard";
 import { PermitChatSidebar } from "./PermitChatSidebar";
+import { PermitsList } from "./PermitsList";
 import { VerdictBanner } from "./VerdictBanner";
 import { useAssessPermit } from "./useAssessPermit";
 import type { PermitAssessment } from "./permitTypes";
@@ -146,6 +147,8 @@ export function PermitsPage() {
                     Re-checking…
                   </p>
                 ) : null}
+                <PermitsList assessment={assessment} />
+                <Rule />
                 <DocumentChecklist
                   assessment={assessment}
                   sessionUploads={new Set(uploads.keys())}
