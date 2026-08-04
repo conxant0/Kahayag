@@ -18,13 +18,13 @@ import type {
 import {
   buildRoofPolygonModel,
   calculateRoofMetrics,
-  centreOutlineOn,
   createDefaultRoofOutline,
   hasVertexBeyondPin,
   isPointInsidePolygon,
   isSelfIntersecting,
   MAX_VERTEX_DISTANCE_METERS,
   isValidRoofTrace,
+  slideOutlineToCover,
   validateRoofPolygon,
 } from "../roofUtils";
 
@@ -594,12 +594,11 @@ export function useRoofTracing(
       );
       if (fitted && isValidRoofTrace(fitted)) {
         // The fit can read the roof correctly and still sit off the pin, on a
-        // long building whose planes near the pin are small. Its size and angle
-        // came from the imagery and are worth keeping; only where it sits was
-        // ever in doubt, so it slides over rather than being thrown away.
-        seed = isPointInsidePolygon(fitted, centre)
-          ? fitted
-          : centreOutlineOn(fitted, centre);
+        // long building whose planes near the pin are small. Its size, angle
+        // and position all came from the imagery and are worth keeping, so a
+        // fit that misses the pin slides only as far as covering it requires
+        // rather than being thrown away or recentred.
+        seed = slideOutlineToCover(fitted, centre);
       }
     } finally {
       setIsFittingOutline(false);

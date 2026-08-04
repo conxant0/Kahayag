@@ -4,9 +4,25 @@ import { describe, expect, it } from "vitest";
 import {
   centreOutlineOn,
   isPointInsidePolygon,
+  slideOutlineToCover,
 } from "../../../../src/features/roof/roofUtils";
+import { outlineToCorners } from "../../../../src/integrations/buildingOutline";
+import davaoMatina from "../../../fixtures/davaoMatinaOutline.json";
 
 const PIN = { latitude: 10.3157, longitude: 123.8854 };
+
+type Corner = { latitude: number; longitude: number };
+
+/** How far a pure translation moved the shape, in metres. */
+function shiftMetres(before: Corner[], after: Corner[]) {
+  const metresPerLatitude = 111_195;
+  const metresPerLongitude =
+    metresPerLatitude * Math.cos((before[0].latitude * Math.PI) / 180);
+  return Math.hypot(
+    (after[0].latitude - before[0].latitude) * metresPerLatitude,
+    (after[0].longitude - before[0].longitude) * metresPerLongitude,
+  );
+}
 
 const SQUARE = [
   { latitude: 10.3156, longitude: 123.8853 },
@@ -90,5 +106,79 @@ describe("centreOutlineOn", () => {
 
     expect(span(moved, "latitude")).toBeCloseTo(span(off, "latitude"), 10);
     expect(span(moved, "longitude")).toBeCloseTo(span(off, "longitude"), 10);
+  });
+});
+
+describe("slideOutlineToCover", () => {
+  it("leaves a shape already covering the pin untouched", () => {
+    expect(slideOutlineToCover(SQUARE, PIN)).toBe(SQUARE);
+  });
+
+  it("slides only as far as covering the pin requires", () => {
+    // A long building whose near end sits by the pin: the centroid move drags
+    // the whole shape until its middle is on the pin, while the shortest slide
+    // barely has to move it. The 0.0009° of longitude is roughly 100 m.
+    const longBuilding = [
+      { latitude: 10.31575, longitude: 123.88545 },
+      { latitude: 10.31595, longitude: 123.88545 },
+      { latitude: 10.31595, longitude: 123.88635 },
+      { latitude: 10.31575, longitude: 123.88635 },
+    ];
+
+    const slid = slideOutlineToCover(longBuilding, PIN);
+    const centred = centreOutlineOn(longBuilding, PIN);
+
+    expect(isPointInsidePolygon(slid, PIN)).toBe(true);
+    expect(shiftMetres(longBuilding, slid)).toBeLessThan(15);
+    expect(shiftMetres(longBuilding, centred)).toBeGreaterThan(45);
+  });
+
+  it("keeps the size and angle it was given", () => {
+    const off = SQUARE.map((corner) => ({
+      latitude: corner.latitude + 0.0006,
+      longitude: corner.longitude + 0.0003,
+    }));
+
+    const slid = slideOutlineToCover(off, PIN);
+    const span = (points: typeof SQUARE, key: "latitude" | "longitude") =>
+      Math.max(...points.map((p) => p[key])) -
+      Math.min(...points.map((p) => p[key]));
+
+    expect(isPointInsidePolygon(slid, PIN)).toBe(true);
+    expect(span(slid, "latitude")).toBeCloseTo(span(off, "latitude"), 10);
+    expect(span(slid, "longitude")).toBeCloseTo(span(off, "longitude"), 10);
+  });
+
+  it("falls back to the centroid move when sliding cannot cover the pin", () => {
+    // Three collinear points enclose nothing, so no slide can ever cover the
+    // pin. The centroid move is the honest last resort either way.
+    const degenerate = [
+      { latitude: 10.316, longitude: 123.886 },
+      { latitude: 10.3161, longitude: 123.886 },
+      { latitude: 10.3162, longitude: 123.886 },
+    ];
+
+    expect(slideOutlineToCover(degenerate, PIN)).toEqual(
+      centreOutlineOn(degenerate, PIN),
+    );
+  });
+
+  it("keeps the real Davao Matina fit on its own roof", () => {
+    // Captured payload: a large L-shaped roof whose fitted outline reads the
+    // imagery correctly but does not quite reach the block-level pin. The
+    // centroid move used to drag it ~32 m onto the neighbouring lots; the
+    // shortest slide covers the pin while staying by the building.
+    const corners = outlineToCorners(davaoMatina.outline, davaoMatina.pin)!;
+
+    expect(corners.length).toBeGreaterThan(4);
+    expect(isPointInsidePolygon(corners, davaoMatina.pin)).toBe(false);
+
+    const slid = slideOutlineToCover(corners, davaoMatina.pin);
+    const centred = centreOutlineOn(corners, davaoMatina.pin);
+
+    expect(isPointInsidePolygon(slid, davaoMatina.pin)).toBe(true);
+    expect(shiftMetres(corners, slid)).toBeLessThan(
+      shiftMetres(corners, centred) / 3,
+    );
   });
 });
