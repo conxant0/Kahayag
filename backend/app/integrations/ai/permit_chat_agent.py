@@ -61,6 +61,11 @@ _ASSIGN_PATTERN = re.compile(
     r"(?:assign|use|put)\s+([\w.\-]+\.\w+)\s+(?:for|as|to)\s+(\w+)", re.IGNORECASE
 )
 _CLEAR_PATTERN = re.compile(r"clear\s+(?:the\s+)?(\w+)\s+slot", re.IGNORECASE)
+_DELEGATION_PATTERN = re.compile(
+    r"\b(?:installer|representative|contractor)\b.*\b(?:file|filing|submit)\b"
+    r"|\bfile\w*\s+(?:on my behalf|for me)\b",
+    re.IGNORECASE,
+)
 
 
 # Generic words shared across many catalog titles ("Barangay Clearance",
@@ -188,6 +193,13 @@ class DisabledPermitChatClient:
                 PlannedPermitToolCall(
                     "set_owner_answer",
                     {"is_registered_owner": True, "registered_owner_name": None},
+                )
+            )
+
+        if _DELEGATION_PATTERN.search(lowered):
+            calls.append(
+                PlannedPermitToolCall(
+                    "set_delegation_answer", {"delegates_filing_to_representative": True}
                 )
             )
 

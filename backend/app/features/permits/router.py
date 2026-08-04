@@ -48,6 +48,7 @@ async def assess_permits(
         full_name=payload.applicant.full_name,
         is_registered_owner=payload.applicant.is_registered_owner,
         registered_owner_name=payload.applicant.registered_owner_name,
+        delegates_filing_to_representative=payload.applicant.delegates_filing_to_representative,
     )
     build = PermitBuildSpec(system_kwp=payload.system_kwp, build_id=payload.build_id)
 
@@ -87,6 +88,7 @@ async def permit_chat_turn(
         full_name=payload.applicant.full_name,
         is_registered_owner=payload.applicant.is_registered_owner,
         registered_owner_name=payload.applicant.registered_owner_name,
+        delegates_filing_to_representative=payload.applicant.delegates_filing_to_representative,
     )
     build = PermitBuildSpec(system_kwp=payload.system_kwp, build_id=payload.build_id)
 

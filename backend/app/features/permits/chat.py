@@ -67,6 +67,15 @@ def _execute_tool(
             slot_by_filename,
         )
 
+    if call.name == "set_delegation_answer":
+        delegates = bool(call.arguments.get("delegates_filing_to_representative", False))
+        updated = replace(applicant, delegates_filing_to_representative=delegates)
+        return (
+            {"delegates_filing_to_representative": delegates},
+            updated,
+            slot_by_filename,
+        )
+
     if call.name == "assign_document_slot":
         slot_id = str(call.arguments.get("slot_id", "")).strip()
         if not slot_id:
@@ -144,6 +153,7 @@ def run_permit_chat_turn(
             "full_name": applicant.full_name,
             "is_registered_owner": applicant.is_registered_owner,
             "registered_owner_name": applicant.registered_owner_name,
+            "delegates_filing_to_representative": applicant.delegates_filing_to_representative,
         },
         uploaded_filenames=tuple(slot_by_filename.keys()),
     )
@@ -191,6 +201,7 @@ def run_permit_chat_turn(
             full_name=updated_applicant.full_name,
             is_registered_owner=updated_applicant.is_registered_owner,
             registered_owner_name=updated_applicant.registered_owner_name,
+            delegates_filing_to_representative=updated_applicant.delegates_filing_to_representative,
         ),
         assessment=assessment,
     )
