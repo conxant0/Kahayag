@@ -5,6 +5,7 @@ import {
   compareBuilds,
   costPerWatt,
   formatCostPerWatt,
+  formatInvestmentRange,
 } from "../../../../src/features/compare/compareViewModel";
 
 describe("compareViewModel", () => {
@@ -19,16 +20,26 @@ describe("compareViewModel", () => {
   it("computes distinct overview metrics per build", () => {
     const views = compareBuilds(mockDesignSession);
     expect(views[0]?.metrics.find((row) => row.label === "Total cost")?.value).toBe(
-      "₱379,456",
+      "₱354,928–₱524,636",
     );
     expect(views[1]?.metrics.find((row) => row.label === "Total cost")?.value).toBe(
-      "₱380,576",
+      "₱356,048–₱525,756",
     );
+  });
+
+  it("formats large investment ranges compactly on one line", () => {
+    const build = {
+      ...mockDesignSession.builds[0]!,
+      total_investment_low_php: 6_789_530,
+      total_investment_high_php: 9_407_076,
+    };
+
+    expect(formatInvestmentRange(build)).toBe("₱6.8M–₱9.4M");
   });
 
   it("formats cost per watt from domain totals", () => {
     const build = mockDesignSession.builds[0]!;
-    expect(costPerWatt(build)).toBeCloseTo(379456 / 5850, 2);
-    expect(formatCostPerWatt(build)).toBe("₱65/W");
+    expect(costPerWatt(build)).toBeCloseTo(build.total_investment_php / 5850, 2);
+    expect(formatCostPerWatt(build)).toBe("₱75/W");
   });
 });

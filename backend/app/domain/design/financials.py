@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from app.domain.design.bom import sum_component_lines
+from app.domain.design.bom import sum_component_lines, sum_component_lines_at_tier
 from app.domain.design.constants import VAT_RATE
 from app.domain.design.entities import DesignBuild, DesignComponent, ValidCombo
 
@@ -67,8 +67,12 @@ def build_design_build(
     cat = load_catalog()
     inverter = get_inverter(combo.inverter_id, cat)
     subtotal = sum_component_lines(components)
+    subtotal_low = sum_component_lines_at_tier(components, "min", catalog=cat)
+    subtotal_high = sum_component_lines_at_tier(components, "max", catalog=cat)
     vat = calculate_vat_php(subtotal)
     total = calculate_total_php(subtotal)
+    total_low = calculate_total_php(subtotal_low)
+    total_high = calculate_total_php(subtotal_high)
     monthly_savings, annual_savings = compute_savings(
         system_kwp=combo.system_kwp,
         annual_consumption_kwh=annual_consumption_kwh,
@@ -94,6 +98,8 @@ def build_design_build(
         annual_savings_php=annual_savings,
         payback_years=payback,
         total_investment_php=total,
+        total_investment_low_php=total_low,
+        total_investment_high_php=total_high,
         subtotal_php=subtotal,
         vat_php=vat,
         inverter_utilisation_pct=combo.inverter_utilisation_pct,

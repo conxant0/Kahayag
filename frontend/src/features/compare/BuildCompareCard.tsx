@@ -133,9 +133,9 @@ export function BuildCompareCard({
       <div className="mt-auto flex flex-col pt-5">
         <div className="h-px bg-hairline" />
         <p className="mt-[18px] font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
-          Total estimated investment
+          Estimated investment range
         </p>
-        <p className="mt-1.5 font-serif text-[32px] font-medium leading-none text-ink">
+        <p className="mt-1.5 whitespace-nowrap font-serif text-[clamp(1.125rem,2.6vw,1.625rem)] font-medium tabular-nums leading-none tracking-tight text-ink">
           {view.totalInvestmentLabel}
         </p>
         <div className="mt-5 flex flex-col gap-2">

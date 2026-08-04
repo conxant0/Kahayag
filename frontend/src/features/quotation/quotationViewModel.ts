@@ -4,7 +4,7 @@ import type {
   DesignComponent,
   QuotationDocument,
 } from "../../shared/api/types";
-import { peso } from "../../shared/lib/currency";
+import { peso, pesoRange } from "../../shared/lib/currency";
 
 export const QUOTE_VALIDITY_DAYS = 30;
 export const PAYMENT_TERMS_LINES = [
@@ -78,10 +78,16 @@ export function buildQuotationFromBuild(build: DesignBuild): QuotationDocument {
     subtotal_php: build.subtotal_php,
     vat_php: build.vat_php,
     total_php: build.total_investment_php,
+    total_low_php: build.total_investment_low_php,
+    total_high_php: build.total_investment_high_php,
     payment_terms: PAYMENT_TERMS,
     warranty_summary: WARRANTY_SUMMARY,
     is_draft: true,
   };
+}
+
+export function formatQuoteTotal(quote: QuotationDocument): string {
+  return pesoRange(quote.total_low_php, quote.total_high_php);
 }
 
 export function quoteValidUntil(quoteDate: string, validityDays: number): string {

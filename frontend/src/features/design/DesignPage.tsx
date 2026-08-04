@@ -10,7 +10,7 @@ import { DesignAppliedModal } from "./DesignAppliedModal";
 import { DesignSidebar } from "./DesignSidebar";
 import { DesignSummaryBar } from "./DesignSummaryBar";
 import { SystemCanvas } from "./SystemCanvas";
-import { getActiveBuild, summaryTiles } from "./designViewModel";
+import { getActiveBuild, formatBuildInvestment, summaryTiles } from "./designViewModel";
 import { useBootstrapDesign } from "./useDesignActions";
 
 export function DesignPage() {
@@ -110,7 +110,9 @@ export function DesignPage() {
         open={showApplied}
         onKeepEditing={() => setShowApplied(false)}
         systemKwp={activeBuild?.system_kwp}
-        totalInvestmentPhp={activeBuild?.total_investment_php}
+        totalInvestmentLabel={
+          activeBuild ? formatBuildInvestment(activeBuild) : undefined
+        }
       />
     </>
   );

@@ -15,6 +15,8 @@ describe("quotationViewModel", () => {
     expect(quote.subtotal_php).toBe(build.subtotal_php);
     expect(quote.vat_php).toBe(build.vat_php);
     expect(quote.total_php).toBe(build.total_investment_php);
+    expect(quote.total_low_php).toBe(build.total_investment_low_php);
+    expect(quote.total_high_php).toBe(build.total_investment_high_php);
     expect(quote.lines.reduce((sum, line) => sum + line.amount_php, 0)).toBe(
       build.subtotal_php,
     );

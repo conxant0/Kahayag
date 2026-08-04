@@ -35,6 +35,7 @@ class SolverConstraints:
     goal: SolverGoal
     locked_panel_id: str | None = None
     locked_inverter_id: str | None = None
+    locked_battery_id: str | None = None
     panel_count_delta: int | None = None
     annual_consumption_kwh: float = 0.0
     resolved_tariff_php_per_kwh: float = 12.0
@@ -87,6 +88,7 @@ class DesignComponent:
     warranty_note: str
     badges: tuple[str, ...] = ()
     specs: dict[str, str | float | int] = field(default_factory=dict)
+    product_image: str | None = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,8 @@ class DesignBuild:
     annual_savings_php: float
     payback_years: float | None
     total_investment_php: float
+    total_investment_low_php: float
+    total_investment_high_php: float
     subtotal_php: float
     vat_php: float
     inverter_utilisation_pct: float

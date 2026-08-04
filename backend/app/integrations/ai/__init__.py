@@ -35,5 +35,6 @@ def get_quote_auditor_client(settings: Settings) -> QuoteAuditorClient:
         return GroqQuoteAuditorClient(
             api_key=settings.groq_api_key,
             model=settings.groq_model,
+            vision_model=settings.groq_vision_model,
         )
     return DisabledQuoteAuditorClient()

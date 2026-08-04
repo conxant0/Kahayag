@@ -64,3 +64,24 @@ def sort_valid_combos(combos: list[ValidCombo]) -> tuple[ValidCombo, ...]:
             ),
         )
     )
+
+
+def _same_equipment_stack(left: ValidCombo, right: ValidCombo) -> bool:
+    return (
+        left.panel_id == right.panel_id
+        and left.inverter_id == right.inverter_id
+        and left.battery_id == right.battery_id
+    )
+
+
+def pick_alternate_combo(
+    top: ValidCombo,
+    valid: tuple[ValidCombo, ...] | list[ValidCombo],
+) -> ValidCombo | None:
+    for combo in valid:
+        if combo.combo_id == top.combo_id:
+            continue
+        if _same_equipment_stack(combo, top):
+            continue
+        return combo
+    return None

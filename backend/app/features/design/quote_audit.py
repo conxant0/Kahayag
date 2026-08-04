@@ -1,7 +1,5 @@
 # Defines uploaded-quote extraction and benchmark comparison for the compare page.
 
-import io
-
 from app.features.design.schemas import (
     DesignBuildSchema,
     DesignSessionSchema,
@@ -9,22 +7,10 @@ from app.features.design.schemas import (
     QuoteAuditResponseSchema,
 )
 from app.integrations.ai.quote_auditor import QuoteAuditorClient
-
-
-def extract_document_text(filename: str, content: bytes) -> str:
-    lowered = filename.lower()
-    if lowered.endswith(".pdf"):
-        try:
-            from pypdf import PdfReader
-
-            reader = PdfReader(io.BytesIO(content))
-            pages = [page.extract_text() or "" for page in reader.pages]
-            return "\n".join(pages).strip()
-        except (ImportError, OSError, ValueError):
-            return ""
-    if lowered.endswith((".txt", ".csv", ".md")):
-        return content.decode("utf-8", errors="ignore").strip()
-    return content.decode("utf-8", errors="ignore").strip()
+from app.integrations.quote_parsing.document_reader import (
+    QuoteImageTranscriber,
+    read_quote_document,
+)
 
 
 def _deterministic_findings(
@@ -75,6 +61,21 @@ def _deterministic_findings(
                 ),
             ),
         )
+    extracted_panels = extracted.get("panel_count")
+    if isinstance(extracted_panels, int):
+        delta_panels = extracted_panels - benchmark.panel_count
+        severity = "info" if abs(delta_panels) <= 2 else "warning"
+        findings.append(
+            QuoteAuditFindingSchema(
+                category="equipment",
+                severity=severity,
+                message=(
+                    f"Uploaded quote lists {extracted_panels} panels versus the "
+                    f"benchmark {benchmark.panel_count} panels "
+                    f"({delta_panels:+d})."
+                ),
+            ),
+        )
     if not findings:
         findings.append(
             QuoteAuditFindingSchema(
@@ -96,6 +97,7 @@ def audit_uploaded_quote(
     content: bytes,
     session: DesignSessionSchema,
     client: QuoteAuditorClient,
+    image_transcriber: QuoteImageTranscriber | None = None,
 ) -> QuoteAuditResponseSchema:
     benchmark = next(
         (build for build in session.builds if build.id == session.active_build_id),
@@ -104,11 +106,11 @@ def audit_uploaded_quote(
     if benchmark is None:
         raise ValueError("Design session has no builds to benchmark against.")
 
-    document_text = extract_document_text(filename, content)
-    if not document_text.strip():
-        raise ValueError(
-            "Could not read text from the upload. Try a text-based PDF or paste a .txt quote."
-        )
+    document_text = read_quote_document(
+        filename,
+        content,
+        transcriber=image_transcriber or client,
+    )
 
     extracted = client.extract_quote_facts(document_text=document_text)
     findings = tuple(_deterministic_findings(extracted=extracted, benchmark=benchmark))
@@ -125,10 +127,12 @@ def audit_uploaded_quote(
 
     total = extracted.get("total_php")
     kwp = extracted.get("system_kwp")
+    panel_count = extracted.get("panel_count")
     return QuoteAuditResponseSchema(
         filename=filename,
         extracted_total_php=float(total) if isinstance(total, (int, float)) else None,
         extracted_system_kwp=float(kwp) if isinstance(kwp, (int, float)) else None,
+        extracted_panel_count=int(panel_count) if isinstance(panel_count, int) else None,
         benchmark_total_php=benchmark.total_investment_php,
         benchmark_system_kwp=benchmark.system_kwp,
         findings=findings,

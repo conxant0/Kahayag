@@ -34,6 +34,18 @@ vi.mock("../../../../src/features/design/useDesignActions", () => ({
     isPending: false,
     error: null,
   }),
+  useMutateDesign: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useCatalogOptions: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn().mockResolvedValue([]),
+    isPending: false,
+    error: null,
+  }),
 }));
 
 afterEach(() => {
@@ -76,6 +88,7 @@ describe("DesignPage", () => {
     expect(screen.getByText("Power converter")).toBeInTheDocument();
     expect(screen.queryByText("Active build")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "AI auto-optimise" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("tablist", { name: "Canvas view mode" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply design" })).toBeInTheDocument();
   });
 });

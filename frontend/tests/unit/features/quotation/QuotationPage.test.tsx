@@ -77,7 +77,8 @@ describe("QuotationPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("VAT (12%)")).toBeInTheDocument();
-    expect(screen.getByText("₱379,456")).toBeInTheDocument();
+    expect(screen.getByText("Estimated total range")).toBeInTheDocument();
+    expect(screen.getByText("₱354,928–₱524,636")).toBeInTheDocument();
     expect(screen.getByText("Why this pays")).toBeInTheDocument();
     expect(screen.getByText("Payment terms")).toBeInTheDocument();
     expect(

@@ -24,6 +24,7 @@ from app.domain.design.financials import (
     build_design_build,
 )
 from app.domain.design.mutations import apply_constraint_patch, goal_constraints
+from app.domain.design.scoring import pick_alternate_combo
 from app.domain.design.solver import constraints_from_sizing, run_solver
 from app.features.design.schemas import (
     AgentAuditEntrySchema,
@@ -41,7 +42,6 @@ from app.features.design.schemas import (
     SolveResultSchema,
     ValidComboSchema,
 )
-
 
 MAX_SESSION_REJECTIONS = 200
 
@@ -156,6 +156,7 @@ def _to_component_schema(component: DesignComponent) -> DesignComponentSchema:
         warranty_note=component.warranty_note,
         badges=component.badges,
         specs=component.specs,
+        product_image=component.product_image,
     )
 
 
@@ -174,6 +175,8 @@ def _to_build_schema(build: DesignBuild) -> DesignBuildSchema:
         annual_savings_php=build.annual_savings_php,
         payback_years=build.payback_years,
         total_investment_php=build.total_investment_php,
+        total_investment_low_php=build.total_investment_low_php,
+        total_investment_high_php=build.total_investment_high_php,
         subtotal_php=build.subtotal_php,
         vat_php=build.vat_php,
         inverter_utilisation_pct=build.inverter_utilisation_pct,
@@ -261,8 +264,8 @@ def _session_from_solve(
     )
 
     builds: list[DesignBuild] = [ai_build]
-    if len(solve_result.valid) >= 2:
-        alternate = solve_result.valid[1]
+    alternate = pick_alternate_combo(top, solve_result.valid)
+    if alternate is not None:
         builds.append(
             _build_from_combo(
                 alternate,
@@ -412,6 +415,7 @@ def mutate_design_session(request: MutateDesignRequest) -> DesignSessionSchema:
         min_battery_kwh=request.min_battery_kwh,
         locked_panel_id=request.locked_panel_id,
         locked_inverter_id=request.locked_inverter_id,
+        locked_battery_id=request.locked_battery_id,
         panel_count_delta=request.panel_count_delta,
     )
     solve_result = run_solver(patched)

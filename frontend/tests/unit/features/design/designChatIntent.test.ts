@@ -6,6 +6,9 @@ describe("classifyMessageIntent", () => {
   it("treats grounded questions as read-only", () => {
     expect(classifyMessageIntent("Why this inverter size?")).toBe("question");
     expect(classifyMessageIntent("How is payback calculated?")).toBe("question");
+    expect(
+      classifyMessageIntent("Would a solar panel system work without a battery storage?"),
+    ).toBe("question");
   });
 
   it("treats design edits as change requests", () => {

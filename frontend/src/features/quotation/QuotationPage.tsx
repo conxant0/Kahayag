@@ -12,6 +12,7 @@ import {
   PAYMENT_TERMS_LINES,
   WARRANTY_LINES,
   formatIssuedDate,
+  formatQuoteTotal,
   quoteMetrics,
   whyThisPaysCopy,
 } from "./quotationViewModel";
@@ -263,10 +264,10 @@ export function QuotationPage() {
                     </div>
                     <div className="mt-3 flex items-end justify-between gap-3 border-t border-hairline pt-3">
                       <span className="font-sans text-sm font-semibold text-ink">
-                        Total amount
+                        Estimated total range
                       </span>
-                      <span className="font-serif text-[32px] font-medium leading-none text-ink">
-                        {peso(quote.total_php)}
+                      <span className="text-right font-serif text-[28px] font-medium leading-tight text-ink">
+                        {formatQuoteTotal(quote)}
                       </span>
                     </div>
 

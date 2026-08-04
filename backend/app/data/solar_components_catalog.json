@@ -81,7 +81,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -192,7 +197,12 @@
         "inv_023",
         "inv_024",
         "inv_025",
-        "inv_026"
+        "inv_026",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "TOPCon",
@@ -305,7 +315,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -418,7 +433,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -531,7 +551,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -644,7 +669,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -757,7 +787,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -959,7 +994,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1072,7 +1112,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1185,7 +1230,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1298,7 +1348,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1409,7 +1464,12 @@
         "inv_023",
         "inv_024",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1522,7 +1582,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1635,7 +1700,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -1746,7 +1816,12 @@
         "inv_023",
         "inv_024",
         "inv_025",
-        "inv_026"
+        "inv_026",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "HPBC",
@@ -1857,7 +1932,12 @@
         "inv_023",
         "inv_024",
         "inv_025",
-        "inv_026"
+        "inv_026",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "TOPCon",
@@ -1966,7 +2046,12 @@
         "inv_022",
         "inv_023",
         "inv_024",
-        "inv_026"
+        "inv_026",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -2077,7 +2162,12 @@
         "inv_023",
         "inv_024",
         "inv_025",
-        "inv_026"
+        "inv_026",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "TOPCon",
@@ -2190,7 +2280,12 @@
         "inv_024",
         "inv_025",
         "inv_026",
-        "inv_028"
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
       ],
       "source": "manufacturer_datasheet",
       "cell_technology": "PERC",
@@ -2219,6 +2314,596 @@
       "product_image": "https://assets.kahayag.dev/catalog/panels/panel_020.jpg",
       "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_020_datasheet.pdf",
       "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_020_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_021",
+      "brand": "Trina Solar",
+      "model": "Vertex S+ TSM-450NEG9R.28",
+      "type": "monocrystalline",
+      "wattage_w": 450,
+      "voc_v": 41.5,
+      "vmp_v": 34.8,
+      "isc_a": 13.5,
+      "imp_a": 12.65,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1909,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5600,
+        "max": 7000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via PH distributors and installer networks"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_003",
+        "inv_004",
+        "inv_005",
+        "inv_006",
+        "inv_007",
+        "inv_008",
+        "inv_009",
+        "inv_010",
+        "inv_011",
+        "inv_012",
+        "inv_013",
+        "inv_014",
+        "inv_015",
+        "inv_016",
+        "inv_017",
+        "inv_018",
+        "inv_019",
+        "inv_020",
+        "inv_021",
+        "inv_022",
+        "inv_023",
+        "inv_024",
+        "inv_025",
+        "inv_026",
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "TOPCon",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "TSM-450NEG9R.28",
+      "distributor": "Solgen Trading, Truelight Energy",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.trinasolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_021.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_021_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_021_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_022",
+      "brand": "REC",
+      "model": "Alpha Pure-R 430",
+      "type": "monocrystalline",
+      "wattage_w": 430,
+      "voc_v": 40.2,
+      "vmp_v": 33.8,
+      "isc_a": 13.5,
+      "imp_a": 12.72,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1821,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 21.0,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 8500,
+        "max": 10500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via PH distributors and installer networks"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_003",
+        "inv_004",
+        "inv_005",
+        "inv_006",
+        "inv_007",
+        "inv_008",
+        "inv_009",
+        "inv_010",
+        "inv_011",
+        "inv_012",
+        "inv_013",
+        "inv_014",
+        "inv_015",
+        "inv_016",
+        "inv_017",
+        "inv_018",
+        "inv_019",
+        "inv_020",
+        "inv_021",
+        "inv_022",
+        "inv_023",
+        "inv_024",
+        "inv_025",
+        "inv_026",
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "HJT",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "REC430AA-PURE-R",
+      "distributor": "Premium PH installers, Greenergy Solar",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.recgroup.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_022.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_022_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_022_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_023",
+      "brand": "Helios Solar",
+      "model": "HS450M-54H (PH)",
+      "type": "monocrystalline",
+      "wattage_w": 450,
+      "voc_v": 41.5,
+      "vmp_v": 34.8,
+      "isc_a": 13.5,
+      "imp_a": 12.65,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1909,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 5000,
+        "max": 6400,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via PH distributors and installer networks"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_003",
+        "inv_004",
+        "inv_005",
+        "inv_006",
+        "inv_007",
+        "inv_008",
+        "inv_009",
+        "inv_010",
+        "inv_011",
+        "inv_012",
+        "inv_013",
+        "inv_014",
+        "inv_015",
+        "inv_016",
+        "inv_017",
+        "inv_018",
+        "inv_019",
+        "inv_020",
+        "inv_021",
+        "inv_022",
+        "inv_023",
+        "inv_024",
+        "inv_025",
+        "inv_026",
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "Philippines",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "HS450M-54H",
+      "distributor": "Local PH assemblers, Solaric Corp.",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "Philippines",
+      "manufacturer_website": "https://www.helios-solar.ph",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_023.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_023_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_023_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_024",
+      "brand": "SunPower",
+      "model": "Maxeon 6 AC 425",
+      "type": "monocrystalline",
+      "wattage_w": 425,
+      "voc_v": 40.0,
+      "vmp_v": 33.5,
+      "isc_a": 13.5,
+      "imp_a": 12.69,
+      "efficiency_pct": 22.8,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1879,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 21.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 12000,
+        "max": 15000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via PH distributors and installer networks"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_003",
+        "inv_004",
+        "inv_005",
+        "inv_006",
+        "inv_007",
+        "inv_008",
+        "inv_009",
+        "inv_010",
+        "inv_011",
+        "inv_012",
+        "inv_013",
+        "inv_014",
+        "inv_015",
+        "inv_016",
+        "inv_017",
+        "inv_018",
+        "inv_019",
+        "inv_020",
+        "inv_021",
+        "inv_022",
+        "inv_023",
+        "inv_024",
+        "inv_025",
+        "inv_026",
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "IBC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "SPR-MAX6-425-AC",
+      "distributor": "Authorized SunPower PH dealers",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://us.sunpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_024.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_024_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_024_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "panel_025",
+      "brand": "DMEGC",
+      "model": "DM450M10RT-54H",
+      "type": "monocrystalline",
+      "wattage_w": 455,
+      "voc_v": 41.5,
+      "vmp_v": 34.8,
+      "isc_a": 13.5,
+      "imp_a": 12.65,
+      "efficiency_pct": 22.3,
+      "temperature_coefficient_pmax_pct_per_c": -0.34,
+      "noct_c": 45,
+      "dimensions_mm": {
+        "length": 1909,
+        "width": 1134,
+        "depth": 30
+      },
+      "weight_kg": 22.5,
+      "cells": 108,
+      "connector_type": "MC4",
+      "wind_load_rating_pa": {
+        "front": 5400,
+        "back": 2400
+      },
+      "salt_mist_certified": true,
+      "ip_rating_junction_box": "IP68",
+      "certifications": [
+        "IEC61215",
+        "IEC61730",
+        "IEC61701"
+      ],
+      "warranty": {
+        "product_years": 15,
+        "performance_years": 25,
+        "performance_curve": "98% year 1, linear to 84% year 25",
+        "voids_warranty_if": [
+          "exceeds inverter max input current per MPPT",
+          "improper grounding/installation not by certified installer",
+          "physical damage from non-rated wind/hail exposure"
+        ]
+      },
+      "price_php": {
+        "min": 4700,
+        "max": 6100,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "widely stocked via PH distributors and installer networks"
+      },
+      "local_service_network": "wide (multiple PH distributors)",
+      "certified_compatible_inverters": [
+        "inv_001",
+        "inv_002",
+        "inv_003",
+        "inv_004",
+        "inv_005",
+        "inv_006",
+        "inv_007",
+        "inv_008",
+        "inv_009",
+        "inv_010",
+        "inv_011",
+        "inv_012",
+        "inv_013",
+        "inv_014",
+        "inv_015",
+        "inv_016",
+        "inv_017",
+        "inv_018",
+        "inv_019",
+        "inv_020",
+        "inv_021",
+        "inv_022",
+        "inv_023",
+        "inv_024",
+        "inv_025",
+        "inv_026",
+        "inv_028",
+        "inv_029",
+        "inv_030",
+        "inv_031",
+        "inv_032",
+        "inv_033"
+      ],
+      "source": "manufacturer_datasheet",
+      "cell_technology": "PERC",
+      "bifacial": false,
+      "power_tolerance_w": {
+        "min": 0,
+        "max": 5
+      },
+      "fire_rating": "IEC 61730 Class C",
+      "maximum_system_voltage_v": 1500,
+      "maximum_series_fuse_rating_a": 25,
+      "panel_color": "black",
+      "frame_color": "black anodized aluminum",
+      "manufacturer_country": "China",
+      "degradation_rate": {
+        "year_1_pct": 2.0,
+        "annual_pct": 0.55
+      },
+      "application": "residential",
+      "sku": "DM450M10RT-54H",
+      "distributor": "Budget turnkey installers, online PH retailers",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.dmegcsolar.com",
+      "product_image": "https://assets.kahayag.dev/catalog/panels/panel_025.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/panels/panel_025_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/panels/panel_025_install.pdf",
       "last_updated": "2026-07-01",
       "eol_status": "active"
     }
@@ -4362,6 +5047,378 @@
         "batt_014"
       ],
       "eps_output_w": 384
+    },
+    {
+      "id": "inv_029",
+      "brand": "Fronius",
+      "model": "Primo 3.0-1",
+      "type": "grid_tie",
+      "rated_ac_output_w": 3000,
+      "max_dc_input_w": 4500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 600
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 85000,
+        "max": 98000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "common in PH residential turnkey packages"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Fronius Cloud",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "4.210.030",
+      "distributor": "Fronius authorized PH dealers",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.fronius.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_029.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_029_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_029_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_030",
+      "brand": "LuxPower",
+      "model": "LXP3600 Hybrid",
+      "type": "hybrid",
+      "rated_ac_output_w": 3600,
+      "max_dc_input_w": 5400,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 550
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 3,
+      "ip_rating": "IP65",
+      "cooling_type": "fan-cooled",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 45000,
+        "max": 55000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "common in PH residential turnkey packages"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "LuxPower Cloud",
+      "backup_eps_capable": true,
+      "generator_compatible": true,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": 35,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "LXP3600",
+      "distributor": "LuxPower PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.luxpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_030.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_030_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_030_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active",
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_011",
+        "batt_012"
+      ],
+      "eps_output_w": 3600
+    },
+    {
+      "id": "inv_031",
+      "brand": "Solax",
+      "model": "X1-3.7-S",
+      "type": "grid_tie",
+      "rated_ac_output_w": 3700,
+      "max_dc_input_w": 5550,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 550
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 24000,
+        "max": 30000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "common in PH residential turnkey packages"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Solax Cloud",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "X1-3.7-S",
+      "distributor": "Solax PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.solaxpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_031.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_031_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_031_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
+    },
+    {
+      "id": "inv_032",
+      "brand": "Solax",
+      "model": "X3-Hybrid-5.0",
+      "type": "hybrid",
+      "rated_ac_output_w": 5000,
+      "max_dc_input_w": 7500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 550
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 3,
+      "ip_rating": "IP65",
+      "cooling_type": "fan-cooled",
+      "connector_type": "MC4",
+      "battery_compatible": true,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 55000,
+        "max": 65000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "common in PH residential turnkey packages"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Solax Cloud",
+      "backup_eps_capable": true,
+      "generator_compatible": true,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": 35,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "X3-Hybrid-5.0",
+      "distributor": "Solax PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.solaxpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_032.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_032_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_032_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active",
+      "battery_voltage_v": 48,
+      "certified_batteries": [
+        "batt_001",
+        "batt_014"
+      ],
+      "eps_output_w": 5000
+    },
+    {
+      "id": "inv_033",
+      "brand": "Chint Power",
+      "model": "CPS 3kW Grid-Tie",
+      "type": "grid_tie",
+      "rated_ac_output_w": 3000,
+      "max_dc_input_w": 4500,
+      "mppt_count": 2,
+      "mppt_voltage_range_v": {
+        "min": 80,
+        "max": 550
+      },
+      "max_input_current_per_mppt_a": 13.5,
+      "cec_euro_efficiency_pct": 97.6,
+      "standby_power_draw_w": 2,
+      "ip_rating": "IP65",
+      "cooling_type": "natural convection",
+      "connector_type": "MC4",
+      "battery_compatible": false,
+      "meralco_net_metering_approved": true,
+      "warranty": {
+        "years": 10,
+        "extendable_to_years": 15,
+        "voids_warranty_if": [
+          "input voltage/current exceeds rated MPPT range",
+          "grid connection made without utility-approved net metering setup"
+        ]
+      },
+      "price_php": {
+        "min": 15000,
+        "max": 20000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "stock_lead_time_days": {
+        "min": 3,
+        "max": 21,
+        "note": "common in PH residential turnkey packages"
+      },
+      "local_service_network": "wide",
+      "source": "distributor_listing",
+      "phase": "single_phase",
+      "maximum_efficiency_pct": 98.0,
+      "startup_voltage_v": 80,
+      "max_pv_strings": 4,
+      "connectivity": {
+        "wifi": true,
+        "ethernet": false,
+        "bluetooth": false
+      },
+      "monitoring_platform": "Chint Power Cloud",
+      "backup_eps_capable": false,
+      "generator_compatible": false,
+      "operating_temp_range_c": {
+        "min": -25,
+        "max": 60
+      },
+      "noise_level_db": null,
+      "country_of_manufacture": "China",
+      "application": "residential",
+      "sku": "CPS3K-S",
+      "distributor": "Chint Power PH distributors",
+      "availability_status": "in_stock",
+      "product_release_year": 2023,
+      "country_of_origin": "China",
+      "manufacturer_website": "https://www.chintpower.com",
+      "product_image": "https://assets.kahayag.dev/catalog/inverters/inv_033.jpg",
+      "datasheet_pdf_url": "https://assets.kahayag.dev/catalog/inverters/inv_033_datasheet.pdf",
+      "installation_manual_url": "https://assets.kahayag.dev/catalog/inverters/inv_033_install.pdf",
+      "last_updated": "2026-07-01",
+      "eol_status": "active"
     }
   ],
   "batteries": [
@@ -5802,6 +6859,36 @@
       "component_b": "inv_025",
       "status": "compatible_with_warning",
       "note": "8 kW Huawei suits high-consumption homes; verify Imp vs MPPT current at noon cell temps."
+    },
+    {
+      "component_a": "panel_004",
+      "component_b": "inv_011",
+      "status": "compatible",
+      "note": "3 kW Growatt pairs cleanly with 8\u00d7450W (~3.6 kWp) \u2014 common townhouse sizing in PH."
+    },
+    {
+      "component_a": "panel_001",
+      "component_b": "inv_019",
+      "status": "compatible",
+      "note": "Deye 3 kW hybrid supports brownout backup on typical Luzon residential loads."
+    },
+    {
+      "component_a": "inv_019",
+      "component_b": "batt_012",
+      "status": "compatible",
+      "note": "LuxPower battery commonly bundled with Deye hybrid kits sold online in PH."
+    },
+    {
+      "component_a": "panel_018",
+      "component_b": "inv_013",
+      "status": "compatible",
+      "note": "Compact 400W panels suit limited Metro Manila roof planes with 3 kW GoodWe inverter."
+    },
+    {
+      "component_a": "panel_002",
+      "component_b": "inv_025",
+      "status": "compatible_with_warning",
+      "note": "8 kW Huawei suits high-consumption homes; verify Imp vs MPPT current at noon cell temps."
     }
   ],
   "schema_version": "2.0",
@@ -5810,8 +6897,8 @@
     "currency": "PHP",
     "last_catalog_update": "2026-07-01",
     "notes": "Expanded PH-market reference catalog for development and testing. Prices and availability are illustrative.",
-    "panel_count": 20,
-    "inverter_count": 28,
+    "panel_count": 25,
+    "inverter_count": 33,
     "battery_count": 16
   },
   "protections": [
@@ -5880,6 +6967,142 @@
         "years": 5
       },
       "unit": "lot"
+    },
+    {
+      "id": "prot_005",
+      "brand": "Generic",
+      "model": "DC Combiner Box / String Junction Box",
+      "category": "dc_combiner",
+      "description": "IP65-rated combiner box with fuse holders for 2\u20134 PV strings",
+      "price_php": {
+        "min": 4500,
+        "max": 7500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "prot_006",
+      "brand": "Generic",
+      "model": "DC Isolator Switch (600V)",
+      "category": "dc_disconnect",
+      "description": "Lockable DC disconnect switch for string inverter input side",
+      "price_php": {
+        "min": 2800,
+        "max": 4500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
+    },
+    {
+      "id": "prot_007",
+      "brand": "Generic",
+      "model": "DC String Fuse Holder & Fuses (15A)",
+      "category": "circuit_protection",
+      "description": "PV-rated fuse holders and gPV fuses per string for overcurrent protection",
+      "price_php": {
+        "min": 1200,
+        "max": 2200,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "prot_008",
+      "brand": "Generic",
+      "model": "AC Manual Disconnect Switch (63A)",
+      "category": "ac_disconnect",
+      "description": "Lockable AC disconnect switch at inverter output, utility-side",
+      "price_php": {
+        "min": 3500,
+        "max": 5500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
+    },
+    {
+      "id": "prot_009",
+      "brand": "Schneider Electric",
+      "model": "Acti9 iC60N AC Main Breaker (63A)",
+      "category": "ac_breaker",
+      "description": "Main AC circuit breaker in consumer unit for solar tie-in",
+      "price_php": {
+        "min": 2800,
+        "max": 4200,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
+    },
+    {
+      "id": "prot_010",
+      "brand": "Generic",
+      "model": "AC/DC Isolation Switch Kit",
+      "category": "isolation_switch",
+      "description": "Paired DC and AC isolation switches for safe maintenance access",
+      "price_php": {
+        "min": 5500,
+        "max": 8500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "prot_011",
+      "brand": "Phoenix Contact",
+      "model": "VAL-MS DC Surge Protector (Type 2)",
+      "category": "surge_protection",
+      "description": "Type 2 DC-side surge protection device for PV strings up to 1000V",
+      "price_php": {
+        "min": 4500,
+        "max": 7000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
+    },
+    {
+      "id": "prot_012",
+      "brand": "Phoenix Contact",
+      "model": "VAL-MS AC Surge Protector (Type 2)",
+      "category": "surge_protection",
+      "description": "Type 2 AC-side surge protection device at inverter output",
+      "price_php": {
+        "min": 3800,
+        "max": 6000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
     }
   ],
   "mounting_kits": [
@@ -5948,6 +7171,74 @@
         "years": 12
       },
       "unit": "kWp"
+    },
+    {
+      "id": "mount_005",
+      "brand": "Generic",
+      "model": "Pitched Roof L-Bracket Kit (per kWp)",
+      "category": "mounting",
+      "description": "L-brackets and rails for corrugated or shingle pitched roofs",
+      "price_php_per_kwp": {
+        "min": 7500,
+        "max": 11000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 10
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "mount_006",
+      "brand": "Generic",
+      "model": "Ground-Mount Racking Kit (per kWp)",
+      "category": "mounting",
+      "description": "Galvanized steel ground-mount frames for open-lot residential installs",
+      "price_php_per_kwp": {
+        "min": 14000,
+        "max": 20000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 15
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "mount_007",
+      "brand": "IronRidge",
+      "model": "XR100 Rail System (per kWp)",
+      "category": "mounting",
+      "description": "IronRidge XR100 aluminum rails with mid/end clamps and flashings",
+      "price_php_per_kwp": {
+        "min": 12000,
+        "max": 17000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 12
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "mount_008",
+      "brand": "Generic",
+      "model": "Typhoon-Rated Reinforced Mount Kit (per kWp)",
+      "category": "mounting",
+      "description": "Heavy-duty rails and anchors rated for Typhoon Signal 3+ coastal zones",
+      "price_php_per_kwp": {
+        "min": 13000,
+        "max": 18000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 12
+      },
+      "unit": "kWp"
     }
   ],
   "cabling": [
@@ -5983,6 +7274,91 @@
         "years": 5
       },
       "unit": "kWp"
+    },
+    {
+      "id": "cable_003",
+      "brand": "Generic",
+      "model": "DC PV Wire & MC4 Connector Kit",
+      "category": "dc_wiring",
+      "description": "4mm\u00b2/6mm\u00b2 PV1-F DC cable with MC4 male/female connectors per string",
+      "price_php_per_kwp": {
+        "min": 3500,
+        "max": 5500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "cable_004",
+      "brand": "Generic",
+      "model": "AC Output Cable & Terminal Lugs",
+      "category": "ac_wiring",
+      "description": "THHN/THWN AC cable from inverter to consumer unit with crimp lugs",
+      "price_php": {
+        "min": 2500,
+        "max": 4500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "cable_005",
+      "brand": "Generic",
+      "model": "Grounding Conductor & Bonding Kit",
+      "category": "grounding",
+      "description": "6 AWG bare copper grounding wire, lugs, and panel/frame bonding hardware",
+      "price_php": {
+        "min": 2000,
+        "max": 3500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "cable_006",
+      "brand": "Generic",
+      "model": "PVC Conduit & Trunking Package",
+      "category": "conduit",
+      "description": "PVC conduit, fittings, and cable trunking for roof-to-inverter runs",
+      "price_php_per_kwp": {
+        "min": 1500,
+        "max": 3000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "kWp"
+    },
+    {
+      "id": "cable_007",
+      "brand": "Generic",
+      "model": "MC4 Branch Connector & Y-Adaptor Kit",
+      "category": "connectors",
+      "description": "MC4 Y-branch connectors and inline fuses for parallel string wiring",
+      "price_php": {
+        "min": 800,
+        "max": 1500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
     }
   ],
   "misc_bom_items": [
@@ -6051,6 +7427,57 @@
         "years": 0
       },
       "unit": "lot"
+    },
+    {
+      "id": "misc_005",
+      "brand": "Secure / Elster",
+      "model": "Bi-directional Production/Net Meter",
+      "category": "net_meter",
+      "description": "Utility-approved bi-directional meter for Meralco net metering program",
+      "price_php": {
+        "min": 12000,
+        "max": 22000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
+    },
+    {
+      "id": "misc_006",
+      "brand": "Generic",
+      "model": "Grounding Electrode & Bonding Kit",
+      "category": "grounding",
+      "description": "Ground rod, clamp, exothermic weld, and bonding jumpers for system grounding",
+      "price_php": {
+        "min": 2500,
+        "max": 4500,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "lot"
+    },
+    {
+      "id": "misc_007",
+      "brand": "Generic",
+      "model": "Weatherproof DC/AC Enclosure Box",
+      "category": "enclosure",
+      "description": "IP65 wall-mount enclosure for DC disconnect, SPD, and combiner components",
+      "price_php": {
+        "min": 3500,
+        "max": 6000,
+        "as_of": "2026-07-01",
+        "currency_note": "component cost largely USD-pegged; PHP price may shift with exchange rate"
+      },
+      "warranty": {
+        "years": 5
+      },
+      "unit": "pcs"
     }
   ]
 }

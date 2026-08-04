@@ -1,10 +1,16 @@
 # Defines BOM expansion from valid combos into design component lines.
 
+from dataclasses import dataclass
+from typing import Literal
+
+PriceTier = Literal["min", "max"]
+
 from app.domain.design.catalog import (
     CatalogBattery,
     CatalogInverter,
     CatalogPackage,
     CatalogPanel,
+    CatalogPrice,
     SolarCatalog,
     get_battery,
     get_inverter,
@@ -12,15 +18,121 @@ from app.domain.design.catalog import (
     load_catalog,
 )
 from app.domain.design.constants import (
-    DEFAULT_CABLING_ID,
     DEFAULT_INSTALL_ID,
     DEFAULT_MOUNTING_KIT_ID,
+    DEFAULT_NET_METER_ID,
     DEFAULT_PERMITS_ID,
-    GRID_TIE_PROTECTION_ID,
-    HYBRID_PROTECTION_ID,
 )
 from app.domain.design.entities import ComponentSlot, DesignComponent, ValidCombo
-from app.domain.design.solver import _is_microinverter
+
+CatalogSection = Literal["protections", "mounting_kits", "cabling", "misc_bom_items"]
+QtyBasis = Literal["fixed", "system_kwp"]
+
+_PACKAGE_IMAGE_FOLDERS: dict[CatalogSection, str] = {
+    "protections": "protections",
+    "mounting_kits": "mounting",
+    "cabling": "cabling",
+    "misc_bom_items": "misc",
+}
+
+
+@dataclass(frozen=True)
+class BomLineTemplate:
+    section: CatalogSection
+    catalog_id: str
+    slot: ComponentSlot
+    qty_basis: QtyBasis
+    fixed_qty: float = 1.0
+
+
+GRID_TIE_BOM_LINES: tuple[BomLineTemplate, ...] = (
+    BomLineTemplate("protections", "prot_005", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_006", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_007", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_008", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_009", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_011", "protection", "fixed"),
+    BomLineTemplate("protections", "prot_012", "protection", "fixed"),
+    BomLineTemplate("misc_bom_items", "misc_007", "protection", "fixed"),
+    BomLineTemplate("mounting_kits", DEFAULT_MOUNTING_KIT_ID, "structure", "system_kwp"),
+    BomLineTemplate("cabling", "cable_003", "electrical", "system_kwp"),
+    BomLineTemplate("cabling", "cable_004", "electrical", "fixed"),
+    BomLineTemplate("cabling", "cable_005", "electrical", "fixed"),
+    BomLineTemplate("cabling", "cable_006", "electrical", "system_kwp"),
+    BomLineTemplate("cabling", "cable_007", "electrical", "fixed"),
+    BomLineTemplate("misc_bom_items", "misc_006", "electrical", "fixed"),
+    BomLineTemplate("misc_bom_items", DEFAULT_INSTALL_ID, "installation", "system_kwp"),
+    BomLineTemplate("misc_bom_items", DEFAULT_PERMITS_ID, "installation", "fixed"),
+    BomLineTemplate("misc_bom_items", DEFAULT_NET_METER_ID, "installation", "fixed"),
+)
+
+HYBRID_EXTRA_BOM_LINES: tuple[BomLineTemplate, ...] = (
+    BomLineTemplate("protections", "prot_010", "protection", "fixed"),
+)
+
+
+def _is_microinverter(inverter: CatalogInverter) -> bool:
+    return inverter.rated_ac_output_w < 1000
+
+
+def _package_product_image(
+    package: CatalogPackage,
+    section: CatalogSection,
+) -> str | None:
+    if package.product_image:
+        return package.product_image
+    folder = _PACKAGE_IMAGE_FOLDERS.get(section)
+    if folder is None:
+        return None
+    return f"https://assets.kahayag.dev/catalog/{folder}/{package.id}.jpg"
+
+
+def _catalog_packages(
+    catalog: SolarCatalog,
+    section: CatalogSection,
+) -> dict[str, CatalogPackage]:
+    if section == "protections":
+        return catalog.protections
+    if section == "mounting_kits":
+        return catalog.mounting_kits
+    if section == "cabling":
+        return catalog.cabling
+    return catalog.misc_bom_items
+
+
+def _resolve_qty(template: BomLineTemplate, system_kwp: float) -> float:
+    if template.qty_basis == "system_kwp":
+        return system_kwp
+    return template.fixed_qty
+
+
+def _package_line_cost(package: CatalogPackage, qty: float) -> float:
+    if package.price_php_per_kwp is not None:
+        return package.price_php_per_kwp.mid * qty
+    if package.price_php is not None:
+        return package.price_php.mid * qty
+    return 0.0
+
+
+def _bom_line_templates(*, hybrid: bool) -> tuple[BomLineTemplate, ...]:
+    if hybrid:
+        return GRID_TIE_BOM_LINES + HYBRID_EXTRA_BOM_LINES
+    return GRID_TIE_BOM_LINES
+
+
+def estimate_balance_of_system_cost_php(
+    system_kwp: float,
+    *,
+    hybrid: bool,
+    catalog: SolarCatalog | None = None,
+) -> float:
+    cat = catalog or load_catalog()
+    total = 0.0
+    for template in _bom_line_templates(hybrid=hybrid):
+        package = _catalog_packages(cat, template.section)[template.catalog_id]
+        qty = _resolve_qty(template, system_kwp)
+        total += _package_line_cost(package, qty)
+    return total
 
 
 def _component_from_panel(panel: CatalogPanel, qty: int, badges: tuple[str, ...] = ()) -> DesignComponent:
@@ -43,6 +155,7 @@ def _component_from_panel(panel: CatalogPanel, qty: int, badges: tuple[str, ...]
             "voc_v": panel.voc_v,
             "vmp_v": panel.vmp_v,
         },
+        product_image=panel.product_image,
     )
 
 
@@ -70,6 +183,7 @@ def _component_from_inverter(
             "mppt_count": inverter.mppt_count,
             "battery_compatible": int(inverter.battery_compatible),
         },
+        product_image=inverter.product_image,
     )
 
 
@@ -90,6 +204,7 @@ def _component_from_battery(
         warranty_note=f"{battery.warranty_years}-year warranty",
         badges=badges,
         specs={"usable_kwh": battery.usable_capacity_kwh},
+        product_image=battery.product_image,
     )
 
 
@@ -99,6 +214,7 @@ def _component_from_package(
     qty: float,
     *,
     badges: tuple[str, ...] = ("INCLUDED",),
+    section: CatalogSection | None = None,
 ) -> DesignComponent:
     if package.price_php_per_kwp is not None:
         unit_price = package.price_php_per_kwp.mid
@@ -126,7 +242,31 @@ def _component_from_package(
             else "As per installer terms"
         ),
         badges=badges,
+        product_image=_package_product_image(package, section) if section else None,
     )
+
+
+def _expand_balance_of_system_lines(
+    *,
+    system_kwp: float,
+    hybrid: bool,
+    catalog: SolarCatalog,
+    badges: tuple[str, ...],
+) -> list[DesignComponent]:
+    lines: list[DesignComponent] = []
+    for template in _bom_line_templates(hybrid=hybrid):
+        package = _catalog_packages(catalog, template.section)[template.catalog_id]
+        qty = _resolve_qty(template, system_kwp)
+        lines.append(
+            _component_from_package(
+                package,
+                template.slot,
+                qty,
+                badges=badges,
+                section=template.section,
+            ),
+        )
+    return lines
 
 
 def expand_combo_to_components(
@@ -139,6 +279,7 @@ def expand_combo_to_components(
     panel = get_panel(combo.panel_id, cat)
     inverter = get_inverter(combo.inverter_id, cat)
     badges = ("AUTO-SUGGESTED",) if ai_suggested else ()
+    included_badges = ("INCLUDED",)
 
     components: list[DesignComponent] = [
         _component_from_panel(panel, combo.panel_count, badges=badges),
@@ -153,32 +294,13 @@ def expand_combo_to_components(
         battery = get_battery(combo.battery_id, cat)
         components.append(_component_from_battery(battery, badges=badges))
 
-    protection_id = (
-        HYBRID_PROTECTION_ID if inverter.battery_compatible else GRID_TIE_PROTECTION_ID
-    )
-    protection = cat.protections[protection_id]
-    components.append(
-        _component_from_package(protection, "protection", 1, badges=("INCLUDED",))
-    )
-
-    mount = cat.mounting_kits[DEFAULT_MOUNTING_KIT_ID]
-    components.append(
-        _component_from_package(mount, "structure", combo.system_kwp, badges=("INCLUDED",))
-    )
-
-    cable = cat.cabling[DEFAULT_CABLING_ID]
-    components.append(
-        _component_from_package(cable, "electrical", combo.system_kwp, badges=("INCLUDED",))
-    )
-
-    install = cat.misc_bom_items[DEFAULT_INSTALL_ID]
-    components.append(
-        _component_from_package(install, "installation", combo.system_kwp, badges=("INCLUDED",))
-    )
-
-    permits = cat.misc_bom_items[DEFAULT_PERMITS_ID]
-    components.append(
-        _component_from_package(permits, "installation", 1, badges=("INCLUDED",))
+    components.extend(
+        _expand_balance_of_system_lines(
+            system_kwp=combo.system_kwp,
+            hybrid=inverter.battery_compatible,
+            catalog=cat,
+            badges=included_badges,
+        ),
     )
 
     return tuple(components)
@@ -186,3 +308,73 @@ def expand_combo_to_components(
 
 def sum_component_lines(components: tuple[DesignComponent, ...]) -> float:
     return round(sum(component.line_total_php for component in components), 2)
+
+
+def _find_package(catalog_id: str, catalog: SolarCatalog) -> CatalogPackage | None:
+    for section in (
+        catalog.protections,
+        catalog.mounting_kits,
+        catalog.cabling,
+        catalog.misc_bom_items,
+    ):
+        if catalog_id in section:
+            return section[catalog_id]
+    return None
+
+
+def _unit_price_at_tier(price: CatalogPrice, tier: PriceTier) -> float:
+    return price.min if tier == "min" else price.max
+
+
+def _package_line_total_at_tier(
+    package: CatalogPackage,
+    qty: float,
+    tier: PriceTier,
+) -> float:
+    if package.price_php_per_kwp is not None:
+        unit_price = _unit_price_at_tier(package.price_php_per_kwp, tier)
+        return round(unit_price * qty, 2)
+    if package.price_php is not None:
+        unit_price = _unit_price_at_tier(package.price_php, tier)
+        return round(unit_price * qty, 2)
+    return 0.0
+
+
+def _line_total_at_tier(
+    component: DesignComponent,
+    tier: PriceTier,
+    catalog: SolarCatalog,
+) -> float:
+    if component.catalog_id is None:
+        return component.line_total_php
+
+    catalog_id = component.catalog_id
+    qty = component.qty
+
+    if component.slot == "panel":
+        price = get_panel(catalog_id, catalog).price_php
+        return round(_unit_price_at_tier(price, tier) * qty, 2)
+    if component.slot == "inverter":
+        price = get_inverter(catalog_id, catalog).price_php
+        return round(_unit_price_at_tier(price, tier) * qty, 2)
+    if component.slot == "battery":
+        price = get_battery(catalog_id, catalog).price_php
+        return round(_unit_price_at_tier(price, tier) * qty, 2)
+
+    package = _find_package(catalog_id, catalog)
+    if package is None:
+        return component.line_total_php
+    return _package_line_total_at_tier(package, qty, tier)
+
+
+def sum_component_lines_at_tier(
+    components: tuple[DesignComponent, ...],
+    tier: PriceTier,
+    *,
+    catalog: SolarCatalog | None = None,
+) -> float:
+    cat = catalog or load_catalog()
+    return round(
+        sum(_line_total_at_tier(component, tier, cat) for component in components),
+        2,
+    )

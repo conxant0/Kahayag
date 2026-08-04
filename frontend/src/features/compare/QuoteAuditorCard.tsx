@@ -3,7 +3,11 @@ import { useRef, useState } from "react";
 
 import { Button } from "../../shared/components/ui";
 import type { QuoteAuditResponse } from "../../shared/api/types";
+import { peso } from "../../shared/lib/currency";
 import { useQuoteAudit } from "./useQuoteAudit";
+
+const ACCEPTED_QUOTE_TYPES =
+  ".pdf,.txt,.csv,.md,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/plain";
 
 function DocumentIcon() {
   return (
@@ -68,6 +72,20 @@ function severityClass(severity: QuoteAuditResponse["findings"][number]["severit
   return "border-hairline bg-white text-secondary";
 }
 
+function extractedSummary(result: QuoteAuditResponse): string {
+  const parts: string[] = [];
+  if (typeof result.extracted_total_php === "number") {
+    parts.push(`Total ${peso(result.extracted_total_php)}`);
+  }
+  if (typeof result.extracted_system_kwp === "number") {
+    parts.push(`${result.extracted_system_kwp.toFixed(2)} kWp`);
+  }
+  if (typeof result.extracted_panel_count === "number") {
+    parts.push(`${result.extracted_panel_count} panels`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : "No totals parsed from upload";
+}
+
 export function QuoteAuditorCard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const audit = useQuoteAudit();
@@ -100,6 +118,14 @@ export function QuoteAuditorCard() {
           <p className="font-sans text-[12px] font-semibold tracking-[0.8px] text-tertiary uppercase">
             Audit · {result.filename}
           </p>
+          <div className="rounded-[12px] border border-hairline bg-white px-3.5 py-3">
+            <p className="font-sans text-[10px] font-medium tracking-[1px] text-tertiary uppercase">
+              Parsed from upload
+            </p>
+            <p className="mt-1 font-sans text-[13px] font-semibold text-ink">
+              {extractedSummary(result)}
+            </p>
+          </div>
           <p className="font-sans text-sm leading-6 text-ink">{result.summary}</p>
           <ul className="grid gap-2">
             {result.findings.map((finding) => (
@@ -116,7 +142,10 @@ export function QuoteAuditorCard() {
             className="mt-auto border-hairline bg-white text-ink"
             onClick={() => {
               setResult(null);
-              inputRef.current?.click();
+              if (inputRef.current) {
+                inputRef.current.value = "";
+                inputRef.current.click();
+              }
             }}
           >
             Audit another quote
@@ -132,14 +161,14 @@ export function QuoteAuditorCard() {
             Let AI audit an outside quote
           </h3>
           <p className="mt-2.5 text-center font-sans text-[12.5px] leading-5 text-tertiary">
-            Upload a PDF or text quote from any installer. We benchmark pricing and
-            capacity against your Kahayag design.
+            Upload a PDF, photo, or text quote from any installer. We read the
+            document and benchmark pricing and capacity against your Kahayag design.
           </p>
 
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf,.txt,.csv,.md,text/plain,application/pdf"
+            accept={ACCEPTED_QUOTE_TYPES}
             className="sr-only"
             onChange={(event) => handleFile(event.target.files?.[0])}
           />
@@ -153,7 +182,7 @@ export function QuoteAuditorCard() {
               onClick={() => inputRef.current?.click()}
             >
               <UploadIcon />
-              {audit.isPending ? "Auditing quote…" : "Audit my PDF quote"}
+              {audit.isPending ? "Reading quote…" : "Upload quote to audit"}
             </Button>
             {audit.error ? (
               <p className="mt-3 font-sans text-sm text-ember" role="alert">
