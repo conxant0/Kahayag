@@ -44,6 +44,12 @@ def test_assess_permits_with_no_uploads_reports_presence_findings() -> None:
     )
     assert barangay["unverified"] is True
     assert barangay["expires"] is None
+    assert barangay["steps"]
+    assert barangay["issuing_agency"]
+    tax_clearance = next(
+        d for d in body["documents"] if d["document_id"] == "obo_16_tax_clearance_lot"
+    )
+    assert tax_clearance["prerequisites"] == ["obo_15_tax_declaration_lot"]
 
 
 def test_assess_permits_with_uploads_pairs_slot_ids_to_files() -> None:

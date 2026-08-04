@@ -47,6 +47,18 @@ class DocumentRequirement:
     expires: bool | None
     expiry_note: str | None
     unverified: bool
+    # Where to get it, in plain language. A document with no fixed office
+    # (e.g. a notarized instrument, or an ID the applicant already holds)
+    # says so here rather than naming a government office.
+    issuing_agency: str
+    # Ordered, plain-language actions for obtaining the document: where to
+    # go or which portal to use, what to bring, what to check before leaving
+    # the counter. Sourced from the same research as legal_basis/source_url —
+    # never invented (AGENTS.md rule 1).
+    steps: tuple[str, ...]
+    # Other document ids (from this catalog) that must be satisfied first.
+    # Empty when nothing gates this document.
+    prerequisites: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -84,6 +96,9 @@ def _parse_document(raw: dict[str, Any]) -> DocumentRequirement:
         expires=raw.get("expires"),
         expiry_note=raw.get("expiry_note"),
         unverified=bool(raw.get("unverified", False)),
+        issuing_agency=str(raw["issuing_agency"]),
+        steps=tuple(raw["steps"]),
+        prerequisites=tuple(raw.get("prerequisites", [])),
     )
 
 
