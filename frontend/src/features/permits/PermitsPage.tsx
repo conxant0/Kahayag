@@ -142,12 +142,14 @@ export function PermitsPage() {
                 />
                 <Rule />
                 <PacketStatusCard assessment={assessment} />
-                <Button
-                  fullWidth
-                  onClick={() => setEgovAcknowledged(true)}
-                >
-                  Submit to eGov
-                </Button>
+                {assessment.packet_status === "ready" ? (
+                  <Button
+                    fullWidth
+                    onClick={() => setEgovAcknowledged(true)}
+                  >
+                    Submit to eGov
+                  </Button>
+                ) : null}
                 {egovAcknowledged ? (
                   <Button
                     variant="ghost"
