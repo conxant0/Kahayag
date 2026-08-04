@@ -1,7 +1,5 @@
 # Defines uploaded-quote extraction and benchmark comparison for the compare page.
 
-import io
-
 from app.features.design.schemas import (
     DesignBuildSchema,
     DesignSessionSchema,
@@ -9,22 +7,7 @@ from app.features.design.schemas import (
     QuoteAuditResponseSchema,
 )
 from app.integrations.ai.quote_auditor import QuoteAuditorClient
-
-
-def extract_document_text(filename: str, content: bytes) -> str:
-    lowered = filename.lower()
-    if lowered.endswith(".pdf"):
-        try:
-            from pypdf import PdfReader
-
-            reader = PdfReader(io.BytesIO(content))
-            pages = [page.extract_text() or "" for page in reader.pages]
-            return "\n".join(pages).strip()
-        except (ImportError, OSError, ValueError):
-            return ""
-    if lowered.endswith((".txt", ".csv", ".md")):
-        return content.decode("utf-8", errors="ignore").strip()
-    return content.decode("utf-8", errors="ignore").strip()
+from app.integrations.pdf.document_text import extract_document_text
 
 
 def _deterministic_findings(
