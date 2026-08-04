@@ -29,6 +29,15 @@ session state for the duration of a visit.
    language. An agent must never move a calculation into a prompt, and never let
    a model output a number that was not computed deterministically. The report
    path validates value preservation for this reason.
+
+   One exception, deliberately narrow: a client-side **preview** may mirror the
+   domain's arithmetic to keep a form responsive while it is being filled in.
+   `frontend/src/features/assessment/liveEstimate.ts` is the only such file, and
+   a preview earns the exception only if it is labelled as an estimate, is never
+   persisted, submitted, or presented as the result, and mirrors the domain's
+   published constants rather than inventing its own. Every figure the homeowner
+   keeps still comes from `POST /assessments`. Adding a second preview is a
+   decision to take to the owner, not a precedent to follow.
 2. **Vendors stay behind adapters.** Google Maps, Google Solar, Nominatim, Groq,
    and ReportLab are reached through `integrations/`. Provider-specific objects
    stop at that boundary. Do not import a vendor SDK into a feature, a domain
