@@ -2,10 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import {
-  fetchBuildingOutline,
-  outlineToCorners,
-} from "../../../integrations/buildingOutline";
-import {
   DEMO_PROPERTY,
   propertyPinIcon,
   useMapLoader,
@@ -18,13 +14,11 @@ import type {
 import {
   buildRoofPolygonModel,
   calculateRoofMetrics,
-  createDefaultRoofOutline,
   hasVertexBeyondPin,
   isPointInsidePolygon,
   isSelfIntersecting,
   MAX_VERTEX_DISTANCE_METERS,
   isValidRoofTrace,
-  slideOutlineToCover,
   validateRoofPolygon,
 } from "../roofUtils";
 
@@ -67,8 +61,6 @@ export function useRoofTracing(
   );
   const [isTracingRoof, setIsTracingRoof] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  /** True while the footprint is being fetched, so the button can say so. */
-  const [isFittingOutline, setIsFittingOutline] = useState(false);
 
   /**
    * Derived from the vertices rather than stored alongside them.
@@ -174,6 +166,12 @@ export function useRoofTracing(
 
   useEffect(() => {
     roofCoordinatesRef.current = roofCoordinates;
+    // Clicking builds the shape one corner at a time, so this is where the
+    // "spring a bad drag back" target keeps up. Only shapes that do not cross
+    // themselves are worth springing back to.
+    if (!isSelfIntersecting(roofCoordinates)) {
+      lastValidCoordinatesRef.current = roofCoordinates;
+    }
   }, [roofCoordinates]);
 
   useEffect(() => {
@@ -269,16 +267,10 @@ export function useRoofTracing(
       return;
     }
 
-    // The outline has to keep covering the pin. Dragged off it, the shape is a
-    // trace of some other roof no matter how carefully it was drawn, and every
-    // number after this step would be about that roof instead.
-    if (pin && !isPointInsidePolygon(coordinates, pin)) {
-      revertDrag(
-        "Your roof outline has to stay over the property pin, so that move was undone.",
-      );
-      return;
-    }
-
+    // Covering the pin is checked when the trace is confirmed, not here: a
+    // shape being clicked into existence corner by corner spends most of its
+    // life not covering the pin yet, and undoing every drag in that state
+    // would fight the person building it.
     lastValidCoordinatesRef.current = coordinates;
     setValidationMessage("");
     setRoofCoordinates(coordinates);
@@ -531,6 +523,13 @@ export function useRoofTracing(
       return;
     }
 
+    // The cursor is the always-on reminder of what a click will do here:
+    // crosshair while every click drops a corner, the ordinary hand once
+    // clicking is just panning again.
+    mapInstanceRef.current.setOptions({
+      draggableCursor: isTracingRoof ? "crosshair" : undefined,
+    });
+
     if (isTracingRoof) {
       createRoofPolygon();
 
@@ -545,14 +544,39 @@ export function useRoofTracing(
             return;
           }
 
-          const { latLng } = event;
-          setRoofCoordinates((previous) => [
-            ...previous,
-            {
-              latitude: latLng.lat(),
-              longitude: latLng.lng(),
-            },
-          ]);
+          const clicked = {
+            latitude: event.latLng.lat(),
+            longitude: event.latLng.lng(),
+          };
+
+          // The same fence the drag guard applies, at the moment the corner
+          // is placed rather than after: a click on the next street cannot
+          // become part of this roof's area.
+          const property = selectedPropertyRef.current;
+          const pin = property && {
+            latitude: property.latitude,
+            longitude: property.longitude,
+          };
+          if (pin && hasVertexBeyondPin([clicked], pin)) {
+            setValidationMessage(
+              `Corners have to stay within ${MAX_VERTEX_DISTANCE_METERS} m of your property pin, so that corner was not added.`,
+            );
+            return;
+          }
+
+          // Refused at the click, the same way a crossing drag is refused at
+          // the drag: a corner whose edges cross the outline can never be
+          // confirmed, and finding that out now beats finding out at the end.
+          const next = [...roofCoordinatesRef.current, clicked];
+          if (isSelfIntersecting(next)) {
+            setValidationMessage(
+              "Corners cannot cross another edge, so that corner was not added.",
+            );
+            return;
+          }
+
+          setValidationMessage("");
+          setRoofCoordinates(next);
         },
       );
     } else if (mapClickListenerRef.current) {
@@ -568,47 +592,6 @@ export function useRoofTracing(
     };
   }, [googleStatus, isTracingRoof]);
 
-  /**
-   * Opens tracing on a rough outline rather than a blank map.
-   *
-   * Asking someone to produce a polygon from nothing is both the hardest way
-   * to start and the easiest to get wrong. A square over the property is wrong
-   * in a way that is obvious and quick to fix: drag four corners onto the roof
-   * instead of inventing them. An existing trace is picked up where it was left
-   * rather than thrown away.
-   */
-  /**
-   * Lays down the starting shape: the building's own footprint if the provider
-   * knows it, a square over the pin if not.
-   *
-   * An approximate start beats a blank map, so a provider that has never
-   * surveyed this building must not become a reason the step cannot begin.
-   */
-  const seedRoofOutline = async (centre: RoofCoordinate) => {
-    setIsFittingOutline(true);
-    let seed = createDefaultRoofOutline(centre);
-    try {
-      const fitted = outlineToCorners(
-        await fetchBuildingOutline(centre),
-        centre,
-      );
-      if (fitted && isValidRoofTrace(fitted)) {
-        // The fit can read the roof correctly and still sit off the pin, on a
-        // long building whose planes near the pin are small. Its size, angle
-        // and position all came from the imagery and are worth keeping, so a
-        // fit that misses the pin slides only as far as covering it requires
-        // rather than being thrown away or recentred.
-        seed = slideOutlineToCover(fitted, centre);
-      }
-    } finally {
-      setIsFittingOutline(false);
-    }
-
-    setRoofCoordinates(seed);
-    lastValidCoordinatesRef.current = seed;
-    applyPolygonPath(seed, true);
-  };
-
   const propertyCentre = () =>
     selectedProperty
       ? {
@@ -617,28 +600,31 @@ export function useRoofTracing(
         }
       : null;
 
-  const startRoofTracing = async () => {
-    const centre = propertyCentre();
-    if (!centre || googleStatus !== "ready") {
+  /**
+   * Opens tracing on a blank map, ready for the first click.
+   *
+   * The shape is the person's to draw: click a corner of the roof, then the
+   * next, until the outline closes around the pin. An earlier attempt seeded a
+   * fitted outline from provider imagery here, and it earned its removal —
+   * where coverage was thin the seed was a misplaced or mis-rotated shape that
+   * had to be wrestled off before tracing could start, which is worse than
+   * starting clean. An existing trace is picked up where it was left rather
+   * than thrown away.
+   */
+  const startRoofTracing = () => {
+    if (!propertyCentre() || googleStatus !== "ready") {
       return;
     }
 
     setValidationMessage("");
     createRoofPolygon();
     setIsTracingRoof(true);
-
-    // An existing trace is picked up where it was left rather than thrown away.
-    if (roofCoordinates.length >= 3) {
-      return;
-    }
-
-    await seedRoofOutline(centre);
   };
 
   const finishRoofTracing = () => {
     if (roofCoordinates.length < 3) {
       setValidationMessage(
-        "Add at least 3 vertices to create a usable roof polygon.",
+        "Add at least 3 corners by clicking the map before confirming.",
       );
       return;
     }
@@ -646,6 +632,18 @@ export function useRoofTracing(
     const validation = validateRoofPolygon(roofCoordinates);
     if (!validation.isValid) {
       setValidationMessage(validation.message);
+      return;
+    }
+
+    // The pin is what the previous step confirmed, so a trace that does not
+    // cover it is a trace of some other roof, however carefully it was drawn.
+    // Checked here rather than while drawing, because a shape under
+    // construction spends most of its life not covering the pin yet.
+    const pin = propertyCentre();
+    if (pin && !isPointInsidePolygon(roofCoordinates, pin)) {
+      setValidationMessage(
+        "Your roof outline has to cover the property pin. Extend the shape until the pin sits inside it.",
+      );
       return;
     }
 
@@ -672,39 +670,16 @@ export function useRoofTracing(
     setRoofPolygon(null);
   };
 
-  /**
-   * Throws away the current shape and lays a fresh one down.
-   *
-   * It used to leave an empty editable polygon behind, which was a dead end:
-   * corners are dragged here, never clicked into place, so a shape with no
-   * corners could not be recovered from without leaving the step.
-   */
-  const redrawRoofTracing = async () => {
-    const centre = propertyCentre();
-    if (!centre || googleStatus !== "ready") {
-      return;
-    }
-
-    setValidationMessage("");
-    setRoofCoordinates([]);
-    clearRoofVertexMarkers();
-    clearPolygonPath();
-    createRoofPolygon();
-    setIsTracingRoof(true);
-    await seedRoofOutline(centre);
-  };
-
   return {
     googleStatus,
     roofCoordinates,
     isTracingRoof,
+    isUsableTrace,
     roofMetrics,
     validationMessage,
-    isFittingOutline,
     startRoofTracing,
     finishRoofTracing,
     resetRoofTracing,
-    redrawRoofTracing,
   };
 }
 /* eslint-enable react-hooks/immutability */
