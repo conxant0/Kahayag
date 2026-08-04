@@ -1,7 +1,8 @@
 // Defines the standalone permits preview route (`/permits-preview`, T3a-v2).
 // Fixture-driven except the chat sidebar, which calls the real
-// POST /permits/chat (T4). Not linked from Quotation, not added to
-// DesignFlowStepper — that is T3b, gated on user approval.
+// POST /permits/chat (T4). Kept as a scenario-toggle demo for design review;
+// the wired D6 step homeowners actually go through is PermitsPage.tsx, linked
+// from Quotation and on the DesignFlowStepper (T3b).
 //
 // Laid out in the flat editorial system: paper ground, hairline rules between
 // blocks, no card shells — the same language as ContentScreen, kept as a

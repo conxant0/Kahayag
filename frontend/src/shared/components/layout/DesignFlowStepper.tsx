@@ -1,4 +1,5 @@
-// Defines the five-step progress indicator for the D3 design flow.
+// Defines the six-step progress indicator for the D3 design flow (D6 adds
+// the permits step after Quotation).
 import { Link } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../../app/routePaths";
@@ -10,9 +11,10 @@ const STEPS = [
   { label: "Results", path: ROUTE_PATHS.results },
   { label: "AI design", path: ROUTE_PATHS.design },
   { label: "Quotation", path: ROUTE_PATHS.quotation },
+  { label: "Permits", path: ROUTE_PATHS.permits },
 ] as const;
 
-export type DesignFlowStep = 1 | 2 | 3 | 4 | 5;
+export type DesignFlowStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 function CheckIcon() {
   return (

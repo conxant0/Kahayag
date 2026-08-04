@@ -13,6 +13,7 @@ export const ROUTE_PATHS = {
   design: "/design",
   compare: "/compare",
   quotation: "/quotation",
+  permits: "/permits",
   invest: "/invest",
   why: "/why",
   brief: "/brief",

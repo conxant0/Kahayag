@@ -1,4 +1,5 @@
 export { PermitsPreviewPage } from "./PermitsPreviewPage";
+export { PermitsPage } from "./PermitsPage";
 export { ApplicantForm } from "./ApplicantForm";
 export type { ApplicantFormValues } from "./ApplicantForm";
 export { DocumentChecklist } from "./DocumentChecklist";
@@ -7,6 +8,7 @@ export { PermitChatSidebar } from "./PermitChatSidebar";
 export { VerdictBanner } from "./VerdictBanner";
 export { PacketStatusCard } from "./PacketStatusCard";
 export { usePermitChat } from "./usePermitChat";
+export { useAssessPermit } from "./useAssessPermit";
 export {
   deriveAssessment,
   documentDisplayStatus,
