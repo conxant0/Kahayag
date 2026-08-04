@@ -340,9 +340,29 @@ const INSTALL_TIMELINES: readonly InstallTimeline[] = [
 ];
 
 /**
+ * The future-loads list keeps its two kinds of nothing: an absent list is
+ * "not answered", an empty one is an explicit "none planned". A stored list
+ * that loses every entry to validation is the first kind — nothing valid was
+ * ever answered, so it must not come back as the explicit "none".
+ */
+function parseFutureLoads(value: unknown): FutureLoad[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const kept = value.filter(
+    (entry): entry is FutureLoad => memberOrNull(FUTURE_LOADS, entry) !== null,
+  );
+  if (kept.length === 0 && value.length > 0) {
+    return null;
+  }
+
+  return kept;
+}
+
+/**
  * Like the energy inputs, always a shape to render; each answer stands or
- * falls on its own. The future-loads list keeps its two kinds of nothing: an
- * absent list is "not answered", an empty one is an explicit "none planned".
+ * falls on its own.
  */
 function parsePlans(value: unknown): AssessmentPlans {
   if (!isRecord(value)) {
@@ -352,12 +372,7 @@ function parsePlans(value: unknown): AssessmentPlans {
   return {
     primaryGoal: memberOrNull(PRIMARY_GOALS, value.primaryGoal),
     usagePattern: memberOrNull(USAGE_PATTERNS, value.usagePattern),
-    futureLoads: Array.isArray(value.futureLoads)
-      ? value.futureLoads.filter(
-          (entry): entry is FutureLoad =>
-            memberOrNull(FUTURE_LOADS, entry) !== null,
-        )
-      : null,
+    futureLoads: parseFutureLoads(value.futureLoads),
     roofMaterial: memberOrNull(ROOF_MATERIALS, value.roofMaterial),
     propertyKind: memberOrNull(PROPERTY_KINDS, value.propertyKind),
     ownsProperty:

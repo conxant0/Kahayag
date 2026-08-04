@@ -135,6 +135,14 @@ describe("readStoredSession", () => {
     expect(readStoredSession().contactDetails).toEqual(DEFAULT_CONTACT_DETAILS);
   });
 
+  it("reads a list of only invalid loads as unanswered, not as 'none'", () => {
+    // Validation emptied the list; nobody chose the empty list. Restoring it
+    // as [] would paint the explicit "None" chip for an answer never given.
+    seed({ plans: { futureLoads: ["time-machine", 7] } });
+
+    expect(readStoredSession().plans.futureLoads).toBeNull();
+  });
+
   it("drops only the field that is corrupt", () => {
     seed({ selectedProperty: PROPERTY, roofPolygon: { nonsense: true } });
 

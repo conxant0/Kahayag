@@ -3,8 +3,10 @@ import { useId } from "react";
 
 import type { ContactDetails } from "../../../state/assessmentStore";
 
+// Named colours only, not `transition-colors`: that shorthand also covers
+// outline-color, which would fade the focus ring in instead of snapping it.
 const FIELD_CLASS_NAME =
-  "w-full rounded-xs border border-hairline bg-white px-3 py-2 font-sans text-[15px] text-ink outline-none transition-colors duration-150 ease-brand placeholder:text-tertiary-ink focus-visible:border-cobalt";
+  "w-full rounded-xs border border-hairline bg-white px-3 py-2 font-sans text-[15px] text-ink outline-none transition-[background-color,border-color,color] duration-150 ease-brand placeholder:text-tertiary-ink focus-visible:border-cobalt";
 
 /**
  * Asked here and nowhere earlier on purpose: a name and number belong to the
