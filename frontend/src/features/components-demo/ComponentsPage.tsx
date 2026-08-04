@@ -14,7 +14,6 @@ import {
   Rule,
   Slider,
   SunLoader,
-  UploadCard,
 } from "../../shared/components/ui";
 
 const BILL_PRESETS = ["₱2,500", "₱4,800", "₱8,000"];
@@ -105,21 +104,6 @@ export function ComponentsPage() {
             valueClassName="text-cobalt"
           />
         </HairlineList>
-      </Specimen>
-
-      <Specimen name="Upload card" note="default · error">
-        <div className="flex w-full max-w-90.5 flex-col gap-4">
-          <UploadCard
-            title="Snap a photo of your bill"
-            hint="We'll read it and fill everything in · optional"
-          />
-          <UploadCard
-            variant="error"
-            title="We couldn't read that photo"
-            hint="Type it in below, or try a clearer shot."
-            action="Retry"
-          />
-        </div>
       </Specimen>
 
       <Specimen name="Info pill" note="cobalt · ink">
