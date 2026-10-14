@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { DesignFlowStepper, DesignStepTabs } from "../../shared/components/layout";
+import {
+  DesignFlowStepper,
+  DesignStepTabs,
+  StepPageHeader,
+} from "../../shared/components/layout";
 import { readAssessmentResult } from "../assessment/formatAssessmentResult";
 import { buildPlansPayload } from "../assessment/buildPlansPayload";
 import { useAssessmentStore } from "../../state/assessmentStore";
@@ -11,12 +15,18 @@ import { DesignAppliedModal } from "./DesignAppliedModal";
 import { DesignSidebar } from "./DesignSidebar";
 import { DesignSummaryBar } from "./DesignSummaryBar";
 import { SystemCanvas } from "./SystemCanvas";
-import { getActiveBuild, formatBuildInvestment, summaryTiles } from "./designViewModel";
+import {
+  getActiveBuild,
+  formatBuildInvestment,
+  summaryTiles,
+} from "./designViewModel";
 import { useBootstrapDesign } from "./useDesignActions";
 
 export function DesignPage() {
   const rawResult = useAssessmentStore((state) => state.result);
-  const selectedProperty = useAssessmentStore((state) => state.selectedProperty);
+  const selectedProperty = useAssessmentStore(
+    (state) => state.selectedProperty,
+  );
   const plans = useAssessmentStore((state) => state.plans);
   const designSession = useDesignStore((state) => state.designSession);
   const quoteAuditResults = useDesignStore((state) => state.quoteAuditResults);
@@ -32,12 +42,7 @@ export function DesignPage() {
   const tiles = useMemo(() => summaryTiles(activeBuild), [activeBuild]);
 
   useEffect(() => {
-    if (
-      !result ||
-      designSession ||
-      bootstrap.isPending ||
-      bootstrap.isError
-    ) {
+    if (!result || designSession || bootstrap.isPending || bootstrap.isError) {
       return;
     }
     bootstrap.mutate({
@@ -74,39 +79,52 @@ export function DesignPage() {
 
   return (
     <>
-      <main id="main" className="flex h-svh flex-col bg-paper">
-        <header className="shrink-0 bg-paper pt-5 pb-4">
-          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 overflow-x-auto px-4 lg:px-8">
-            <div className="flex justify-center">
+      <main id="main" className="flex min-h-svh flex-col bg-paper">
+        <div className="mx-auto flex w-full max-w-[1440px] shrink-0 flex-col gap-6 px-4 pt-6 pb-5 sm:px-6 lg:px-16 lg:pt-8">
+          <div className="flex w-full flex-col gap-4 overflow-x-auto">
+            <div className="flex sm:justify-center">
               <DesignFlowStepper activeStep={4} />
             </div>
             <DesignStepTabs />
           </div>
-        </header>
 
-        <DesignSummaryBar
-          tiles={tiles}
-          applyDisabled={actionsDisabled}
-          saveDisabled={actionsDisabled}
-          onApply={handleApply}
-        />
+          <StepPageHeader
+            backHref={ROUTE_PATHS.results}
+            backLabel="Back to your results"
+            eyebrow="Step 4 of 6 · AI design"
+            title={
+              <>
+                Shape your <em className="font-normal italic">system.</em>
+              </>
+            }
+            lead={
+              activeBuild &&
+              Math.abs(
+                activeBuild.system_kwp -
+                  Number(result.recommendation.system_capacity_kwp),
+              ) >= 0.05 ? (
+                <p>
+                  Starting from your {result.recommendation.panel_count}-panel
+                  preliminary estimate (
+                  {Number(result.recommendation.system_capacity_kwp).toFixed(1)}{" "}
+                  kWp). Selected catalog equipment sizes the system at{" "}
+                  {activeBuild.system_kwp.toFixed(1)} kWp.
+                </p>
+              ) : null
+            }
+            actions={
+              <DesignSummaryBar
+                tiles={tiles}
+                applyDisabled={actionsDisabled}
+                saveDisabled={actionsDisabled}
+                onApply={handleApply}
+              />
+            }
+          />
+        </div>
 
-        {activeBuild &&
-        Math.abs(
-          activeBuild.system_kwp - Number(result.recommendation.system_capacity_kwp),
-        ) >= 0.05 ? (
-          <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-8">
-            <p className="rounded-[14px] border border-hairline bg-[#fffdf5] px-4 py-3 font-sans text-[13px] leading-5 text-secondary">
-              Starting from your {result.recommendation.panel_count}-panel preliminary
-              estimate ({Number(result.recommendation.system_capacity_kwp).toFixed(1)}{" "}
-              kWp). Selected catalog equipment sizes the system at{" "}
-              {activeBuild.system_kwp.toFixed(1)} kWp.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mx-auto grid min-h-0 w-full max-w-[1440px] flex-1 grid-cols-1 lg:grid-cols-[18.5rem_1fr]">
-          <aside className="flex min-h-0 flex-col overflow-hidden border-b border-hairline px-5 py-5 lg:border-r lg:border-b-0 lg:px-5">
+        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 px-4 pb-6 sm:px-6 lg:h-[40rem] lg:grid-cols-[19rem_1fr] lg:px-16 lg:pb-6">
+          <aside className="order-2 flex h-[34rem] min-h-0 flex-col overflow-hidden border-t border-hairline py-5 lg:order-none lg:h-auto lg:border-t-0 lg:pr-2">
             <DesignSidebar />
 
             {bootstrap.error ? (
@@ -116,7 +134,7 @@ export function DesignPage() {
             ) : null}
           </aside>
 
-          <section className="min-h-0 p-4 lg:p-6">
+          <section className="min-h-0 py-4 lg:py-0 lg:pl-6">
             {loading ? (
               <div className="flex h-full min-h-[28rem] items-center justify-center rounded-[20px] border border-hairline bg-[#fcfaf5] font-sans text-secondary">
                 Running the design solver…
