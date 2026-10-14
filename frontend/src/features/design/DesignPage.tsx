@@ -123,7 +123,7 @@ export function DesignPage() {
           />
         </div>
 
-        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 px-4 pb-6 sm:px-6 lg:h-[40rem] lg:grid-cols-[19rem_1fr] lg:px-16 lg:pb-6">
+        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 px-4 pb-6 sm:px-6 lg:h-[40rem] lg:grid-cols-[19rem_minmax(0,1fr)] lg:px-16 lg:pb-6">
           <aside className="order-2 flex h-[34rem] min-h-0 flex-col overflow-hidden border-t border-hairline py-5 lg:order-none lg:h-auto lg:border-t-0 lg:pr-2">
             <DesignSidebar />
 
