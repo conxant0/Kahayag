@@ -135,7 +135,7 @@ export function AskEngineSidebar({
 
   return (
     <section
-      className="flex max-h-[min(42rem,calc(100svh-12rem))] min-h-[22rem] flex-col gap-4 rounded-[20px] border border-hairline bg-white p-5 print:hidden"
+      className="flex max-h-[min(42rem,calc(100svh-12rem))] min-h-[22rem] flex-col gap-4 print:hidden"
       aria-label="Ask the engine"
     >
       <header className="shrink-0 flex items-center gap-2 text-ink">
@@ -150,12 +150,11 @@ export function AskEngineSidebar({
 
       {showPrompts ? (
         <div className="shrink-0 flex flex-wrap gap-2">
-          {topChips.map((chip) => (
+          {[...topChips, ...followUps].map((chip) => (
             <Chip
               key={chip}
               onClick={() => void send(chip)}
               disabled={explain.isPending}
-              className="border-transparent bg-[#fff4cc] text-[12px] text-[#7a5c00] hover:border-transparent hover:text-[#7a5c00]"
             >
               {chip}
             </Chip>
@@ -168,7 +167,7 @@ export function AskEngineSidebar({
         className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5"
         aria-live="polite"
       >
-        <p className="rounded-[14px] bg-[#fbf6e8] p-3 font-sans text-sm leading-5 text-ink">
+        <p className="border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-ink">
           {welcome}
         </p>
 
@@ -192,28 +191,8 @@ export function AskEngineSidebar({
         ) : null}
       </div>
 
-      {showPrompts ? (
-        <ul className="shrink-0 flex flex-col gap-2">
-          {followUps.map((question) => (
-            <li key={question}>
-              <button
-                type="button"
-                disabled={explain.isPending}
-                onClick={() => void send(question)}
-                className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-hairline px-3 py-2.5 text-left font-sans text-[13px] text-ink transition-colors hover:border-tertiary disabled:opacity-45"
-              >
-                <span>{question}</span>
-                <span aria-hidden="true" className="text-tertiary">
-                  ›
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       <form
-        className="shrink-0 flex items-center gap-2 rounded-pill border border-hairline bg-[#fcfaf5] py-1.5 pr-1.5 pl-4"
+        className="shrink-0 flex items-center gap-2 rounded-pill border border-hairline bg-white py-1.5 pr-1.5 pl-4"
         onSubmit={(event) => {
           event.preventDefault();
           void send(draft);
