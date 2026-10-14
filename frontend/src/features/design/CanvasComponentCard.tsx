@@ -158,9 +158,11 @@ function EmptySlotCard({
         ? "Add inverter"
         : "— Not included";
   const sharedClassName = cn(
-    "flex w-[15.5rem] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#cfc9bb] bg-white/70 text-center shadow-[0_2px_8px_rgba(26,23,18,0.03)]",
-    compact ? "px-2 py-4" : "px-4 py-8",
-    onAdd ? "transition-colors hover:border-cobalt/40 hover:bg-white" : "",
+    "flex w-[15.5rem] flex-col items-center justify-center rounded-[16px] border border-dashed border-[#d9d3c6] bg-white/60 text-center",
+    compact ? "px-2 py-4" : "px-4 py-7",
+    onAdd
+      ? "transition-colors duration-150 ease-brand hover:border-cobalt/40 hover:bg-white"
+      : "",
     className,
   );
 
@@ -169,21 +171,26 @@ function EmptySlotCard({
       <div
         className={cn(
           "flex items-center justify-center rounded-[10px]",
-          compact ? "size-7" : "size-10",
+          compact ? "size-7" : "size-9",
           accent.bg,
         )}
       >
-        <CanvasSlotIcon slot={slot} size={compact ? 16 : 20} />
+        <CanvasSlotIcon slot={slot} size={compact ? 16 : 18} />
       </div>
       <p
         className={cn(
-          "mt-2 font-sans font-semibold text-secondary",
-          compact ? "text-[10px]" : "text-sm",
+          "mt-2.5 font-sans font-semibold text-ink",
+          compact ? "text-[10px]" : "text-[13px]",
         )}
       >
         {emptyLabel}
       </p>
-      <p className="font-sans text-[8px] font-semibold tracking-[0.6px] text-tertiary uppercase">
+      <p
+        className={cn(
+          "mt-0.5 font-sans font-semibold tracking-[0.8px] text-tertiary-ink uppercase",
+          compact ? "text-[8px]" : "text-[10px]",
+        )}
+      >
         {canvasSlotHeader(slot)}
       </p>
     </>
@@ -277,120 +284,120 @@ export function CanvasComponentCard({
     );
   }
 
+  const bosCard =
+    component.slot === "protection" || isAggregatedBosComponent(component);
+
   return (
     <article
       className={cn(
-        "group relative flex w-[15.5rem] flex-col overflow-hidden rounded-[14px] border bg-white shadow-[0_4px_14px_rgba(26,23,18,0.05)]",
-        showHighlight ? "border-sun border-[2px]" : autoSuggested ? "border-sun" : "border-hairline",
+        "relative flex w-[15.5rem] flex-col rounded-[16px] border bg-white shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]",
+        showHighlight ? "border-[1.5px] border-sun" : "border-hairline",
         className,
       )}
     >
-      {autoSuggested ? (
-        <div className="bg-[#fff4cc] px-2.5 py-1 text-center font-sans text-[8px] font-bold tracking-[1px] text-[#7a5c00] uppercase">
-          Auto-suggested
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-2.5 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <div className={cn("flex size-7 items-center justify-center rounded-[8px]", accent.bg)}>
-              <CanvasSlotIcon slot={component.slot} size={16} />
+      <header className="flex items-center justify-between gap-2 px-4 pt-3.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* The product image below already carries the slot icon. */}
+          {showProductImage ? null : (
+            <div
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-[7px]",
+                accent.bg,
+              )}
+            >
+              <CanvasSlotIcon slot={component.slot} size={14} />
             </div>
-            <p className="font-sans text-[9px] font-semibold tracking-[0.8px] text-tertiary uppercase">
-              {canvasSlotHeaderForComponent(component)}
-            </p>
-          </div>
-          <p className="font-sans text-[9px] font-semibold tracking-[0.8px] text-tertiary uppercase">
+          )}
+          <p className="truncate font-sans text-[10px] font-semibold tracking-[0.9px] text-tertiary-ink uppercase">
+            {canvasSlotHeaderForComponent(component)}
+          </p>
+        </div>
+        {autoSuggested ? (
+          <span className="shrink-0 rounded-pill bg-[#fff4cc] px-2 py-0.5 font-sans text-[10px] font-semibold text-[#7a5c00]">
+            Auto-suggested
+          </span>
+        ) : (
+          <p className="shrink-0 font-sans text-[10px] font-semibold tracking-[0.9px] text-tertiary-ink uppercase">
             {quantityLabel(component)}
           </p>
-        </div>
+        )}
+      </header>
 
-        <div className={cn("flex gap-2.5", showProductImage ? "items-start" : "")}>
-          {showProductImage ? (
-            <ComponentProductImage component={component} size="thumb" />
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <p className="font-sans text-[12px] font-semibold text-cobalt">{component.brand}</p>
-            <p className="font-sans text-[14px] leading-tight font-bold text-ink">
-              {displayModel(component)}
-            </p>
-            {price ? (
-              <div className="mt-1.5">
-                <p className="font-sans text-[15px] font-bold text-ink">{price.total}</p>
-                {price.detail ? (
-                  <p className="font-sans text-[10px] text-secondary">{price.detail}</p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {stats.length > 0 ? (
-          <div className="grid grid-cols-2 gap-1.5">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-[8px] border border-hairline bg-[#fcfaf5] px-2 py-1.5"
-              >
-                <p className="font-sans text-[8px] font-semibold tracking-[0.6px] text-tertiary uppercase">
-                  {stat.label}
-                </p>
-                <p className="font-sans text-[11px] font-semibold text-ink">{stat.value}</p>
-              </div>
-            ))}
-          </div>
+      <div className="flex gap-3 px-4 pt-3">
+        {showProductImage ? (
+          <ComponentProductImage component={component} size="thumb" />
         ) : null}
-
-        {component.slot === "inverter" && autoSuggested ? (
-          <p className="rounded-pill bg-[#fff4cc] px-2 py-1 text-center font-sans text-[10px] font-medium text-[#7a5c00]">
-            Built-in AI arc protection
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-sans text-[12px] font-semibold text-cobalt">
+            {component.brand}
           </p>
-        ) : null}
+          <p className="line-clamp-2 font-sans text-[15px] leading-snug font-semibold text-ink">
+            {displayModel(component)}
+          </p>
+        </div>
+      </div>
 
-        {component.slot === "protection" || isAggregatedBosComponent(component) ? (
-          <div className="flex flex-wrap gap-1">
-            <span className="rounded-pill bg-[#f2eee4] px-2 py-0.5 font-sans text-[9px] font-semibold text-secondary">
-              PEC 2024
-            </span>
-            <span className="rounded-pill bg-[#fff4cc] px-2 py-0.5 font-sans text-[9px] font-semibold text-[#7a5c00]">
-              Lifetime support
-            </span>
-          </div>
-        ) : null}
+      <div className="flex items-baseline justify-between gap-2 px-4 pt-2.5">
+        {price ? (
+          <p className="font-sans text-[17px] font-bold text-ink tabular-nums">
+            {price.total}
+          </p>
+        ) : (
+          <span />
+        )}
+        <p className="font-sans text-[12px] text-tertiary-ink tabular-nums">
+          {price?.detail ?? (autoSuggested ? quantityLabel(component) : null)}
+        </p>
+      </div>
 
-        <div className="flex items-center justify-between gap-2">
+      {stats.length > 0 && !bosCard ? (
+        <dl className="mx-4 mt-3 grid grid-cols-2 border-t border-hairline pt-2.5">
+          {stats.map((stat, index) => (
+            <div
+              key={stat.label}
+              className={cn("min-w-0", index > 0 && "border-l border-hairline pl-3")}
+            >
+              <dt className="truncate font-sans text-[10px] font-semibold tracking-[0.6px] text-tertiary-ink uppercase">
+                {stat.label}
+              </dt>
+              <dd className="truncate font-sans text-[13px] font-semibold text-ink">
+                {stat.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline px-4 py-2.5">
+        <button
+          type="button"
+          className="font-sans text-[12px] font-semibold text-cobalt hover:underline"
+          onClick={() => setShowDetails((open) => !open)}
+          aria-expanded={showDetails}
+        >
+          {showDetails ? "Hide details" : "View details"}
+        </button>
+        {swappable ? (
           <button
             type="button"
-            className="flex items-center gap-1 font-sans text-[12px] font-semibold text-cobalt hover:underline"
-            onClick={() => setShowDetails((open) => !open)}
-            aria-expanded={showDetails}
+            onClick={onSwap}
+            className="rounded-pill border border-hairline px-3 py-1 font-sans text-[12px] font-semibold text-secondary transition-colors duration-150 ease-brand hover:border-tertiary hover:text-ink"
           >
-            {showDetails ? "Hide details" : "View details"}
-            <span aria-hidden="true">ⓘ</span>
+            Swap
           </button>
-          {swappable ? (
-            <button
-              type="button"
-              onClick={onSwap}
-              className="rounded-pill border border-hairline px-2 py-0.5 font-sans text-[10px] font-semibold text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:border-cobalt/30 hover:text-ink"
-            >
-              Swap
-            </button>
-          ) : null}
-        </div>
-
-        {showDetails ? (
-          <dl className="grid gap-0.5 border-t border-hairline pt-2 font-sans text-[11px]">
-            {Object.entries(component.specs).map(([key, value]) => (
-              <div key={key} className="flex justify-between gap-2">
-                <dt className="text-secondary">{formatStatLabel(key)}</dt>
-                <dd className="text-ink">{String(value)}</dd>
-              </div>
-            ))}
-          </dl>
         ) : null}
       </div>
+
+      {showDetails ? (
+        <dl className="grid gap-1 border-t border-hairline px-4 py-3 font-sans text-[12px]">
+          {Object.entries(component.specs).map(([key, value]) => (
+            <div key={key} className="flex justify-between gap-3">
+              <dt className="text-tertiary-ink">{formatStatLabel(key)}</dt>
+              <dd className="text-right text-ink">{String(value)}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </article>
   );
 }
@@ -400,12 +407,14 @@ export function AddComponentCard({ onAdd }: { onAdd?: () => void }) {
     <button
       type="button"
       onClick={onAdd}
-      className="flex h-[6.5rem] w-[15.5rem] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#cfc9bb] bg-white/50 transition-colors hover:border-cobalt/40 hover:bg-white"
+      className="flex h-[6.5rem] w-[15.5rem] flex-col items-center justify-center rounded-[16px] border border-dashed border-[#d9d3c6] bg-white/40 transition-colors duration-150 ease-brand hover:border-cobalt/40 hover:bg-white"
     >
       <div className="flex size-8 items-center justify-center rounded-pill bg-[#f2eee4] font-sans text-lg text-secondary">
         +
       </div>
-      <p className="mt-1.5 font-sans text-[12px] font-semibold text-secondary">Add component</p>
+      <p className="mt-2 font-sans text-[13px] font-semibold text-ink">
+        Add component
+      </p>
     </button>
   );
 }
