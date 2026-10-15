@@ -30,7 +30,7 @@ export function ContactDetailsCard({
   return (
     <section
       aria-label="Your contact details"
-      className="flex w-full flex-col gap-4 rounded-3xl border-[1.5px] border-hairline bg-white px-6 py-6"
+      className="flex w-full flex-col gap-4 border-t border-hairline pt-6"
     >
       <div className="flex flex-col gap-1">
         <h2 className="font-serif text-[20px] font-medium text-ink">

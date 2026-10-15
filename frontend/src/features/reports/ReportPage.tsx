@@ -91,6 +91,7 @@ export function ReportPage() {
 
   return (
     <ContentScreen
+      progressStep={5}
       eyebrow="Your report"
       className="lg:w-153.75 lg:gap-6.75 lg:px-9 lg:pt-6 lg:pb-15"
       backHref={ROUTE_PATHS.brief}
@@ -120,6 +121,7 @@ export function ReportPage() {
               the final step. */}
           <ButtonLink
             to={ROUTE_PATHS.permits}
+            variant="secondary"
             fullWidth
             className="lg:h-16 lg:text-[18px]"
           >
@@ -150,7 +152,7 @@ export function ReportPage() {
         </>
       }
     >
-      <article className="flex w-full flex-col gap-4 rounded-3xl border-[1.5px] border-hairline bg-white px-6 py-7 lg:gap-5.25 lg:px-7.5 lg:py-8.25">
+      <article className="flex w-full flex-col gap-4 rounded-[20px] border border-hairline bg-white px-6 py-7 shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)] lg:gap-5.25 lg:px-7.5 lg:py-8.25">
         <KahayagSunrise size={48} />
 
         <h2 className="font-serif text-[26px] font-medium text-ink">

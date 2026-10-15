@@ -110,6 +110,7 @@ export function RecommendationPage() {
 
   return (
     <ContentScreen
+      progressStep={3}
       eyebrow="The 25-year picture"
       title="Your solar investment."
       backHref={ROUTE_PATHS.results}
