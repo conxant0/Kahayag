@@ -108,7 +108,7 @@ export function QuoteAuditorCard() {
         <h3 className="mt-5 font-serif text-[22px] font-medium leading-7 text-ink">
           {uploadedCount > 0 ? "Add another installer quote" : "Get a plain-language quote review"}
         </h3>
-        <p className="mt-2.5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary">
+        <p className="mt-2.5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary-ink">
           {uploadedCount > 0
             ? `${uploadedCount} quote${uploadedCount === 1 ? "" : "s"} are ready to compare above. Upload another PDF or photo for the same review.`
             : "Upload a quote from any installer. We check the price, parts, and completeness — and tell you what to ask before you sign."}

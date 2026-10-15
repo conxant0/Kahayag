@@ -97,7 +97,8 @@ export function AssessmentPage() {
 
   return (
     <FlowLayout
-      step="Step 3 of 5"
+      progressStep={2}
+      step="Bill input"
       title="What do you pay monthly?"
       backHref={ROUTE_PATHS.trace}
       backLabel="Back to roof trace"

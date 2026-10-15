@@ -53,7 +53,7 @@ function ZoomControls({
   onReset: () => void;
 }) {
   return (
-    <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-[12px] border border-hairline bg-white shadow-[0_3px_10px_rgba(26,23,18,0.06)]">
+    <div className="absolute right-4 bottom-4 hidden flex-col overflow-hidden lg:flex rounded-[12px] border border-hairline bg-white shadow-[0_3px_10px_rgba(26,23,18,0.06)]">
       <button type="button" aria-label="Zoom in" onClick={onZoomIn} className="flex size-10 items-center justify-center font-sans text-lg text-ink hover:bg-[#f2eee4]">+</button>
       <button type="button" aria-label="Zoom out" onClick={onZoomOut} className="flex size-10 items-center justify-center border-t border-hairline font-sans text-lg text-ink hover:bg-[#f2eee4]">−</button>
       <button type="button" aria-label="Reset zoom" onClick={onReset} className="flex size-10 items-center justify-center border-t border-hairline text-secondary hover:bg-[#f2eee4]">
@@ -394,12 +394,12 @@ export function SystemCanvas({
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage: "radial-gradient(circle, #d4cec0 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, #e2ddd1 1px, transparent 1px)",
             backgroundSize: "22px 22px",
           }}
         />
 
-        <div className="relative z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 border-b border-hairline bg-[#f2eee4]/95 px-4 py-3 backdrop-blur-sm">
+        <div className="relative z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 px-4 pt-4">
           {sourceOptions.length > 1 ? (
             <DiagramSourcePicker
               value={canvasSource}
@@ -412,7 +412,7 @@ export function SystemCanvas({
           ) : (
             <div className="flex-1" />
           )}
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <Button
               variant="ghost"
               disabled={!session || managePending}

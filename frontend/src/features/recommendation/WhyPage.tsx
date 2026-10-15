@@ -35,6 +35,7 @@ export function WhyPage() {
   // quotation flow, not from here.
   return (
     <ContentScreen
+      progressStep={3}
       eyebrow="The prediction engine"
       backHref={ROUTE_PATHS.invest}
       backLabel="Back to your investment"

@@ -69,7 +69,7 @@ function SpecRows({ rows }: { rows: { label: string; value: string }[] }) {
         <div key={row.label}>
           {index > 0 ? <div className="h-px bg-hairline" /> : null}
           <div className="flex items-center justify-between gap-3 py-2.5 text-[12.5px]">
-            <dt className="shrink-0 font-sans font-normal text-tertiary">{row.label}</dt>
+            <dt className="shrink-0 font-sans font-normal text-tertiary-ink">{row.label}</dt>
             <dd className="min-w-0 break-words text-right font-sans font-semibold text-ink">
               {row.value}
             </dd>
@@ -96,7 +96,7 @@ function BuildCardFooter({
   return (
     <div className="mt-auto flex flex-col pt-5">
       <div className="h-px bg-hairline" />
-      <p className="mt-[18px] font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+      <p className="mt-[18px] font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
         Estimated investment range
       </p>
       <p className={compareMoneyClass}>{view.totalInvestmentLabel}</p>
@@ -135,7 +135,7 @@ function cardFaceClass(isSuggested: boolean, back = false) {
     back ? compareFlipFaceBackClass : compareFlipFaceClass,
     isSuggested
       ? "border-[1.6px] border-sun shadow-[0px_8px_12px_rgba(26,23,18,0.1)]"
-      : "border border-hairline shadow-[0px_3px_10px_0px_rgba(26,23,18,0.04)]",
+      : "border border-hairline shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]",
   );
 }
 
@@ -166,14 +166,14 @@ function BuildCardFace({
       {showRibbon ? <BestAllRoundRibbon /> : null}
       <BuildCardHeader view={view} isSuggested={isSuggested} />
       <div className="mt-5 rounded-[14px] bg-[#fbf6e8] px-[18px] py-4">
-        <p className="font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+        <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
           Monthly savings
         </p>
         <p className="mt-1 font-serif text-[34px] font-medium leading-none text-cobalt">
           {view.monthlySavingsLabel}
         </p>
         <div className="my-3.5 h-px bg-hairline" />
-        <p className="font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+        <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
           Payback period
         </p>
         <p className="mt-1 font-serif text-[26px] font-medium leading-none text-ink">
@@ -227,7 +227,7 @@ function BuildCardBackFace({
     <>
       {showRibbon ? <BestAllRoundRibbon /> : null}
       <BuildCardHeader view={view} isSuggested={isSuggested} />
-      <p className="mt-5 font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+      <p className="mt-5 font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
         Technical specs
       </p>
       <div className="mt-3">

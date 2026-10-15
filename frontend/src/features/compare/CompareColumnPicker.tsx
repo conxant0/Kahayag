@@ -20,7 +20,7 @@ function CompareSelect({
 }) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-1.5">
-      <span className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
+      <span className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
         {label}
       </span>
       <select
@@ -58,15 +58,15 @@ export function CompareColumnPicker({
   return (
     <div
       aria-label="Choose builds to compare"
-      className="overflow-hidden rounded-[16px] border border-hairline bg-[#fbf8f1]"
+      className="border-b border-hairline"
     >
-      <div className="grid grid-cols-1 gap-3 px-4 py-4 lg:grid-cols-[minmax(6.5rem,8.5rem)_minmax(0,1fr)_minmax(0,1fr)] lg:px-0">
-        <div className="hidden items-end px-4 lg:flex">
-          <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
+      <div className="grid grid-cols-1 gap-3 pb-4 lg:grid-cols-[minmax(6.5rem,8.5rem)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="hidden items-end pb-3 lg:flex">
+          <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
             Swap builds
           </p>
         </div>
-        <div className="lg:px-4">
+        <div className="lg:pl-4">
           <CompareSelect
             id="compare-left"
             label="Left build"
@@ -76,7 +76,7 @@ export function CompareColumnPicker({
             onChange={onLeftChange}
           />
         </div>
-        <div className="lg:px-4">
+        <div className="lg:pl-4">
           <CompareSelect
             id="compare-right"
             label="Right build"

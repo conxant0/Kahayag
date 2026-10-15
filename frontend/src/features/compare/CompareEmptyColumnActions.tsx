@@ -131,7 +131,7 @@ export function CompareEmptyColumnActions() {
         </label>
 
         <fieldset>
-          <legend className="font-sans text-[10px] font-semibold tracking-[0.8px] text-tertiary uppercase">
+          <legend className="font-sans text-[10px] font-semibold tracking-[0.8px] text-tertiary-ink uppercase">
             Panel count change
           </legend>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -153,7 +153,7 @@ export function CompareEmptyColumnActions() {
         </fieldset>
 
         <label className="flex flex-col gap-1.5 font-sans text-[12px] text-ink">
-          <span className="text-[10px] font-semibold tracking-[0.8px] text-tertiary uppercase">
+          <span className="text-[10px] font-semibold tracking-[0.8px] text-tertiary-ink uppercase">
             Optimise for
           </span>
           <select
@@ -192,7 +192,7 @@ export function CompareEmptyColumnActions() {
 
   return (
     <div className="flex w-full max-w-[16rem] flex-col items-center gap-3 text-center">
-      <p className="font-sans text-[12px] leading-5 text-tertiary">
+      <p className="font-sans text-[12px] leading-5 text-tertiary-ink">
         Upload an installer quote or add another build to compare against AI suggested.
       </p>
 

@@ -10,8 +10,11 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { DesignFlowStepper } from "../../shared/components/layout/DesignFlowStepper";
-import { Button, Eyebrow, Rule } from "../../shared/components/ui";
+import {
+  DesignFlowStepper,
+  StepPageHeader,
+} from "../../shared/components/layout";
+import { Button, Rule } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
 import { useDesignStore } from "../../state/designStore";
 import { getActiveBuild } from "../design/designViewModel";
@@ -112,21 +115,23 @@ export function PermitsPage() {
     <div className="flex min-h-svh flex-col bg-paper">
       <main
         id="main"
-        className="mx-auto flex w-full max-w-[1240px] flex-col gap-7 px-6 pt-8 pb-16 lg:gap-8 lg:px-10 lg:pt-10"
+        className="mx-auto flex w-full max-w-[1440px] flex-col gap-7 px-4 pt-6 pb-16 sm:px-6 lg:gap-8 lg:px-16 lg:pt-8"
       >
         <DesignFlowStepper activeStep={6} />
 
-        <header>
-          <Eyebrow>Permits &amp; compliance</Eyebrow>
-          <h1 className="mt-2 font-serif text-[36px] leading-tight font-medium text-balance text-ink lg:text-[44px]">
-            Homeowner permit packet
-          </h1>
-          <p className="mt-3 max-w-2xl font-sans text-sm leading-6 text-secondary">
-            This screen only covers documents you can produce yourself.
-            Installer and licensed-professional filings are handled
-            separately.
-          </p>
-        </header>
+        <StepPageHeader
+          backHref={ROUTE_PATHS.brief}
+          backLabel="Back to your project brief"
+          eyebrow="Step 6 of 6 · Permits & compliance"
+          title="Homeowner permit packet"
+          lead={
+            <p>
+              This screen only covers documents you can produce yourself.
+              Installer and licensed-professional filings are handled
+              separately.
+            </p>
+          }
+        />
 
         <Rule />
 
@@ -138,9 +143,12 @@ export function PermitsPage() {
 
         <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-12">
           <div className="flex flex-col gap-7 lg:gap-8">
-            {assessment ? <VerdictBanner assessment={assessment} /> : null}
-
-            <Rule />
+            {assessment ? (
+              <>
+                <VerdictBanner assessment={assessment} />
+                <Rule />
+              </>
+            ) : null}
 
             <ApplicantForm
               values={applicant}

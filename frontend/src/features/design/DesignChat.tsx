@@ -1,7 +1,13 @@
 // Defines the unified Build / Ask design assistant chat panel.
+//
+// Shares its look with the quotation `AskEngineSidebar` and the permits
+// `PermitChatSidebar`: engine-icon header, shared Chip starters, the homeowner's
+// words in the neutral track fill, engine replies on the cobalt left rule, and
+// a pill composer.
 import { useEffect, useRef, useState } from "react";
 
 import type { SolverGoal } from "../../shared/api/types";
+import { Chip, Eyebrow } from "../../shared/components/ui";
 import { cn } from "../../shared/lib/cn";
 import { ASK_AI_CHIPS, GOAL_LABELS } from "./designViewModel";
 import { classifyMessageIntent } from "./designChatIntent";
@@ -56,21 +62,25 @@ function ReasoningStepsList({
     return null;
   }
   return (
-    <ul className="mb-2 space-y-1 border-b border-[#e8e2d6] pb-2" aria-label="Reasoning steps">
+    <ul className="mb-2 space-y-1" aria-label="Reasoning steps">
       {steps.map((step, index) => (
         <li
           key={`${step.kind}-${index}`}
           className={cn(
-            "font-sans text-[11px] leading-4",
-            step.kind === "error" ? "text-ember" : "text-secondary",
+            "font-sans text-[12px] leading-4",
+            step.kind === "error" ? "text-ember" : "text-tertiary-ink",
           )}
         >
-          <span className="mr-1.5">
-            {step.kind === "error" ? "✕" : step.kind === "tool_result" ? "✓" : "◉"}
+          <span className="mr-1.5" aria-hidden="true">
+            {step.kind === "error"
+              ? "✕"
+              : step.kind === "tool_result"
+                ? "✓"
+                : "◉"}
           </span>
           {step.label}
           {step.detail ? (
-            <span className="block pl-4 text-tertiary">{step.detail}</span>
+            <span className="block pl-4">{step.detail}</span>
           ) : null}
         </li>
       ))}
@@ -78,9 +88,52 @@ function ReasoningStepsList({
   );
 }
 
+function EngineIcon() {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="4"
+        y="7"
+        width="16"
+        height="12"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <circle cx="9" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.2" fill="currentColor" />
+      <path
+        d="M9 16h6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10 7V5.5a2 2 0 0 1 4 0V7"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
 function SendIcon() {
   return (
-    <svg width={15} height={15} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M5 12h12M13 6l6 6-6 6"
         stroke="currentColor"
@@ -94,7 +147,14 @@ function SendIcon() {
 
 function SparkIcon() {
   return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d="M4 20L14.5 9.5M12.5 7.5l2-2 4 4-2 2-4-4ZM9 5l.6 1.4L11 7l-1.4.6L9 9l-.6-1.4L7 7l1.4-.6L9 5Z"
         stroke="currentColor"
@@ -160,41 +220,30 @@ function EmptyState({
   onAuto: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col justify-end gap-5 pb-2">
-      <div className="space-y-2">
-        <p className="font-sans text-[11px] font-semibold tracking-[1.2px] text-tertiary uppercase">
-          Questions
-        </p>
-        <ul className="flex flex-col gap-1.5">
-          {ASK_AI_CHIPS.map((chip) => (
-            <li key={chip}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onPrompt(chip)}
-                className="w-full rounded-[12px] px-2 py-2 text-left font-sans text-[13px] text-secondary transition-colors hover:bg-white/80 hover:text-ink disabled:opacity-45"
-              >
-                {chip}
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="flex flex-col gap-5 pb-2">
+      <div className="flex flex-wrap gap-2">
+        {ASK_AI_CHIPS.map((chip) => (
+          <Chip key={chip} onClick={() => onPrompt(chip)} disabled={disabled}>
+            {chip}
+          </Chip>
+        ))}
       </div>
 
-      <div className="space-y-2">
-        <p className="font-sans text-[11px] font-semibold tracking-[1.2px] text-tertiary uppercase">
-          Quick actions
-        </p>
-        <ul className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
+        <Eyebrow>Quick actions</Eyebrow>
+        <ul className="flex flex-col divide-y divide-hairline">
           {GOAL_SHORTCUTS.map((goal) => (
             <li key={goal}>
               <button
                 type="button"
                 disabled={disabled}
                 onClick={() => onGoal(goal)}
-                className="w-full rounded-[12px] px-2 py-2 text-left font-sans text-[13px] text-secondary transition-colors hover:bg-white/80 hover:text-ink disabled:opacity-45"
+                className="flex w-full items-center justify-between gap-3 py-2.5 text-left font-sans text-[13px] text-secondary transition-colors hover:text-ink disabled:opacity-45"
               >
-                {GOAL_LABELS[goal]}
+                <span>{GOAL_LABELS[goal]}</span>
+                <span aria-hidden="true" className="text-tertiary-ink">
+                  ›
+                </span>
               </button>
             </li>
           ))}
@@ -203,7 +252,7 @@ function EmptyState({
               type="button"
               disabled={disabled}
               onClick={onAuto}
-              className="flex w-full items-center gap-2 rounded-[12px] px-2 py-2 text-left font-sans text-[13px] font-semibold text-[#7a5c00] transition-colors hover:bg-[#fff4cc]/70 disabled:opacity-45"
+              className="flex w-full items-center gap-2 py-2.5 text-left font-sans text-[13px] font-semibold text-[#7a5c00] transition-colors hover:text-ink disabled:opacity-45"
             >
               <SparkIcon />
               {GOAL_LABELS.auto}
@@ -230,7 +279,8 @@ export function DesignChat() {
 
   useEffect(() => {
     const node = scrollRef.current;
-    if (node) {
+    // The empty state reads top-down; only a transcript pins to the latest.
+    if (node && messages.length > 0) {
       node.scrollTop = node.scrollHeight;
     }
   }, [messages, busy]);
@@ -272,7 +322,10 @@ export function DesignChat() {
   };
 
   const previewChange = async (userText: string) => {
-    const preview = await agent.mutateAsync({ user_text: userText, dry_run: true });
+    const preview = await agent.mutateAsync({
+      user_text: userText,
+      dry_run: true,
+    });
     if (preview.requires_confirmation) {
       appendConfirmation(preview.reply, userText);
       return;
@@ -322,9 +375,10 @@ export function DesignChat() {
       content: "Applying changes…",
     });
     try {
-      const { reply, reasoning_steps: reasoningSteps } = await agent.mutateAsync({
-        user_text: message.userText,
-      });
+      const { reply, reasoning_steps: reasoningSteps } =
+        await agent.mutateAsync({
+          user_text: message.userText,
+        });
       resolveConfirmation(message.id, {
         id: message.id,
         kind: "assistant",
@@ -333,7 +387,9 @@ export function DesignChat() {
       });
     } catch (caught) {
       const detail =
-        caught instanceof Error ? caught.message : "Could not apply that change.";
+        caught instanceof Error
+          ? caught.message
+          : "Could not apply that change.";
       resolveConfirmation(message.id, {
         id: message.id,
         kind: "assistant",
@@ -366,18 +422,19 @@ export function DesignChat() {
   };
 
   const placeholder =
-    mode === "build"
-      ? "Ask a question or describe a design change…"
-      : "Ask about the design, or describe a change to preview…";
+    mode === "build" ? "Ask or describe a change…" : "Ask or preview a change…";
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col"
+      className="flex h-full min-h-0 flex-col gap-4"
       aria-label="Design assistant chat"
     >
-      <header className="mb-3 shrink-0">
-        <h2 className="font-sans text-sm font-semibold text-ink">Design assistant</h2>
-        <p className="mt-1 font-sans text-[12px] leading-4 text-tertiary">
+      <header className="shrink-0">
+        <div className="flex items-center gap-2 text-ink">
+          <EngineIcon />
+          <h2 className="font-sans text-sm font-semibold">Design assistant</h2>
+        </div>
+        <p className="mt-2 font-sans text-[13px] leading-5 text-secondary">
           {mode === "build"
             ? "Questions stay read-only. Changes apply to the canvas."
             : "Changes preview first — you approve before they apply."}
@@ -386,7 +443,8 @@ export function DesignChat() {
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto pr-1"
+        className="min-h-0 flex-1 overflow-y-auto pr-0.5"
+        aria-live="polite"
       >
         {messages.length === 0 ? (
           <EmptyState
@@ -401,7 +459,7 @@ export function DesignChat() {
               if (message.kind === "user") {
                 return (
                   <li key={message.id} className="flex justify-end">
-                    <p className="max-w-[92%] rounded-[16px] rounded-br-[6px] bg-ink px-3.5 py-2.5 font-sans text-[13px] leading-5 text-paper">
+                    <p className="max-w-[92%] rounded-[14px] bg-[#f2eee4] px-3.5 py-2 font-sans text-sm leading-5 whitespace-pre-wrap text-ink">
                       {message.content}
                     </p>
                   </li>
@@ -410,11 +468,11 @@ export function DesignChat() {
 
               if (message.kind === "confirmation") {
                 return (
-                  <li key={message.id} className="flex justify-start">
-                    <div className="max-w-[95%] rounded-[16px] border border-hairline bg-white px-3.5 py-3 font-sans text-[13px] leading-5 text-ink shadow-[0_1px_4px_rgba(26,23,18,0.04)]">
-                      <p className="mb-2 font-sans text-[11px] font-semibold tracking-[1px] text-secondary uppercase">
+                  <li key={message.id}>
+                    <div className="rounded-[14px] border border-hairline bg-white p-3 font-sans text-sm leading-6 text-ink">
+                      <Eyebrow tone="cobalt" className="mb-1.5">
                         Review change
-                      </p>
+                      </Eyebrow>
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {/* Disabled on any in-flight mutation, not just the
@@ -424,8 +482,8 @@ export function DesignChat() {
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => confirmChange(message)}
-                          className="rounded-pill bg-ink px-3.5 py-1.5 font-sans text-[12px] font-semibold text-paper disabled:opacity-45"
+                          onClick={() => void confirmChange(message)}
+                          className="rounded-pill bg-ink px-4 py-2 font-sans text-[13px] font-semibold text-paper disabled:opacity-45"
                         >
                           Apply
                         </button>
@@ -433,7 +491,7 @@ export function DesignChat() {
                           type="button"
                           disabled={busy}
                           onClick={() => cancelChange(message)}
-                          className="rounded-pill border border-hairline px-3.5 py-1.5 font-sans text-[12px] text-secondary hover:text-ink disabled:opacity-45"
+                          className="rounded-pill border border-hairline bg-white px-4 py-2 font-sans text-[13px] font-medium text-secondary transition-colors hover:border-tertiary hover:text-ink disabled:opacity-45"
                         >
                           Cancel
                         </button>
@@ -444,88 +502,75 @@ export function DesignChat() {
               }
 
               return (
-                <li key={message.id} className="flex justify-start">
-                  {message.tone === "status" ? (
-                    <p className="max-w-[95%] rounded-[12px] bg-[#f3efe6] px-3 py-2 font-sans text-[12px] leading-5 text-secondary">
-                      {message.content}
-                    </p>
-                  ) : (
-                    <div className="max-w-[95%] rounded-[16px] rounded-bl-[6px] border border-[#e8e2d6] bg-[#faf7f0] px-3.5 py-2.5 font-sans text-[13px] leading-5 text-ink shadow-[0_1px_3px_rgba(26,23,18,0.04)]">
-                      <span className="mb-1 block font-sans text-[10px] font-semibold tracking-[0.8px] text-secondary uppercase">
-                        Assistant
-                      </span>
-                      {message.reasoningSteps ? (
-                        <ReasoningStepsList steps={message.reasoningSteps} />
-                      ) : null}
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    </div>
+                <li
+                  key={message.id}
+                  className={cn(
+                    "border-l-2 border-cobalt pl-3 font-sans text-sm leading-6",
+                    message.tone === "status" ? "text-secondary" : "text-ink",
                   )}
+                >
+                  {message.reasoningSteps ? (
+                    <ReasoningStepsList steps={message.reasoningSteps} />
+                  ) : null}
+                  <p className="whitespace-pre-wrap">{message.content}</p>
                 </li>
               );
             })}
             {busy ? (
-              <li className="flex justify-start">
-                <p className="rounded-[12px] bg-[#f3efe6] px-3 py-2 font-sans text-[12px] text-secondary">
-                  Thinking…
-                </p>
+              <li className="border-l-2 border-cobalt pl-3 font-sans text-sm leading-6 text-tertiary-ink">
+                Thinking…
               </li>
             ) : null}
           </ul>
         )}
       </div>
 
-      <div className="mt-3 shrink-0">
+      <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <ModeToggle value={mode} onChange={setMode} disabled={busy} />
+          {/* The empty state already lists auto-optimise; offer it here only
+              once the transcript has replaced that list. */}
+          {messages.length > 0 ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void runGoal("auto")}
+              aria-label={GOAL_LABELS.auto}
+              title={GOAL_LABELS.auto}
+              className="flex size-8 items-center justify-center rounded-pill bg-[#fff4cc] text-[#7a5c00] transition-colors hover:bg-[#ffeeb3] disabled:opacity-45"
+            >
+              <SparkIcon />
+            </button>
+          ) : null}
+        </div>
+
         <form
-          className="rounded-[18px] border border-hairline bg-white p-3 shadow-[0_8px_24px_rgba(26,23,18,0.06)]"
+          className="flex items-center gap-2 rounded-pill border border-hairline bg-white py-1.5 pr-1.5 pl-4"
           onSubmit={(event) => {
             event.preventDefault();
             void sendMessage(draft);
           }}
         >
-          <textarea
+          <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void sendMessage(draft);
-              }
-            }}
-            rows={3}
             placeholder={placeholder}
             aria-label="Design assistant message"
             disabled={busy}
-            className="max-h-32 min-h-[4.5rem] w-full resize-none bg-transparent font-sans text-[13px] leading-5 text-ink outline-none placeholder:text-tertiary"
+            className="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-tertiary-ink"
           />
-
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-hairline pt-2">
-            <ModeToggle value={mode} onChange={setMode} disabled={busy} />
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void runGoal("auto")}
-                aria-label={GOAL_LABELS.auto}
-                title={GOAL_LABELS.auto}
-                className="flex size-8 items-center justify-center rounded-pill text-[#7a5c00] transition-colors hover:bg-[#fff4cc] disabled:opacity-45"
-              >
-                <SparkIcon />
-              </button>
-              <button
-                type="submit"
-                disabled={busy || !draft.trim()}
-                aria-label="Send message"
-                className="flex size-8 items-center justify-center rounded-pill bg-ink text-paper disabled:opacity-45"
-              >
-                <SendIcon />
-              </button>
-            </div>
-          </div>
+          <button
+            type="submit"
+            disabled={busy || !draft.trim()}
+            aria-label="Send message"
+            className="flex size-10 shrink-0 items-center justify-center rounded-pill bg-ink text-paper disabled:opacity-45"
+          >
+            <SendIcon />
+          </button>
         </form>
 
         {error ? (
-          <p className="mt-2 font-sans text-[12px] text-ember" role="alert">
+          <p className="font-sans text-sm text-ember" role="alert">
             {error.message}
           </p>
         ) : null}

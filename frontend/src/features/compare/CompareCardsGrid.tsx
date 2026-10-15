@@ -37,7 +37,7 @@ export const compareFlipFaceBackClass =
   "absolute inset-0 flex h-full flex-col rounded-[20px] bg-white p-6 [backface-visibility:hidden] [transform:rotateY(180deg)]";
 
 export const compareUtilityCardClass =
-  "flex h-full w-full flex-col rounded-[20px] border border-dashed border-[#d8d2c4] bg-white px-6 py-6";
+  "flex h-full w-full flex-col rounded-[20px] border border-hairline bg-white px-6 py-6 shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]";
 
 export const compareMoneyClass =
   "mt-1.5 break-words font-serif text-[1.25rem] font-medium tabular-nums leading-tight tracking-tight text-ink";

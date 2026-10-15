@@ -120,6 +120,7 @@ export function ResultsPage() {
 
   return (
     <FlowLayout
+      progressStep={3}
       step="Your preliminary result"
       title={
         <>

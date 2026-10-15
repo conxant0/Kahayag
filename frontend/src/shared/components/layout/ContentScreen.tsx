@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { Eyebrow } from "../ui";
 import { cn } from "../../lib/cn";
+import { DesignFlowStepper, type DesignFlowStep } from "./DesignFlowStepper";
 
 export type ContentScreenCtaSticky = "mobile" | "always";
 
@@ -29,6 +30,7 @@ export function ContentScreen({
   backHref,
   backLabel,
   className,
+  progressStep,
 }: {
   eyebrow: string;
   title: ReactNode;
@@ -45,11 +47,21 @@ export function ContentScreen({
   backHref?: string;
   backLabel?: string;
   className?: string;
+  /**
+   * Shows the journey tracker above the column, with this step current, so
+   * the side screens of a step carry the same progress as the step itself.
+   */
+  progressStep?: DesignFlowStep;
 }) {
   const split = Boolean(aside);
 
   return (
     <div className="flex min-h-svh flex-col items-center bg-paper">
+      {progressStep ? (
+        <div className="w-full shrink-0 px-4 pt-6 lg:px-12 lg:pt-8">
+          <DesignFlowStepper activeStep={progressStep} />
+        </div>
+      ) : null}
       <main
         id="main"
         className={cn(
@@ -68,13 +80,11 @@ export function ContentScreen({
           </Link>
         ) : null}
 
-        <Eyebrow className="lg:text-[13px] lg:tracking-[1.8px]">
-          {eyebrow}
-        </Eyebrow>
+        <Eyebrow>{eyebrow}</Eyebrow>
 
         <h1
           className={cn(
-            "w-full font-serif text-[36px] leading-tight font-medium text-balance text-ink lg:text-[44px]",
+            "w-full font-serif text-[32px] leading-tight font-medium text-balance text-ink lg:text-[40px]",
             split && "xl:max-w-[16ch]",
           )}
         >

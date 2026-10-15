@@ -37,10 +37,20 @@ function CheckIcon() {
   );
 }
 
-export function DesignFlowStepper({ activeStep }: { activeStep: DesignFlowStep }) {
+/**
+ * One pill holds the whole journey so it reads as a single control, centred
+ * over the page. Every step shares the same circle; only its fill says where
+ * it sits: sun for done, ink for here, an outline for still to come. The rule
+ * between two steps is ink once the step it leads to has been reached.
+ */
+export function DesignFlowStepper({
+  activeStep,
+}: {
+  activeStep: DesignFlowStep;
+}) {
   return (
     <nav aria-label="Assessment progress" className="w-full overflow-x-auto">
-      <ol className="flex min-w-max items-center gap-0">
+      <ol className="mx-auto flex w-max items-center rounded-pill border border-hairline bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(26,23,18,0.04)] sm:px-3">
         {STEPS.map((step, index) => {
           const stepNumber = (index + 1) as DesignFlowStep;
           const isActive = stepNumber === activeStep;
@@ -52,7 +62,7 @@ export function DesignFlowStepper({ activeStep }: { activeStep: DesignFlowStep }
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "mx-2 h-px w-6 sm:mx-3 sm:w-10",
+                    "mx-1.5 h-px w-4 sm:mx-2 sm:w-6",
                     isComplete || isActive ? "bg-ink" : "bg-hairline",
                   )}
                 />
@@ -60,20 +70,24 @@ export function DesignFlowStepper({ activeStep }: { activeStep: DesignFlowStep }
               <Link
                 to={step.path}
                 className={cn(
-                  "flex items-center gap-2 font-sans text-[12px] font-semibold tracking-[0.4px]",
+                  "flex items-center gap-2 rounded-pill py-1 pr-1 pl-1 font-sans text-[12px] font-semibold tracking-[0.4px] sm:pr-2.5",
                   "transition-colors duration-150 ease-brand",
-                  isActive && "text-ink",
-                  isComplete && !isActive && "text-ink hover:underline",
-                  !isActive && !isComplete && "text-tertiary hover:text-ink",
+                  isActive && "bg-[#f2eee4] text-ink",
+                  isComplete && "text-ink hover:bg-[#f7f4ed]",
+                  !isActive &&
+                    !isComplete &&
+                    "text-tertiary-ink hover:bg-[#f7f4ed] hover:text-ink",
                 )}
                 aria-current={isActive ? "step" : undefined}
               >
                 <span
                   className={cn(
-                    "flex size-7 items-center justify-center rounded-pill text-[11px]",
+                    "flex size-6 shrink-0 items-center justify-center rounded-pill text-[11px]",
                     isActive && "bg-ink text-paper",
-                    isComplete && !isActive && "bg-sun text-ink",
-                    !isActive && !isComplete && "bg-[#f2eee4] text-tertiary",
+                    isComplete && "bg-sun text-ink",
+                    !isActive &&
+                      !isComplete &&
+                      "border border-hairline bg-white text-tertiary-ink",
                   )}
                 >
                   {isComplete ? <CheckIcon /> : stepNumber}

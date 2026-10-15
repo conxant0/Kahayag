@@ -9,3 +9,5 @@ export { DesignStepTabs } from "./DesignStepTabs";
 
 export { FlowLayout } from "./FlowLayout";
 export { SiteFooter } from "./SiteFooter";
+
+export { StepPageHeader } from "./StepPageHeader";

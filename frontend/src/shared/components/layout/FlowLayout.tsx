@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { Button, ButtonLink, CtaArrow, Eyebrow } from "../ui";
 import { cn } from "../../lib/cn";
+import { DesignFlowStepper, type DesignFlowStep } from "./DesignFlowStepper";
 
 /**
  * A fixed rail beside a full-height pane on desktop; one column on mobile, where
@@ -36,6 +37,7 @@ export function FlowLayout({
   railClassName,
   titleClassName,
   mobilePaneBehind = false,
+  progressStep,
 }: {
   step: string;
   title: ReactNode;
@@ -68,17 +70,25 @@ export function FlowLayout({
    * top. Desktop is unaffected either way, since it already shows both at once.
    */
   mobilePaneBehind?: boolean;
+  /**
+   * Shows the journey tracker above both columns, with this step current, so
+   * the assessment screens carry the same progress the design flow does.
+   */
+  progressStep?: DesignFlowStep;
 }) {
   const railColumn = cn("flex flex-col gap-5 px-6 lg:px-0", railClassName);
   const blocked = nextDisabled || nextLoading;
   const behind = mobilePaneBehind;
 
-  return (
+  const main = (
     <main
       id="main"
       className={cn(
-        "flex h-svh flex-col bg-paper",
-        "lg:grid lg:grid-cols-[26.25rem_1fr] lg:grid-rows-[auto_1fr_auto] lg:pt-14 lg:pb-12",
+        "flex flex-col bg-paper",
+        "lg:grid lg:grid-cols-[26.25rem_1fr] lg:grid-rows-[auto_1fr_auto] lg:pb-12",
+        // With the tracker above it, the shell shares the viewport with it
+        // instead of claiming all of it.
+        progressStep ? "min-h-0 flex-1 lg:pt-8" : "h-svh lg:pt-14",
       )}
     >
       <div
@@ -184,5 +194,18 @@ export function FlowLayout({
         )}
       </div>
     </main>
+  );
+
+  if (!progressStep) {
+    return main;
+  }
+
+  return (
+    <div className="flex h-svh flex-col bg-paper">
+      <div className="shrink-0 px-4 pt-4 lg:px-12 lg:pt-6">
+        <DesignFlowStepper activeStep={progressStep} />
+      </div>
+      {main}
+    </div>
   );
 }
