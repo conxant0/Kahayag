@@ -146,7 +146,7 @@ export function PlansPage() {
   return (
     <FlowLayout
       progressStep={2}
-      step="Step 4 of 5"
+      step="Your plans"
       title="What should we plan around?"
       backHref={ROUTE_PATHS.energy}
       backLabel="Back to your bill"

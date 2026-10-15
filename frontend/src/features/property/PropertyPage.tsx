@@ -28,7 +28,7 @@ export function PropertyPage() {
   return (
     <FlowLayout
       progressStep={1}
-      step="Step 1 of 5"
+      step="Find your home"
       title="Where is your roof?"
       backHref={ROUTE_PATHS.landing}
       backLabel="Back to home"
