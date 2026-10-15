@@ -92,11 +92,7 @@ export function DesignPage() {
             backHref={ROUTE_PATHS.results}
             backLabel="Back to your results"
             eyebrow="Step 4 of 6 · AI design"
-            title={
-              <>
-                Shape your <em className="font-normal italic">system.</em>
-              </>
-            }
+            title="Shape your system."
             lead={
               activeBuild &&
               Math.abs(

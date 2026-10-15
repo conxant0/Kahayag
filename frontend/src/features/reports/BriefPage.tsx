@@ -192,11 +192,7 @@ export function BriefPage() {
           backHref={ROUTE_PATHS.quotation}
           backLabel="Back to your quotation"
           eyebrow="Project brief"
-          title={
-            <>
-              Your project <em className="font-normal italic">brief.</em>
-            </>
-          }
+          title="Your project brief."
           lead={
             <p>
               {brief.locationLabel} ·{" "}

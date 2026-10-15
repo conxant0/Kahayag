@@ -117,11 +117,7 @@ export function QuotationPage() {
           backHref={ROUTE_PATHS.design}
           backLabel="Back to your design"
           eyebrow="Step 5 of 6 · Quotation"
-          title={
-            <>
-              Here&apos;s what it <em className="font-normal italic">costs.</em>
-            </>
-          }
+          title="Here's what it costs."
           lead={
             mode === "quote"
               ? "Your uploaded installer quote, read back line by line."
