@@ -188,7 +188,7 @@ function EmptySlotCard({
       <p
         className={cn(
           "mt-0.5 font-sans font-semibold tracking-[0.8px] text-tertiary-ink uppercase",
-          compact ? "text-[8px]" : "text-[10px]",
+          compact ? "text-[8.5px]" : "text-[10px]",
         )}
       >
         {canvasSlotHeader(slot)}
@@ -256,26 +256,26 @@ export function CanvasComponentCard({
     return (
       <article
         className={cn(
-          "flex w-[7.25rem] min-w-0 flex-col overflow-hidden rounded-[12px] border bg-white shadow-[0_2px_8px_rgba(26,23,18,0.04)]",
+          "flex w-[7.25rem] min-w-0 flex-col overflow-hidden rounded-[12px] border bg-white shadow-[0_1px_2px_rgba(26,23,18,0.04),0_4px_12px_rgba(26,23,18,0.05)]",
           showHighlight ? "border-sun border-[1.5px]" : "border-hairline",
           className,
         )}
       >
-        <div className="flex flex-col gap-1.5 p-2">
+        <div className="flex flex-col gap-1.5 p-2.5">
           <div className="flex items-center gap-1">
             <div className={cn("flex size-5 shrink-0 items-center justify-center rounded-[6px]", accent.bg)}>
               <CanvasSlotIcon slot={component.slot} size={12} />
             </div>
-            <p className="min-w-0 truncate font-sans text-[7px] font-semibold tracking-[0.4px] text-tertiary uppercase">
+            <p className="min-w-0 truncate font-sans text-[8.5px] font-semibold tracking-[0.5px] text-tertiary-ink uppercase">
               {canvasSlotHeaderForComponent(component)}
             </p>
           </div>
-          <p className="font-sans text-[7px] font-semibold tracking-[0.4px] text-tertiary uppercase">
+          <p className="font-sans text-[8.5px] font-semibold tracking-[0.5px] text-tertiary-ink uppercase">
             {quantityLabel(component)}
           </p>
           <div className="min-w-0">
-            <p className="truncate font-sans text-[10px] font-semibold text-cobalt">{component.brand}</p>
-            <p className="line-clamp-2 font-sans text-[11px] leading-tight font-bold text-ink">
+            <p className="truncate font-sans text-[11px] font-semibold text-cobalt">{component.brand}</p>
+            <p className="line-clamp-2 font-sans text-[12px] leading-snug font-semibold text-ink">
               {displayModel(component)}
             </p>
           </div>
