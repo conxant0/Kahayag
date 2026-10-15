@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
-import { DesignFlowStepper, DesignStepTabs } from "../../shared/components/layout";
-import { Eyebrow, SegmentedToggle } from "../../shared/components/ui";
+import {
+  DesignFlowStepper,
+  DesignStepTabs,
+  StepPageHeader,
+} from "../../shared/components/layout";
+import { SegmentedToggle } from "../../shared/components/ui";
 import { useDesignStore } from "../../state/designStore";
 import { BuildCompareCard } from "./BuildCompareCard";
 import { BuildSideBySideCompare } from "./BuildSideBySideCompare";
@@ -87,7 +91,7 @@ export function ComparePage() {
     <div className="flex min-h-svh flex-col bg-paper">
       <main
         id="main"
-        className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-6 pt-8 pb-16 lg:px-16 lg:pt-16 lg:pb-[72px]"
+        className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pt-6 pb-16 sm:px-6 lg:px-16 lg:pt-8 lg:pb-[72px]"
       >
         <div className="flex w-full flex-col gap-4">
           <div className="flex justify-center">
@@ -96,27 +100,26 @@ export function ComparePage() {
           <DesignStepTabs />
         </div>
 
-        <header className="flex flex-col items-start">
-          <Eyebrow className="tracking-[1.4px]">
-            After AI design · Compare builds
-          </Eyebrow>
-          <h1 className="mt-4 font-serif text-[36px] leading-tight font-medium text-ink lg:text-[54px] lg:leading-[60px]">
-            Compare your options.
-          </h1>
-          <p className="mt-3.5 max-w-[620px] font-sans text-base leading-[26px] text-secondary">
-            The real-world financial shape of three ways to build this roof —
-            and room to test your own.
-          </p>
-        </header>
-
-        <div className="flex justify-center">
-          <SegmentedToggle
-            ariaLabel="Compare layout"
-            value={layout}
-            options={LAYOUT_OPTIONS}
-            onChange={setLayout}
-          />
-        </div>
+        <StepPageHeader
+          backHref={ROUTE_PATHS.design}
+          backLabel="Back to your design"
+          eyebrow="Step 4 of 6 · Compare builds"
+          title="Compare your options."
+          lead={
+            <p>
+              The real-world financial shape of three ways to build this roof
+              and room to test your own.
+            </p>
+          }
+          actions={
+            <SegmentedToggle
+              ariaLabel="Compare layout"
+              value={layout}
+              options={LAYOUT_OPTIONS}
+              onChange={setLayout}
+            />
+          }
+        />
 
         {layout === "matrix" && leftColumn ? (
           <BuildSideBySideCompare

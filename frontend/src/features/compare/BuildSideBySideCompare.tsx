@@ -91,10 +91,10 @@ function EmptyColumnHeader({ divider = false }: { divider?: boolean }) {
       divider={divider}
       className="flex min-h-[7.5rem] flex-col items-center justify-center gap-2 px-3 py-4 text-center sm:px-4"
     >
-      <h3 className="font-serif text-[20px] leading-tight font-medium text-tertiary sm:text-[22px]">
+      <h3 className="font-serif text-[20px] leading-tight font-medium text-tertiary-ink sm:text-[22px]">
         Add to compare
       </h3>
-      <p className="max-w-[12rem] font-sans text-[12px] leading-5 text-tertiary">
+      <p className="max-w-[12rem] font-sans text-[12px] leading-5 text-tertiary-ink">
         Upload a quote or create another build for this column.
       </p>
     </EmptyBuildCell>
@@ -146,7 +146,7 @@ function ColumnHeader({ column, divider = false }: { column: CompareColumn; divi
     >
       <div className="min-h-[1.75rem]">
         {column.isSuggested ? (
-          <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-sun px-2.5 py-1 font-sans text-[9px] font-semibold tracking-[0.8px] text-ink uppercase">
+          <span className="inline-flex w-fit items-center gap-1 rounded-pill bg-sun px-2.5 py-1 font-sans text-[10px] font-semibold tracking-[0.8px] text-ink uppercase">
             <SparkIcon />
             Best all-round
           </span>
@@ -255,14 +255,18 @@ export function BuildSideBySideCompare({
         onRightChange={onRightChange}
       />
 
+      {/* Three columns cannot share a phone's width without clipping the
+          diagrams, so below lg the table keeps a readable width and scrolls
+          sideways inside this frame instead. */}
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
       <section
         aria-label="Side-by-side build comparison"
-        className="grid overflow-hidden rounded-[20px] border border-hairline bg-white shadow-[0_3px_10px_rgba(26,23,18,0.04)]"
+        className="grid min-w-[58rem] overflow-hidden rounded-[20px] border border-hairline bg-white lg:min-w-0"
         style={{ gridTemplateColumns: COMPARE_MATRIX_GRID }}
       >
         <MatrixRow>
           <LabelCell className="flex-col items-start py-4">
-            <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
+            <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
               Compare
             </p>
             <p className="mt-1 font-sans text-[13px] font-semibold text-ink">
@@ -279,7 +283,7 @@ export function BuildSideBySideCompare({
 
         <MatrixRow>
           <LabelCell className="py-4">
-            <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary uppercase">
+            <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
               System layout
             </p>
           </LabelCell>
@@ -311,7 +315,7 @@ export function BuildSideBySideCompare({
         {rows.map((row) => (
           <MatrixRow key={row.label}>
             <LabelCell>
-              <p className="font-sans text-[12px] font-medium text-secondary">{row.label}</p>
+              <p className="font-sans text-[13px] font-medium text-secondary">{row.label}</p>
             </LabelCell>
             <BuildCell column={leftColumn} divider>
               <p
@@ -332,7 +336,7 @@ export function BuildSideBySideCompare({
               </BuildCell>
             ) : (
               <EmptyBuildCell>
-                <p className="w-full text-center font-sans text-[13px] font-semibold text-tertiary tabular-nums">
+                <p className="w-full text-center font-sans text-[13px] font-semibold text-tertiary-ink tabular-nums">
                   {row.values[1]}
                 </p>
               </EmptyBuildCell>
@@ -359,6 +363,7 @@ export function BuildSideBySideCompare({
           )}
         </MatrixRow>
       </section>
+      </div>
     </div>
   );
 }

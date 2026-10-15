@@ -63,7 +63,7 @@ describe("ComparePage", () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(screen.getByText("After AI design · Compare builds")).toBeInTheDocument();
+    expect(screen.getByText("Step 4 of 6 · Compare builds")).toBeInTheDocument();
     expect(screen.getByLabelText("Side-by-side build comparison")).toBeInTheDocument();
     expect(screen.getByText("Add to compare")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload quote to audit" })).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("ComparePage", () => {
 
     render(<RouterProvider router={router} />);
 
-    expect(screen.getByText("After AI design · Compare builds")).toBeInTheDocument();
+    expect(screen.getByText("Step 4 of 6 · Compare builds")).toBeInTheDocument();
     expect(screen.getByLabelText("Side-by-side build comparison")).toBeInTheDocument();
     expect(screen.getByLabelText("Choose builds to compare")).toBeInTheDocument();
     expect(screen.getByText("2 builds")).toBeInTheDocument();
