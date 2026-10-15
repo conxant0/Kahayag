@@ -157,6 +157,7 @@ export function EditLayoutPage() {
 
   return (
     <FlowLayout
+      progressStep={3}
       step="Edit layout"
       title="Adjust your panels."
       railClassName="lg:gap-4.5"
