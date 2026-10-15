@@ -63,7 +63,7 @@ export function CompareCustomCard() {
   if (expanded) {
     return (
       <article
-        className="flex h-full w-full flex-col rounded-[20px] border border-hairline bg-white px-6 py-6 shadow-[0px_3px_10px_0px_rgba(26,23,18,0.04)]"
+        className="flex h-full w-full flex-col rounded-[20px] border border-hairline bg-white px-6 py-6 shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]"
         aria-label="Compare custom"
       >
         <h2 className="font-serif text-[26px] font-medium leading-none text-ink">
@@ -84,7 +84,7 @@ export function CompareCustomCard() {
         </label>
 
         <fieldset className="mt-4">
-          <legend className="font-sans text-[11px] font-semibold tracking-[0.8px] text-tertiary uppercase">
+          <legend className="font-sans text-[11px] font-semibold tracking-[0.8px] text-tertiary-ink uppercase">
             Panel count change
           </legend>
           <div className="mt-2 flex gap-2">
@@ -106,7 +106,7 @@ export function CompareCustomCard() {
         </fieldset>
 
         <label className="mt-4 flex flex-col gap-2 font-sans text-sm text-ink">
-          <span className="text-[11px] font-semibold tracking-[0.8px] text-tertiary uppercase">
+          <span className="text-[11px] font-semibold tracking-[0.8px] text-tertiary-ink uppercase">
             Optimise for
           </span>
           <select
@@ -145,7 +145,7 @@ export function CompareCustomCard() {
   return (
     <article className={compareUtilityCardClass} aria-label="Compare custom">
       <div className="flex flex-col items-center text-center">
-        <h2 className="font-serif text-[26px] font-medium leading-none text-tertiary">
+        <h2 className="font-serif text-[26px] font-medium leading-none text-ink">
           Your build
         </h2>
       </div>
@@ -154,7 +154,7 @@ export function CompareCustomCard() {
         <div className="flex size-[58px] items-center justify-center rounded-pill bg-[#f2eee4] text-secondary">
           <PlusIcon />
         </div>
-        <p className="mt-5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary">
+        <p className="mt-5 max-w-[17rem] font-sans text-[12.5px] leading-5 text-tertiary-ink">
           Start with an empty diagram and pick panels, inverters, and batteries
           yourself.
         </p>

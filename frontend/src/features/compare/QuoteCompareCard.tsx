@@ -22,7 +22,7 @@ function SpecRows({ rows }: { rows: { label: string; value: string }[] }) {
         <div key={row.label}>
           {index > 0 ? <div className="h-px bg-hairline" /> : null}
           <div className="flex items-center justify-between gap-3 py-2.5 text-[12.5px]">
-            <dt className="shrink-0 font-sans font-normal text-tertiary">{row.label}</dt>
+            <dt className="shrink-0 font-sans font-normal text-tertiary-ink">{row.label}</dt>
             <dd className="min-w-0 break-words text-right font-sans font-semibold text-ink">
               {row.value}
             </dd>
@@ -88,7 +88,7 @@ function QuoteCardFooter({
   return (
     <div className="mt-auto flex flex-col pt-5">
       <div className="h-px bg-hairline" />
-      <p className="mt-[18px] font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+      <p className="mt-[18px] font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
         Quoted total
       </p>
       <p className={compareMoneyClass}>{view.quotedTotalLabel}</p>
@@ -135,12 +135,12 @@ function QuoteCardFooter({
 
 const quoteFaceClass = cn(
   compareFlipFaceClass,
-  "border border-hairline shadow-[0px_3px_10px_0px_rgba(26,23,18,0.04)]",
+  "border border-hairline shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]",
 );
 
 const quoteFaceBackClass = cn(
   compareFlipFaceBackClass,
-  "border border-hairline shadow-[0px_3px_10px_0px_rgba(26,23,18,0.04)]",
+  "border border-hairline shadow-[0_1px_2px_rgba(26,23,18,0.04),0_8px_24px_rgba(26,23,18,0.05)]",
 );
 
 function QuoteOverviewFace({
@@ -161,14 +161,14 @@ function QuoteOverviewFace({
       <QuoteCardHeader view={view} />
 
       <div className="mt-5 rounded-[14px] bg-[#fbf6e8] px-[18px] py-4">
-        <p className="font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+        <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
           Quoted total
         </p>
         <p className="mt-1 break-words font-serif text-[1.75rem] font-medium leading-none text-cobalt">
           {view.quotedTotalLabel}
         </p>
         <div className="my-3.5 h-px bg-hairline" />
-        <p className="font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+        <p className="font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
           Compared to our estimate
         </p>
         <p className="mt-1 break-words font-serif text-[1.375rem] font-medium leading-snug text-ink">
@@ -234,7 +234,7 @@ function QuoteTechnicalFace({
     <>
       <QuoteCardHeader view={view} />
 
-      <p className="mt-5 font-sans text-[9.5px] font-medium tracking-[1.1px] text-tertiary uppercase">
+      <p className="mt-5 font-sans text-[10px] font-semibold tracking-[1px] text-tertiary-ink uppercase">
         Technical specs
       </p>
 
