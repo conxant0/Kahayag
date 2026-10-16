@@ -5,7 +5,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mockDesignSession } from "../../../../src/features/design/fixtures/mockDesignSession";
-import { mockPermitAssessmentComplete } from "../../../../src/features/permits/fixtures/mockPermitAssessments";
+import {
+  mockPermitAssessmentComplete,
+  mockPermitAssessmentIncomplete,
+} from "../../../../src/features/permits/fixtures/mockPermitAssessments";
 import { PermitsPage } from "../../../../src/features/permits/PermitsPage";
 import { useAssessmentStore, type SelectedProperty } from "../../../../src/state/assessmentStore";
 import { useDesignStore } from "../../../../src/state/designStore";
@@ -97,6 +100,49 @@ describe("PermitsPage", () => {
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
     await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
+  });
+
+  it("sends each file once, then the documents the backend read from it", async () => {
+    const user = userEvent.setup();
+    // The backend echoes back one record per file it has been sent, keeping
+    // the records it was given.
+    mockMutate.mockImplementation((variables, options) => {
+      const records = [
+        ...variables.extractedDocuments,
+        ...[...variables.uploads].map(([slotId, file]: [string, File]) => ({
+          slot_id: slotId,
+          filename: file.name,
+          text: "read",
+          fields: {},
+        })),
+      ];
+      options?.onSuccess?.({
+        ...mockPermitAssessmentIncomplete,
+        extracted_documents: records,
+      });
+    });
+    seedSession();
+
+    renderPermits();
+
+    const applicantSection = screen.getByRole("region", { name: "Applicant details" });
+    await user.type(screen.getByLabelText("Your full name"), "Maria Santos");
+    await user.click(within(applicantSection).getByRole("button", { name: "Submit" }));
+    await screen.findByRole("region", { name: "Packet status" });
+
+    const inputs = document.body.querySelectorAll<HTMLInputElement>('input[type="file"]');
+    const first = new File(["first"], "first.pdf", { type: "application/pdf" });
+    const second = new File(["second"], "second.pdf", { type: "application/pdf" });
+    await user.upload(inputs[0]!, first);
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(2));
+    await user.upload(inputs[1]!, second);
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(3));
+
+    const lastCall = mockMutate.mock.calls[2]![0];
+    expect([...lastCall.uploads.values()]).toEqual([second]);
+    expect(lastCall.extractedDocuments.map((d: { filename: string }) => d.filename)).toEqual([
+      "first.pdf",
+    ]);
   });
 
   it("stubs Submit and reveals start-over after acknowledgement", async () => {

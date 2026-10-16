@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Chip } from "../../shared/components/ui";
 import type { ApplicantFormValues } from "./ApplicantForm";
-import type { PermitAssessment } from "./permitTypes";
+import type { ExtractedDocument, PermitAssessment } from "./permitTypes";
 import {
   PERMIT_CHAT_FOLLOW_UP_QUESTIONS,
   PERMIT_CHAT_SUGGESTED_QUESTIONS,
@@ -78,6 +78,7 @@ export function PermitChatSidebar({
   propertyAddress,
   systemKwp,
   uploads,
+  extractedDocuments = [],
   buildId,
 }: {
   applicant: ApplicantFormValues;
@@ -89,6 +90,7 @@ export function PermitChatSidebar({
   propertyAddress: string;
   systemKwp: number;
   uploads: ReadonlyMap<string, File>;
+  extractedDocuments?: readonly ExtractedDocument[];
   buildId: string | null;
 }) {
   const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
@@ -118,6 +120,7 @@ export function PermitChatSidebar({
           build_id: buildId,
           property_address: propertyAddress,
           user_text: trimmed,
+          extracted_documents: extractedDocuments,
         },
         uploads,
       });

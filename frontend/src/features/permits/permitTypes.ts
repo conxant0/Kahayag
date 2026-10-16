@@ -62,6 +62,18 @@ export interface NetMeteringEligibility {
   source_url: string;
 }
 
+/**
+ * An upload after the backend has read it. Sent back on later requests in
+ * place of the file, so each document is read (and its AI call made) once.
+ * An empty slot_id means the file is not in a checklist slot.
+ */
+export interface ExtractedDocument {
+  slot_id: string;
+  filename: string;
+  text: string;
+  fields: Readonly<Record<string, string | null>>;
+}
+
 export interface PermitAssessment {
   track: PermitTrack;
   net_metering_eligibility: NetMeteringEligibility;
@@ -70,6 +82,8 @@ export interface PermitAssessment {
   findings: readonly PermitFinding[];
   packet_status: PacketStatus;
   summary: string;
+  /** Absent on fixtures; every live response carries it. */
+  extracted_documents?: readonly ExtractedDocument[];
 }
 
 /**
@@ -86,6 +100,7 @@ export interface PermitChatRequest {
   build_id: string | null;
   property_address: string;
   user_text: string;
+  extracted_documents: readonly ExtractedDocument[];
 }
 
 export interface PermitChatResponse {

@@ -18,6 +18,7 @@ from app.domain.permits.rules import (
     resolve_track,
 )
 from app.features.permits.schemas import (
+    ExtractedDocumentSchema,
     NetMeteringEligibilitySchema,
     PermitAssessmentResponseSchema,
     PermitDocumentChecklistItemSchema,
@@ -114,21 +115,64 @@ def _expected_owner_name(applicant: ApplicantAnswers) -> str:
     return applicant.full_name
 
 
+def extract_documents(
+    uploads: tuple[UploadedDocument, ...],
+    client: DocumentIntakeClient,
+) -> tuple[ExtractedDocumentSchema, ...]:
+    """Reads each new upload once: its text, then one intake-client call for
+    its fields. The only place a document reaches the AI."""
+    extracted: list[ExtractedDocumentSchema] = []
+    for upload in uploads:
+        text = extract_document_text(upload.filename, upload.content)
+        fields = client.extract_document_fields(document_text=text) if text.strip() else {}
+        extracted.append(
+            ExtractedDocumentSchema(
+                slot_id=upload.slot_id,
+                filename=upload.filename,
+                text=text,
+                fields=fields,
+            )
+        )
+    return tuple(extracted)
+
+
+def merge_documents(
+    previous: tuple[ExtractedDocumentSchema, ...],
+    new: tuple[ExtractedDocumentSchema, ...],
+) -> tuple[ExtractedDocumentSchema, ...]:
+    """A new upload replaces any earlier record in the same slot, or with the
+    same filename when it has no slot yet."""
+
+    def replaced_by(old: ExtractedDocumentSchema, fresh: ExtractedDocumentSchema) -> bool:
+        if fresh.slot_id:
+            return old.slot_id == fresh.slot_id
+        return old.filename == fresh.filename
+
+    kept = tuple(
+        old for old in previous if not any(replaced_by(old, fresh) for fresh in new)
+    )
+    return kept + new
+
+
 def assess_permit_documents(
     *,
     applicant: ApplicantAnswers,
     build: PermitBuildSpec,
     property_address: str,
-    uploads: tuple[UploadedDocument, ...],
+    uploads: tuple[UploadedDocument, ...] = (),
+    documents: tuple[ExtractedDocumentSchema, ...] = (),
     client: DocumentIntakeClient,
 ) -> PermitAssessmentResponseSchema:
+    """Assesses the packet from already-read documents plus any new uploads.
+    Only the new uploads are read; every check below is deterministic."""
+    records = merge_documents(documents, extract_documents(uploads, client))
     catalog = load_catalog()
     track = resolve_track(applicant.solar_in_original_permit)
     docs = required_documents(applicant, catalog)
     permits = required_permits(applicant, catalog)
     eligibility = check_net_metering_eligibility(build)
 
-    upload_by_slot = {upload.slot_id: upload for upload in uploads}
+    record_by_slot = {record.slot_id: record for record in records if record.slot_id}
     expected_owner_name = _expected_owner_name(applicant)
 
     findings: list[PermitFindingSchema] = []
@@ -136,10 +180,10 @@ def assess_permit_documents(
     extracted_owner_names: list[tuple[str, str]] = []  # (document_id, raw name)
 
     for doc in docs:
-        upload = upload_by_slot.get(doc.id)
+        record = record_by_slot.get(doc.id)
 
         # 1. Presence
-        if upload is None:
+        if record is None:
             findings.append(
                 PermitFindingSchema(
                     document_id=doc.id,
@@ -162,7 +206,7 @@ def assess_permit_documents(
             )
             continue
 
-        text = extract_document_text(upload.filename, upload.content)
+        text = record.text
 
         # 3. Unreadable — never a silent pass.
         if not text.strip():
@@ -220,7 +264,7 @@ def assess_permit_documents(
                 )
             )
 
-        fields = client.extract_document_fields(document_text=text)
+        fields = record.fields
 
         # 4. Address mismatch
         if "property_address" in doc.cross_check_fields:
@@ -320,4 +364,5 @@ def assess_permit_documents(
         findings=tuple(findings),
         packet_status=packet_status,
         summary=summary,
+        extracted_documents=records,
     )

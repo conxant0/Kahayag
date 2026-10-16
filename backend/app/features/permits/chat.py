@@ -12,9 +12,15 @@ from dataclasses import replace
 from app.domain.permits.catalog import load_catalog
 from app.domain.permits.entities import ApplicantAnswers, PermitBuildSpec
 from app.domain.permits.rules import required_documents, required_permits
-from app.features.permits.intake import UploadedDocument, assess_permit_documents
+from app.features.permits.intake import (
+    UploadedDocument,
+    assess_permit_documents,
+    extract_documents,
+    merge_documents,
+)
 from app.features.permits.schemas import (
     ApplicantAnswersSchema,
+    ExtractedDocumentSchema,
     PermitAssessmentResponseSchema,
     PermitChatResponseSchema,
 )
@@ -154,11 +160,15 @@ def run_permit_chat_turn(
     user_text: str,
     chat_client: PermitChatClient,
     intake_client: DocumentIntakeClient,
+    documents: tuple[ExtractedDocumentSchema, ...] = (),
 ) -> PermitChatResponseSchema:
+    # Documents read on an earlier request arrive as records; only files new
+    # to this request are read (and sent to the intake client) here.
+    records = merge_documents(documents, extract_documents(uploads, intake_client))
     # An empty-string slot_id means "not yet assigned to a slot" — the same
     # as None, so both count as unassigned when filtering uploads below.
     slot_by_filename: dict[str, str | None] = {
-        upload.filename: (upload.slot_id or None) for upload in uploads
+        record.filename: (record.slot_id or None) for record in records
     }
 
     # Deterministic gate: a message that reads as a plain question never
@@ -203,10 +213,13 @@ def run_permit_chat_turn(
             continue
         tool_audit.append({"name": call.name, "arguments": call.arguments, "result": result})
 
-    updated_uploads = tuple(
-        UploadedDocument(slot_id=slot_id, filename=upload.filename, content=upload.content)
-        for upload in uploads
-        if (slot_id := updated_slot_by_filename.get(upload.filename)) is not None
+    # A file the tools unassigned keeps its record (so it is not read again)
+    # but no longer counts toward any slot.
+    updated_records = tuple(
+        record.model_copy(
+            update={"slot_id": updated_slot_by_filename.get(record.filename) or ""}
+        )
+        for record in records
     )
 
     # The only recomputation path: no tool above can shortcut this.
@@ -214,7 +227,7 @@ def run_permit_chat_turn(
         applicant=updated_applicant,
         build=build,
         property_address=property_address,
-        uploads=updated_uploads,
+        documents=updated_records,
         client=intake_client,
     )
 

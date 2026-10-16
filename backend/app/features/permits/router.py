@@ -77,6 +77,7 @@ async def assess_permits(
         build=build,
         property_address=payload.property_address,
         uploads=tuple(uploads),
+        documents=payload.extracted_documents,
         client=get_document_intake_client(settings),
     )
 
@@ -112,4 +113,5 @@ async def permit_chat_turn(
         user_text=payload.user_text,
         chat_client=get_permit_chat_client(settings),
         intake_client=get_document_intake_client(settings),
+        documents=payload.extracted_documents,
     )

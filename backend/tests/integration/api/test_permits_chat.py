@@ -123,3 +123,40 @@ def test_chat_turn_rejects_mismatched_slot_and_file_counts() -> None:
         files={"files": ("barangay.txt", b"Barangay Clearance", "text/plain")},
     )
     assert response.status_code == 400
+
+
+def test_chat_accepts_documents_read_by_an_earlier_assess_request() -> None:
+    assess_payload = {key: value for key, value in _request_payload().items() if key != "user_text"}
+    assessed = client.post(
+        "/api/v1/permits/assess",
+        data={
+            "request": json.dumps(assess_payload),
+            "slot_ids": ["obo_12_barangay_clearance"],
+        },
+        files={
+            "files": (
+                "barangay.txt",
+                b"Barangay Clearance\nIssued to Maria Santos.",
+                "text/plain",
+            )
+        },
+    ).json()
+    assert [d["filename"] for d in assessed["extracted_documents"]] == ["barangay.txt"]
+
+    # No files on the chat request: the records stand in for them.
+    response = client.post(
+        "/api/v1/permits/chat",
+        data={
+            "request": json.dumps(
+                _request_payload(extracted_documents=assessed["extracted_documents"])
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    barangay = next(
+        d
+        for d in response.json()["assessment"]["documents"]
+        if d["document_id"] == "obo_12_barangay_clearance"
+    )
+    assert barangay["status"] == "uploaded"
