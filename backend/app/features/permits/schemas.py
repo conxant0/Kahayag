@@ -32,11 +32,26 @@ class ApplicantAnswersSchema(ContractModel):
     delegates_filing_to_representative: StrictBool = False
 
 
+class ExtractedDocumentSchema(ContractModel):
+    """One upload after it has been read: its text and the fields the intake
+    client pulled from it. Returned with every assessment and sent back by
+    the browser, so a document is read (and the AI called) once per upload
+    rather than on every assess or chat request. Only the homeowner's own
+    checklist depends on it, and every verdict is still recomputed from it
+    deterministically. An empty slot_id means the file is not in a slot."""
+
+    slot_id: str = ""
+    filename: str
+    text: str
+    fields: dict[str, str | None]
+
+
 class PermitAssessmentRequestSchema(ContractModel):
     applicant: ApplicantAnswersSchema
     system_kwp: StrictFloat = Field(gt=0)
     build_id: str | None = None
     property_address: str = Field(min_length=1)
+    extracted_documents: tuple[ExtractedDocumentSchema, ...] = ()
 
 
 class PermitFindingSchema(ContractModel):
@@ -81,6 +96,7 @@ class PermitAssessmentResponseSchema(ContractModel):
     findings: tuple[PermitFindingSchema, ...]
     packet_status: PacketStatus
     summary: str
+    extracted_documents: tuple[ExtractedDocumentSchema, ...] = ()
 
 
 class PermitChatRequestSchema(ContractModel):
@@ -89,6 +105,7 @@ class PermitChatRequestSchema(ContractModel):
     build_id: str | None = None
     property_address: str = Field(min_length=1)
     user_text: str = Field(min_length=1)
+    extracted_documents: tuple[ExtractedDocumentSchema, ...] = ()
 
 
 class PermitChatResponseSchema(ContractModel):

@@ -463,3 +463,50 @@ def test_groq_qa_passes_through_a_compliant_reply(monkeypatch) -> None:
         intake_client=CLIENT,
     )
     assert response.reply == compliant_reply
+
+
+class _CountingIntakeClient(DisabledDocumentIntakeClient):
+    """Counts the per-document reads, which are the AI calls in production."""
+
+    def __init__(self) -> None:
+        self.reads = 0
+
+    def extract_document_fields(self, *, document_text: str):  # type: ignore[no-untyped-def]
+        self.reads += 1
+        return super().extract_document_fields(document_text=document_text)
+
+
+def test_chat_turn_reuses_documents_read_on_an_earlier_request() -> None:
+    upload = UploadedDocument(
+        slot_id="obo_12_barangay_clearance",
+        filename="barangay.txt",
+        content=b"Barangay Clearance\nIssued to Maria Santos.",
+    )
+    first = _CountingIntakeClient()
+    assessed = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(upload,),
+        user_text="What track am I on?",
+        chat_client=CHAT_CLIENT,
+        intake_client=first,
+    ).assessment
+    assert first.reads == 1
+
+    # The browser sends the records back instead of the file: no document is
+    # read again, and the checklist comes out the same.
+    later = _CountingIntakeClient()
+    response = run_permit_chat_turn(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(),
+        documents=assessed.extracted_documents,
+        user_text="Do I need a notarized authorization?",
+        chat_client=CHAT_CLIENT,
+        intake_client=later,
+    )
+    assert later.reads == 0
+    assert response.assessment.documents == assessed.documents
+    assert response.assessment.findings == assessed.findings

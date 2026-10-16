@@ -47,6 +47,9 @@ export function PermitsPage() {
   const [submittedApplicant, setSubmittedApplicant] = useState<ApplicantFormValues | null>(null);
   const [uploads, setUploads] = useState<ReadonlyMap<string, File>>(() => new Map());
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Files the backend has already read. Later requests send the documents it
+  // returned instead, so each file is uploaded and read once.
+  const [sentFiles, setSentFiles] = useState<ReadonlySet<File>>(() => new Set());
   const [lastAssessment, setLastAssessment] = useState<PermitAssessment | null>(null);
   const [egovAcknowledged, setEgovAcknowledged] = useState(false);
   const [isStartingOver, setIsStartingOver] = useState(false);
@@ -56,13 +59,33 @@ export function PermitsPage() {
   const systemKwp = activeBuild?.system_kwp ?? 0;
   const buildId = activeBuild?.id ?? null;
 
+  const unsentUploads = (all: ReadonlyMap<string, File>) =>
+    new Map([...all].filter(([, file]) => !sentFiles.has(file)));
+
+  const markSent = (sent: ReadonlyMap<string, File>) => {
+    setSentFiles((current) => new Set([...current, ...sent.values()]));
+  };
+
   useEffect(() => {
     if (!submittedApplicant || !buildId || !propertyAddress) {
       return;
     }
+    const pending = unsentUploads(uploads);
     assess.mutate(
-      { applicant: submittedApplicant, systemKwp, buildId, propertyAddress, uploads },
-      { onSuccess: setLastAssessment },
+      {
+        applicant: submittedApplicant,
+        systemKwp,
+        buildId,
+        propertyAddress,
+        extractedDocuments: lastAssessment?.extracted_documents ?? [],
+        uploads: pending,
+      },
+      {
+        onSuccess: (assessment) => {
+          markSent(pending);
+          setLastAssessment(assessment);
+        },
+      },
     );
     // assess and assess.mutate are stable across renders (react-query); only
     // the request's own inputs should re-trigger it.
@@ -113,6 +136,8 @@ export function PermitsPage() {
     assessment: PermitAssessment,
     nextApplicant: ApplicantFormValues,
   ) => {
+    // The turn carried every unsent file, and its assessment holds them now.
+    markSent(unsentUploads(uploads));
     setLastAssessment(assessment);
     // A Q&A-only chat turn still produces a real assessment — wire it into
     // the assess pipeline so later document uploads re-check the packet.
@@ -223,7 +248,8 @@ export function PermitsPage() {
               onAssessmentChange={handleChatAssessmentChange}
               propertyAddress={propertyAddress}
               systemKwp={systemKwp}
-              uploads={uploads}
+              uploads={unsentUploads(uploads)}
+              extractedDocuments={lastAssessment?.extracted_documents ?? []}
               buildId={buildId}
             />
           </aside>

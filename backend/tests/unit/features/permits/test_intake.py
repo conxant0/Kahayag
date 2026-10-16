@@ -279,3 +279,38 @@ def test_checklist_items_carry_steps_prerequisites_and_issuing_agency() -> None:
     assert tax_clearance.steps
     assert tax_clearance.issuing_agency
     assert tax_clearance.prerequisites == ("obo_15_tax_declaration_lot",)
+
+
+def test_a_new_upload_replaces_the_earlier_record_in_its_slot() -> None:
+    wrong = UploadedDocument(
+        slot_id="obo_12_barangay_clearance",
+        filename="first.txt",
+        content=b"Certificate of Good Moral Character",
+    )
+    first = assess_permit_documents(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(wrong,),
+        client=CLIENT,
+    )
+    right = UploadedDocument(
+        slot_id="obo_12_barangay_clearance",
+        filename="second.txt",
+        content=b"Barangay Clearance\nIssued to Maria Santos.",
+    )
+    second = assess_permit_documents(
+        applicant=_retrofit_applicant(),
+        build=BUILD,
+        property_address=ADDRESS,
+        uploads=(right,),
+        documents=first.extracted_documents,
+        client=CLIENT,
+    )
+
+    assert [d.filename for d in second.extracted_documents] == ["second.txt"]
+    assert not [
+        f
+        for f in second.findings
+        if f.category == "wrong_slot" and f.document_id == "obo_12_barangay_clearance"
+    ]

@@ -9,7 +9,7 @@ import { useRef } from "react";
 import { apiUploadForm } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
 import type { ApplicantFormValues } from "./ApplicantForm";
-import type { PermitAssessment } from "./permitTypes";
+import type { ExtractedDocument, PermitAssessment } from "./permitTypes";
 import { toApiApplicant } from "./permitsViewModel";
 
 export interface AssessPermitInput {
@@ -17,6 +17,9 @@ export interface AssessPermitInput {
   systemKwp: number;
   buildId: string | null;
   propertyAddress: string;
+  /** Documents read on an earlier request; sent instead of their files. */
+  extractedDocuments: readonly ExtractedDocument[];
+  /** Only files the backend has not read yet. */
   uploads: ReadonlyMap<string, File>;
 }
 
@@ -38,6 +41,7 @@ export function useAssessPermit() {
             system_kwp: input.systemKwp,
             build_id: input.buildId,
             property_address: input.propertyAddress,
+            extracted_documents: input.extractedDocuments,
           }),
         );
         for (const [documentId, file] of input.uploads) {

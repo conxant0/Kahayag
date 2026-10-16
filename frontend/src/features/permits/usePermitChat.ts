@@ -12,6 +12,7 @@ import type { PermitChatRequest, PermitChatResponse } from "./permitTypes";
 
 export interface PermitChatInput {
   payload: PermitChatRequest;
+  /** Only files the backend has not read yet; the rest ride in the payload. */
   uploads: ReadonlyMap<string, File>;
 }
 
