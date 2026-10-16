@@ -103,7 +103,7 @@ def test_quote_audit_accepts_uploads_larger_than_default_multipart_limit(
         },
     ).json()
 
-    # Starlette's default multipart part limit is 1 MB; quote uploads allow 10 MB.
+    # Starlette's default multipart part limit is 1 MB; quote uploads allow 4 MB.
     oversized_image = b"\x00" * (1024 * 1024 + 512)
 
     response = client.post(

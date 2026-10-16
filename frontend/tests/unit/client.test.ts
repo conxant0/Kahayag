@@ -24,4 +24,10 @@ describe("formatErrorDetail", () => {
   it("falls back to the status when there is no detail", () => {
     expect(formatErrorDetail(undefined, 500)).toBe("Request failed: 500");
   });
+
+  it("explains a platform 413, which arrives without a detail", () => {
+    expect(formatErrorDetail(undefined, 413)).toBe(
+      "Upload is too large. Keep files under 4 MB.",
+    );
+  });
 });

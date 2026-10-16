@@ -86,3 +86,22 @@ def test_assess_permits_rejects_mismatched_slot_and_file_counts() -> None:
         files={"files": ("barangay.txt", b"Barangay Clearance", "text/plain")},
     )
     assert response.status_code == 400
+
+
+def test_assess_permits_rejects_a_packet_over_the_upload_limit() -> None:
+    # Two documents that are each fine but together exceed what one request
+    # may carry, since every request re-sends the whole packet.
+    half_limit_plus = b"x" * (2 * 1024 * 1024 + 1)
+    response = client.post(
+        "/api/v1/permits/assess",
+        data={
+            "request": json.dumps(_request_payload()),
+            "slot_ids": ["obo_12_barangay_clearance", "obo_14_tct"],
+        },
+        files=[
+            ("files", ("barangay.txt", half_limit_plus, "text/plain")),
+            ("files", ("tct.txt", half_limit_plus, "text/plain")),
+        ],
+    )
+
+    assert response.status_code == 413

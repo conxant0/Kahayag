@@ -20,6 +20,34 @@ router = APIRouter(prefix="/permits", tags=["permits"])
 
 DependsSettings = Depends(get_settings)
 
+# Assess and chat both carry every document uploaded so far in one request.
+# Vercel refuses bodies over 4.5 MB before the app runs; enforcing the same
+# packet limit here keeps other deployments consistent with it.
+MAX_PERMIT_UPLOAD_BYTES = 4 * 1024 * 1024
+
+
+async def _read_uploads(
+    slot_ids: list[str],
+    files: list[UploadFile],
+) -> list[UploadedDocument]:
+    if len(slot_ids) != len(files):
+        raise HTTPException(status_code=400, detail="slot_ids and files must pair 1:1.")
+
+    uploads: list[UploadedDocument] = []
+    total_bytes = 0
+    for slot_id, file in zip(slot_ids, files, strict=True):
+        content = await file.read()
+        total_bytes += len(content)
+        if total_bytes > MAX_PERMIT_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail="Your documents are over 4 MB in total. Upload smaller photos or PDFs.",
+            )
+        uploads.append(
+            UploadedDocument(slot_id=slot_id, filename=file.filename or slot_id, content=content)
+        )
+    return uploads
+
 
 @router.post("/assess", response_model=PermitAssessmentResponseSchema)
 async def assess_permits(
@@ -33,15 +61,7 @@ async def assess_permits(
     except (json.JSONDecodeError, ValueError) as error:
         raise HTTPException(status_code=400, detail="Invalid request payload.") from error
 
-    if len(slot_ids) != len(files):
-        raise HTTPException(status_code=400, detail="slot_ids and files must pair 1:1.")
-
-    uploads: list[UploadedDocument] = []
-    for slot_id, file in zip(slot_ids, files, strict=True):
-        content = await file.read()
-        uploads.append(
-            UploadedDocument(slot_id=slot_id, filename=file.filename or slot_id, content=content)
-        )
+    uploads = await _read_uploads(slot_ids, files)
 
     applicant = ApplicantAnswers(
         solar_in_original_permit=payload.applicant.solar_in_original_permit,
@@ -73,15 +93,7 @@ async def permit_chat_turn(
     except (json.JSONDecodeError, ValueError) as error:
         raise HTTPException(status_code=400, detail="Invalid request payload.") from error
 
-    if len(slot_ids) != len(files):
-        raise HTTPException(status_code=400, detail="slot_ids and files must pair 1:1.")
-
-    uploads: list[UploadedDocument] = []
-    for slot_id, file in zip(slot_ids, files, strict=True):
-        content = await file.read()
-        uploads.append(
-            UploadedDocument(slot_id=slot_id, filename=file.filename or slot_id, content=content)
-        )
+    uploads = await _read_uploads(slot_ids, files)
 
     applicant = ApplicantAnswers(
         solar_in_original_permit=payload.applicant.solar_in_original_permit,

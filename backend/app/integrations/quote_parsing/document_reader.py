@@ -10,7 +10,9 @@ IMAGE_EXTENSIONS = frozenset(
     {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff", ".heic"}
 )
 TEXT_EXTENSIONS = frozenset({".txt", ".csv", ".md"})
-MAX_QUOTE_UPLOAD_BYTES = 10 * 1024 * 1024
+# Vercel refuses request bodies over 4.5 MB before the app runs; staying under
+# it means an oversized quote gets this module's message, not a bare 413.
+MAX_QUOTE_UPLOAD_BYTES = 4 * 1024 * 1024
 
 _MIME_BY_EXTENSION = {
     ".png": "image/png",
@@ -33,7 +35,7 @@ def validate_quote_upload(filename: str, content: bytes) -> None:
     if not content:
         raise ValueError("Uploaded file is empty.")
     if len(content) > MAX_QUOTE_UPLOAD_BYTES:
-        raise ValueError("Upload is too large. Maximum size is 10 MB.")
+        raise ValueError("Upload is too large. Maximum size is 4 MB.")
     lowered = filename.lower()
     if lowered.endswith(".pdf") or _extension(lowered) in IMAGE_EXTENSIONS | TEXT_EXTENSIONS:
         return

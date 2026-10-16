@@ -10,6 +10,11 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ROUTE_PATHS } from "../../app/routePaths";
+import {
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+  shrinkImageForUpload,
+} from "../../shared/lib/uploadFiles";
 import { DesignFlowStepper } from "../../shared/components/layout/DesignFlowStepper";
 import { Button, Eyebrow, Rule } from "../../shared/components/ui";
 import { useAssessmentStore } from "../../state/assessmentStore";
@@ -41,6 +46,7 @@ export function PermitsPage() {
   const [applicant, setApplicant] = useState<ApplicantFormValues>(DEFAULT_APPLICANT);
   const [submittedApplicant, setSubmittedApplicant] = useState<ApplicantFormValues | null>(null);
   const [uploads, setUploads] = useState<ReadonlyMap<string, File>>(() => new Map());
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [lastAssessment, setLastAssessment] = useState<PermitAssessment | null>(null);
   const [egovAcknowledged, setEgovAcknowledged] = useState(false);
   const [isStartingOver, setIsStartingOver] = useState(false);
@@ -74,8 +80,20 @@ export function PermitsPage() {
     return <Navigate to={ROUTE_PATHS.locate} replace />;
   }
 
-  const handleUpload = (documentId: string, file: File) => {
-    setUploads((current) => new Map(current).set(documentId, file));
+  // Assess and chat both re-send every document in one request, so the limit
+  // applies to the whole packet, not to each file on its own.
+  const handleUpload = async (documentId: string, original: File) => {
+    const file = await shrinkImageForUpload(original);
+    const next = new Map(uploads).set(documentId, file);
+    const packetBytes = [...next.values()].reduce((total, item) => total + item.size, 0);
+    if (packetBytes > MAX_UPLOAD_BYTES) {
+      setUploadError(
+        `${original.name} would take your documents over ${MAX_UPLOAD_LABEL} in total. Upload a smaller photo or a PDF.`,
+      );
+      return;
+    }
+    setUploadError(null);
+    setUploads(next);
   };
 
   const handleApplicantChange = (next: ApplicantFormValues) => {
@@ -136,6 +154,12 @@ export function PermitsPage() {
           </p>
         ) : null}
 
+        {uploadError ? (
+          <p className="font-sans text-sm text-ember" role="alert">
+            {uploadError}
+          </p>
+        ) : null}
+
         <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-12">
           <div className="flex flex-col gap-7 lg:gap-8">
             {assessment ? <VerdictBanner assessment={assessment} /> : null}
@@ -162,7 +186,7 @@ export function PermitsPage() {
                 <DocumentChecklist
                   assessment={assessment}
                   sessionUploads={new Set(uploads.keys())}
-                  onUpload={handleUpload}
+                  onUpload={(documentId, file) => void handleUpload(documentId, file)}
                 />
                 <Rule />
                 <PacketStatusCard

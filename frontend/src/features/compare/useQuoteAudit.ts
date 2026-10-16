@@ -4,21 +4,17 @@ import { useMutation } from "@tanstack/react-query";
 import { apiUploadForm } from "../../shared/api/client";
 import { ENDPOINTS } from "../../shared/api/endpoints";
 import type { QuoteAuditResponse } from "../../shared/api/types";
+import {
+  MAX_UPLOAD_BYTES,
+  shrinkImageForUpload,
+  uploadTooLargeMessage,
+} from "../../shared/lib/uploadFiles";
 import { useDesignStore } from "../../state/designStore";
 
 export type QuoteAuditBatchResult = {
   results: QuoteAuditResponse[];
   failures: string[];
 };
-
-const MAX_QUOTE_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-function validateQuoteFileSize(file: File): string | null {
-  if (file.size > MAX_QUOTE_UPLOAD_BYTES) {
-    return `${file.name}: File is too large. Maximum size is 10 MB.`;
-  }
-  return null;
-}
 
 async function auditQuoteFile(
   file: File,
@@ -46,10 +42,10 @@ export function useQuoteAudit() {
       const results: QuoteAuditResponse[] = [];
       const failures: string[] = [];
 
-      for (const file of files) {
-        const sizeError = validateQuoteFileSize(file);
-        if (sizeError) {
-          failures.push(sizeError);
+      for (const original of files) {
+        const file = await shrinkImageForUpload(original);
+        if (file.size > MAX_UPLOAD_BYTES) {
+          failures.push(uploadTooLargeMessage(original.name));
           continue;
         }
         try {
@@ -58,7 +54,7 @@ export function useQuoteAudit() {
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "Could not audit this quote.";
-          failures.push(`${file.name}: ${message}`);
+          failures.push(`${original.name}: ${message}`);
         }
       }
 
