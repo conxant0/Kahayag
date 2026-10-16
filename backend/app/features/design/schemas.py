@@ -105,6 +105,19 @@ class DesignBuildSchema(ContractModel):
             raise ValueError("total_investment_high_php must be >= total_investment_low_php")
         return self
 
+    def check_totals_add_up(self) -> None:
+        """Rejects a build whose figures no longer add up. The sums the solver
+        produced always do, so a mismatch means the values were altered after
+        it computed them. Called wherever a quotation is printed from a build
+        the client sent back."""
+        lines_total = sum(component.line_total_php for component in self.components)
+        if abs(lines_total - self.subtotal_php) > 1:
+            raise ValueError("design build component totals must sum to its subtotal")
+        if abs(self.subtotal_php + self.vat_php - self.total_investment_php) > 1:
+            raise ValueError(
+                "design build subtotal and VAT must sum to its total investment"
+            )
+
 
 class AgentAuditEntrySchema(ContractModel):
     turn_id: str

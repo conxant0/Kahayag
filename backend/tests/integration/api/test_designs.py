@@ -108,6 +108,31 @@ def test_quotation_matches_build_totals(
     assert quote["total_high_php"] == build["total_investment_high_php"]
 
 
+def test_quotation_rejects_a_build_whose_totals_were_altered(
+    completed_assessment_data: dict[str, object],
+) -> None:
+    bootstrap = client.post(
+        "/api/v1/designs/bootstrap",
+        json={
+            "assessment": completed_assessment_data,
+            "property_ref": "demo-property-1",
+        },
+    ).json()
+    build = bootstrap["builds"][0]
+    # A client that rewrites the headline total no longer matches the lines
+    # the solver priced, so no Kahayag quotation may be printed from it.
+    build["total_investment_php"] = 1000.0
+    build["total_investment_low_php"] = 1000.0
+    build["total_investment_high_php"] = 1000.0
+
+    quote_response = client.post(
+        f"/api/v1/designs/quotation/{build['id']}",
+        json={"build_id": build["id"], "session": bootstrap},
+    )
+
+    assert quote_response.status_code == 422
+
+
 def test_bootstrap_succeeds_for_small_usable_roof(
     completed_assessment_data: dict[str, object],
 ) -> None:

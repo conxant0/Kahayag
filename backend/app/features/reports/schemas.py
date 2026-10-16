@@ -38,23 +38,8 @@ class ReportPDFRequest(ContractModel):
             )
 
     def validate_design_build(self) -> None:
-        """Rejects a build whose figures no longer add up — the sums the
-        solver produced always do, so a mismatch means the values were
-        altered after it computed them."""
-        build = self.design_build
-        if build is None:
-            return
-        lines_total = sum(
-            component.line_total_php for component in build.components
-        )
-        if abs(lines_total - build.subtotal_php) > 1:
-            raise ValueError(
-                "design build component totals must sum to its subtotal"
-            )
-        if abs(build.subtotal_php + build.vat_php - build.total_investment_php) > 1:
-            raise ValueError(
-                "design build subtotal and VAT must sum to its total investment"
-            )
+        if self.design_build is not None:
+            self.design_build.check_totals_add_up()
 
 
 class ProjectionRow(ContractModel):
