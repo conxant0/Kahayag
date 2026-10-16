@@ -1,5 +1,6 @@
 // Defines provider-neutral frontend HTTP client configuration.
 import { API_BASE_URL } from "../config/env";
+import { MAX_UPLOAD_LABEL } from "../lib/uploadFiles";
 
 /** Used when the response carries no `Content-Disposition` filename. */
 const FALLBACK_REPORT_FILENAME = "kahayag-solar-report.pdf";
@@ -36,6 +37,11 @@ export function formatErrorDetail(detail: unknown, status: number) {
   }
   if (detail) {
     return JSON.stringify(detail);
+  }
+  // The hosting platform rejects oversized bodies before the backend runs, so
+  // a 413 usually arrives with no detail of ours to show.
+  if (status === 413) {
+    return `Upload is too large. Keep files under ${MAX_UPLOAD_LABEL}.`;
   }
   return `Request failed: ${status}`;
 }
