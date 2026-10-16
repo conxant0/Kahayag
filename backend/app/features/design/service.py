@@ -1026,7 +1026,10 @@ def generate_quotation(request: GenerateQuotationRequest) -> QuotationDocumentSc
 def compose_quotation(build: DesignBuildSchema) -> QuotationDocumentSchema:
     """Composes the quotation document for a build. The PDF report reuses
     this so a quote rendered into the report is authored by the same domain
-    path as the one served on /quotation, never re-stated by the client."""
+    path as the one served on /quotation, never re-stated by the client.
+
+    Raises ValueError when the build's totals no longer add up."""
+    build.check_totals_add_up()
     lines = tuple(
         QuotationLine(
             item=component.summary,

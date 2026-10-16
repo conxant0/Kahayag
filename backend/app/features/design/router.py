@@ -144,6 +144,8 @@ def create_quotation(
         return generate_quotation(request)
     except NoValidDesignError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @router.post("/agent", response_model=AgentDesignResponse)
